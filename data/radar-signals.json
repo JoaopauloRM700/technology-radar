@@ -1,0 +1,365 @@
+{
+  "generatedAt": "2026-07-23T16:15:12.667Z",
+  "mode": "offline",
+  "sources": [
+    {
+      "name": "Thoughtworks Technology Radar",
+      "url": "https://www.thoughtworks.com/radar",
+      "strength": "Alta",
+      "themes": [
+        "radar",
+        "agentic",
+        "engineering",
+        "software quality"
+      ],
+      "ok": null,
+      "fetchedAt": null,
+      "title": "Thoughtworks Technology Radar",
+      "signals": [
+        {
+          "keyword": "radar",
+          "snippet": "Monitorar evidências sobre radar em Thoughtworks Technology Radar."
+        },
+        {
+          "keyword": "agentic",
+          "snippet": "Monitorar evidências sobre agentic em Thoughtworks Technology Radar."
+        },
+        {
+          "keyword": "engineering",
+          "snippet": "Monitorar evidências sobre engineering em Thoughtworks Technology Radar."
+        },
+        {
+          "keyword": "software quality",
+          "snippet": "Monitorar evidências sobre software quality em Thoughtworks Technology Radar."
+        }
+      ]
+    },
+    {
+      "name": "DORA Research",
+      "url": "https://dora.dev/research/",
+      "strength": "Alta",
+      "themes": [
+        "metrics",
+        "AI-assisted software development",
+        "DevOps"
+      ],
+      "ok": null,
+      "fetchedAt": null,
+      "title": "DORA Research",
+      "signals": [
+        {
+          "keyword": "metrics",
+          "snippet": "Monitorar evidências sobre metrics em DORA Research."
+        },
+        {
+          "keyword": "AI-assisted software development",
+          "snippet": "Monitorar evidências sobre AI-assisted software development em DORA Research."
+        },
+        {
+          "keyword": "DevOps",
+          "snippet": "Monitorar evidências sobre DevOps em DORA Research."
+        }
+      ]
+    },
+    {
+      "name": "OWASP GenAI Security",
+      "url": "https://genai.owasp.org/",
+      "strength": "Alta",
+      "themes": [
+        "LLM security",
+        "agentic security",
+        "MCP",
+        "AI governance"
+      ],
+      "ok": null,
+      "fetchedAt": null,
+      "title": "OWASP GenAI Security",
+      "signals": [
+        {
+          "keyword": "LLM security",
+          "snippet": "Monitorar evidências sobre LLM security em OWASP GenAI Security."
+        },
+        {
+          "keyword": "agentic security",
+          "snippet": "Monitorar evidências sobre agentic security em OWASP GenAI Security."
+        },
+        {
+          "keyword": "MCP",
+          "snippet": "Monitorar evidências sobre MCP em OWASP GenAI Security."
+        },
+        {
+          "keyword": "AI governance",
+          "snippet": "Monitorar evidências sobre AI governance em OWASP GenAI Security."
+        }
+      ]
+    },
+    {
+      "name": "GitHub Blog",
+      "url": "https://github.blog/",
+      "strength": "Média",
+      "themes": [
+        "coding agents",
+        "Copilot",
+        "languages",
+        "supply chain"
+      ],
+      "ok": null,
+      "fetchedAt": null,
+      "title": "GitHub Blog",
+      "signals": [
+        {
+          "keyword": "coding agents",
+          "snippet": "Monitorar evidências sobre coding agents em GitHub Blog."
+        },
+        {
+          "keyword": "Copilot",
+          "snippet": "Monitorar evidências sobre Copilot em GitHub Blog."
+        },
+        {
+          "keyword": "languages",
+          "snippet": "Monitorar evidências sobre languages em GitHub Blog."
+        },
+        {
+          "keyword": "supply chain",
+          "snippet": "Monitorar evidências sobre supply chain em GitHub Blog."
+        }
+      ]
+    },
+    {
+      "name": "GitLab Resources",
+      "url": "https://about.gitlab.com/resources/",
+      "strength": "Média",
+      "themes": [
+        "DevSecOps",
+        "platform engineering",
+        "AI accountability"
+      ],
+      "ok": null,
+      "fetchedAt": null,
+      "title": "GitLab Resources",
+      "signals": [
+        {
+          "keyword": "DevSecOps",
+          "snippet": "Monitorar evidências sobre DevSecOps em GitLab Resources."
+        },
+        {
+          "keyword": "platform engineering",
+          "snippet": "Monitorar evidências sobre platform engineering em GitLab Resources."
+        },
+        {
+          "keyword": "AI accountability",
+          "snippet": "Monitorar evidências sobre AI accountability em GitLab Resources."
+        }
+      ]
+    },
+    {
+      "name": "Stack Overflow Developer Survey",
+      "url": "https://survey.stackoverflow.co/",
+      "strength": "Média",
+      "themes": [
+        "developer adoption",
+        "AI trust",
+        "languages",
+        "tools"
+      ],
+      "ok": null,
+      "fetchedAt": null,
+      "title": "Stack Overflow Developer Survey",
+      "signals": [
+        {
+          "keyword": "developer adoption",
+          "snippet": "Monitorar evidências sobre developer adoption em Stack Overflow Developer Survey."
+        },
+        {
+          "keyword": "AI trust",
+          "snippet": "Monitorar evidências sobre AI trust em Stack Overflow Developer Survey."
+        },
+        {
+          "keyword": "languages",
+          "snippet": "Monitorar evidências sobre languages em Stack Overflow Developer Survey."
+        },
+        {
+          "keyword": "tools",
+          "snippet": "Monitorar evidências sobre tools em Stack Overflow Developer Survey."
+        }
+      ]
+    },
+    {
+      "name": "CNCF Landscape",
+      "url": "https://landscape.cncf.io/",
+      "strength": "Alta",
+      "themes": [
+        "cloud native",
+        "observability",
+        "platform",
+        "security"
+      ],
+      "ok": null,
+      "fetchedAt": null,
+      "title": "CNCF Landscape",
+      "signals": [
+        {
+          "keyword": "cloud native",
+          "snippet": "Monitorar evidências sobre cloud native em CNCF Landscape."
+        },
+        {
+          "keyword": "observability",
+          "snippet": "Monitorar evidências sobre observability em CNCF Landscape."
+        },
+        {
+          "keyword": "platform",
+          "snippet": "Monitorar evidências sobre platform em CNCF Landscape."
+        },
+        {
+          "keyword": "security",
+          "snippet": "Monitorar evidências sobre security em CNCF Landscape."
+        }
+      ]
+    },
+    {
+      "name": "OpenSSF",
+      "url": "https://openssf.org/",
+      "strength": "Alta",
+      "themes": [
+        "supply chain",
+        "SLSA",
+        "Scorecard",
+        "Sigstore"
+      ],
+      "ok": null,
+      "fetchedAt": null,
+      "title": "OpenSSF",
+      "signals": [
+        {
+          "keyword": "supply chain",
+          "snippet": "Monitorar evidências sobre supply chain em OpenSSF."
+        },
+        {
+          "keyword": "SLSA",
+          "snippet": "Monitorar evidências sobre SLSA em OpenSSF."
+        },
+        {
+          "keyword": "Scorecard",
+          "snippet": "Monitorar evidências sobre Scorecard em OpenSSF."
+        },
+        {
+          "keyword": "Sigstore",
+          "snippet": "Monitorar evidências sobre Sigstore em OpenSSF."
+        }
+      ]
+    },
+    {
+      "name": "NIST AI RMF",
+      "url": "https://www.nist.gov/itl/ai-risk-management-framework",
+      "strength": "Alta",
+      "themes": [
+        "AI risk",
+        "governance",
+        "secure development"
+      ],
+      "ok": null,
+      "fetchedAt": null,
+      "title": "NIST AI RMF",
+      "signals": [
+        {
+          "keyword": "AI risk",
+          "snippet": "Monitorar evidências sobre AI risk em NIST AI RMF."
+        },
+        {
+          "keyword": "governance",
+          "snippet": "Monitorar evidências sobre governance em NIST AI RMF."
+        },
+        {
+          "keyword": "secure development",
+          "snippet": "Monitorar evidências sobre secure development em NIST AI RMF."
+        }
+      ]
+    },
+    {
+      "name": "Martin Fowler",
+      "url": "https://martinfowler.com/",
+      "strength": "Média",
+      "themes": [
+        "architecture",
+        "agentic programming",
+        "software engineering"
+      ],
+      "ok": null,
+      "fetchedAt": null,
+      "title": "Martin Fowler",
+      "signals": [
+        {
+          "keyword": "architecture",
+          "snippet": "Monitorar evidências sobre architecture em Martin Fowler."
+        },
+        {
+          "keyword": "agentic programming",
+          "snippet": "Monitorar evidências sobre agentic programming em Martin Fowler."
+        },
+        {
+          "keyword": "software engineering",
+          "snippet": "Monitorar evidências sobre software engineering em Martin Fowler."
+        }
+      ]
+    },
+    {
+      "name": "InfoQ Trends",
+      "url": "https://www.infoq.com/infoq-trends-report/",
+      "strength": "Complementar",
+      "themes": [
+        "architecture",
+        "AI",
+        "data",
+        "methods"
+      ],
+      "ok": null,
+      "fetchedAt": null,
+      "title": "InfoQ Trends",
+      "signals": [
+        {
+          "keyword": "architecture",
+          "snippet": "Monitorar evidências sobre architecture em InfoQ Trends."
+        },
+        {
+          "keyword": "AI",
+          "snippet": "Monitorar evidências sobre AI em InfoQ Trends."
+        },
+        {
+          "keyword": "data",
+          "snippet": "Monitorar evidências sobre data em InfoQ Trends."
+        },
+        {
+          "keyword": "methods",
+          "snippet": "Monitorar evidências sobre methods em InfoQ Trends."
+        }
+      ]
+    },
+    {
+      "name": "SIG State of Software",
+      "url": "https://www.softwareimprovementgroup.com/",
+      "strength": "Média",
+      "themes": [
+        "software quality",
+        "technical debt",
+        "AI-generated code"
+      ],
+      "ok": null,
+      "fetchedAt": null,
+      "title": "SIG State of Software",
+      "signals": [
+        {
+          "keyword": "software quality",
+          "snippet": "Monitorar evidências sobre software quality em SIG State of Software."
+        },
+        {
+          "keyword": "technical debt",
+          "snippet": "Monitorar evidências sobre technical debt em SIG State of Software."
+        },
+        {
+          "keyword": "AI-generated code",
+          "snippet": "Monitorar evidências sobre AI-generated code em SIG State of Software."
+        }
+      ]
+    }
+  ]
+}

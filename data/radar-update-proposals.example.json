@@ -1,0 +1,51 @@
+{
+  "generatedAt": "2026-07-23T00:00:00.000Z",
+  "source": "Exemplo de formato para importação no app",
+  "proposals": [
+    {
+      "action": "update",
+      "id": "ES-16",
+      "reason": "Exemplo: novas evidências indicam maior prontidão para piloto controlado.",
+      "confidence": 0.72,
+      "evidence": [
+        {
+          "source": "DORA Research",
+          "url": "https://dora.dev/research/",
+          "note": "Substituir por evidência real."
+        }
+      ],
+      "changes": {
+        "ring": "Trial",
+        "status": "Monitorar",
+        "strategic": "Centralizar políticas, logs, roteamento de modelos, custo e proteção de dados com piloto controlado.",
+        "constraints": "Validar lock-in, latência, privacidade, custo e integração com IAM antes de adoção ampla."
+      }
+    },
+    {
+      "action": "add",
+      "reason": "Exemplo de novo blip sugerido pela IA.",
+      "confidence": 0.61,
+      "evidence": [
+        {
+          "source": "OWASP GenAI Security",
+          "url": "https://genai.owasp.org/",
+          "note": "Substituir por evidência real."
+        }
+      ],
+      "blip": {
+        "name": "Avaliação contínua de agentes",
+        "quadrant": "Técnicas",
+        "ring": "Assess",
+        "horizon": "Médio",
+        "maturity": "Experimental",
+        "risk": "Médio",
+        "effort": "Médio",
+        "status": "Monitorar",
+        "source": "OWASP, NIST",
+        "theme": "Governança de IA",
+        "strategic": "Criar uma rotina de avaliação contínua para comportamento, segurança e qualidade de agentes.",
+        "constraints": "Necessita critérios claros, datasets de avaliação, logs e revisão humana."
+      }
+    }
+  ]
+}

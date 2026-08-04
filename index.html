@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Radar Tecnologico | Engenharia de Software</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <h1>Radar Tecnologico</h1>
+          <p>Engenharia de Software | P&amp;D</p>
+        </div>
+      </div>
+      <nav class="top-nav" aria-label="Seções principais">
+        <button class="nav-button active" data-view="radar">Radar</button>
+        <button class="nav-button" data-view="roadmap">Roadmap</button>
+        <button class="nav-button" data-view="sources">Fontes</button>
+        <button class="nav-button" data-view="export">Exportação</button>
+      </nav>
+      <div class="header-actions">
+        <button class="ghost-button" id="resetDataButton" title="Restaurar dados iniciais">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v6h6M20 20v-6h-6"/><path d="M20 9a8 8 0 0 0-13.3-3L4 8M4 15a8 8 0 0 0 13.3 3L20 16"/></svg>
+          Restaurar
+        </button>
+        <button class="secondary-button" id="exportButton">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          Exportar Markdown
+        </button>
+        <button class="secondary-button" id="importProposalsButton">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M5 21h14"/></svg>
+          Importar Propostas
+        </button>
+        <button class="secondary-button" id="analyzePdfButton">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 15h6"/><path d="M9 18h4"/></svg>
+          Analisar PDF
+        </button>
+        <button class="primary-button" id="addBlipButton">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Adicionar Blip
+        </button>
+      </div>
+    </header>
+    <input id="proposalFileInput" class="hidden" type="file" accept="application/json,.json" />
+    <input id="pdfFileInput" class="hidden" type="file" accept="application/pdf,.pdf" />
+
+    <main class="app-shell">
+      <aside class="sources-panel">
+        <div class="panel-title-row">
+          <div>
+            <h2>Fontes Monitoradas</h2>
+            <p>Base para atualização autonoma assistida por IA.</p>
+          </div>
+          <button class="icon-button" id="addSourceButton" title="Adicionar fonte">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+        <div class="agent-card">
+          <span class="status-dot live"></span>
+          <div>
+            <strong>Agente mensal</strong>
+            <p>Coleta sinais, agrupa evidências, propõe mudanças e aguarda aprovação humana.</p>
+          </div>
+        </div>
+        <div class="source-list" id="sourceList"></div>
+      </aside>
+
+      <section class="workspace">
+        <section class="summary-strip" aria-label="Resumo do radar">
+          <div>
+            <span class="metric-label">Blips</span>
+            <strong id="totalBlips">25</strong>
+          </div>
+          <div>
+            <span class="metric-label">Pilotos P&amp;D</span>
+            <strong id="pilotCount">5</strong>
+          </div>
+          <div>
+            <span class="metric-label">Atualização</span>
+            <strong>Mensal</strong>
+          </div>
+          <div>
+            <span class="metric-label">Versão</span>
+            <strong>0.1</strong>
+          </div>
+        </section>
+
+        <section class="radar-view" data-view-panel="radar">
+          <div class="section-heading">
+            <div>
+              <h2>Radar Editavel</h2>
+              <p>Clique em um blip para editar. Quadrante e anel reposicionam a tecnologia no radar.</p>
+            </div>
+            <div class="filter-row">
+              <label for="ringFilter">Anel</label>
+              <select id="ringFilter">
+                <option value="Todos">Todos</option>
+                <option value="Adopt">Adopt</option>
+                <option value="Trial">Trial</option>
+                <option value="Assess">Assess</option>
+                <option value="Caution">Caution</option>
+              </select>
+            </div>
+          </div>
+          <div class="radar-stage">
+            <svg id="radarSvg" viewBox="0 0 760 760" role="img" aria-labelledby="radarTitle radarDesc">
+              <title id="radarTitle">Radar tecnologico de Engenharia de Software</title>
+              <desc id="radarDesc">Quatro quadrantes com aneis de recomendacao Adopt, Trial, Assess e Caution.</desc>
+            </svg>
+          </div>
+          <div class="ring-legend">
+            <span><i class="ring-swatch adopt"></i>Adopt</span>
+            <span><i class="ring-swatch trial"></i>Trial</span>
+            <span><i class="ring-swatch assess"></i>Assess</span>
+            <span><i class="ring-swatch caution"></i>Caution</span>
+          </div>
+          <div class="pilot-strip" id="pilotStrip"></div>
+        </section>
+
+        <section class="roadmap-view hidden" data-view-panel="roadmap">
+          <div class="section-heading">
+            <div>
+              <h2>Matriz Radar + TRM</h2>
+              <p>Visão executiva para horizonte, maturidade, risco e esforço de implantação.</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="matrix-table">
+              <thead>
+                <tr>
+                  <th>Tecnologia/Técnica</th>
+                  <th>Quadrante</th>
+                  <th>Anel</th>
+                  <th>Horizonte</th>
+                  <th>Maturidade</th>
+                  <th>Risco</th>
+                  <th>Esforço</th>
+                </tr>
+              </thead>
+              <tbody id="matrixBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="sources-view hidden" data-view-panel="sources">
+          <div class="section-heading">
+            <div>
+              <h2>Biblioteca de Fontes</h2>
+              <p>Sites e relatórios que alimentam a atualização autonoma assistida.</p>
+            </div>
+          </div>
+          <div class="source-grid" id="sourceGrid"></div>
+        </section>
+
+        <section class="export-view hidden" data-view-panel="export">
+          <div class="section-heading">
+            <div>
+              <h2>Exportação para Google Docs</h2>
+              <p>Markdown pronto para copiar, baixar ou colar em um documento de gestão.</p>
+            </div>
+            <div class="export-actions">
+              <button class="secondary-button" id="saveHtmlButton">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+                Salvar HTML
+              </button>
+              <button class="secondary-button" id="downloadHtmlButton">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+                Baixar HTML
+              </button>
+              <button class="secondary-button" id="downloadMarkdownButton">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+                Baixar .md
+              </button>
+            </div>
+          </div>
+          <textarea id="markdownOutput" spellcheck="false"></textarea>
+        </section>
+      </section>
+
+      <aside class="editor-panel">
+        <div class="panel-title-row">
+          <div>
+            <h2>Editor de Blip</h2>
+            <p id="selectedBlipLabel">Selecione uma tecnologia.</p>
+          </div>
+          <button class="icon-button danger" id="deleteBlipButton" title="Excluir blip">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>
+          </button>
+        </div>
+
+        <article class="detail-card" id="detailCard"></article>
+
+        <form id="blipForm" class="editor-form">
+          <label>
+            Nome do Blip
+            <input name="name" required />
+          </label>
+          <div class="form-grid">
+            <label>
+              Quadrante
+              <select name="quadrant">
+                <option>Técnicas</option>
+                <option>Plataformas</option>
+                <option>Ferramentas</option>
+                <option>Linguagens e Frameworks</option>
+              </select>
+            </label>
+            <label>
+              Anel
+              <select name="ring">
+                <option>Adopt</option>
+                <option>Trial</option>
+                <option>Assess</option>
+                <option>Caution</option>
+              </select>
+            </label>
+          </div>
+          <div class="form-grid">
+            <label>
+              Horizonte
+              <select name="horizon">
+                <option>Curto</option>
+                <option>Médio</option>
+                <option>Longo</option>
+              </select>
+            </label>
+            <label>
+              Maturidade
+              <select name="maturity">
+                <option>Experimental</option>
+                <option>Emergente</option>
+                <option>Madura</option>
+              </select>
+            </label>
+          </div>
+          <div class="form-grid">
+            <label>
+              Risco
+              <select name="risk">
+                <option>Baixo</option>
+                <option>Médio</option>
+                <option>Alto</option>
+              </select>
+            </label>
+            <label>
+              Esforço
+              <select name="effort">
+                <option>Baixo</option>
+                <option>Médio</option>
+                <option>Alto</option>
+              </select>
+            </label>
+          </div>
+          <div class="form-grid">
+            <label>
+              Status
+              <select name="status">
+                <option>Monitorar</option>
+                <option>Piloto recomendado</option>
+                <option>Em piloto</option>
+                <option>Padronizar</option>
+                <option>Segurar</option>
+              </select>
+            </label>
+            <label>
+              Fonte principal
+              <input name="source" />
+            </label>
+          </div>
+          <label>
+            Tema
+            <input name="theme" />
+          </label>
+          <label>
+            Link de detalhes
+            <input name="detailsUrl" type="url" />
+          </label>
+          <label>
+            Justificativa Estratégica
+            <textarea name="strategic" rows="5"></textarea>
+          </label>
+          <label>
+            Gargalos e Contraindicações
+            <textarea name="constraints" rows="5"></textarea>
+          </label>
+        </form>
+      </aside>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

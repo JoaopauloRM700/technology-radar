@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Radar Tecnologico e TRM - Engenharia de Software</title>
+    <style>
+      :root {
+        --ink: #17212b;
+        --muted: #5f6f7b;
+        --line: #d7e0e5;
+        --shell: #f6f9fa;
+        --nav: #071724;
+        --panel: #ffffff;
+        --teal: #008a8a;
+        --green: #25985a;
+        --amber: #c47a00;
+        --red: #b83549;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; color: var(--ink); background: var(--shell); }
+      header { padding: 28px 36px; background: var(--nav); color: white; }
+      header h1 { margin: 0; font-size: 28px; line-height: 1.1; }
+      header p { margin: 8px 0 0; color: #b8cbd4; }
+      main { max-width: 1180px; margin: 0 auto; padding: 28px; }
+      .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--line); }
+      .summary div { background: white; padding: 18px; }
+      .summary span { display: block; color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+      .summary strong { display: block; margin-top: 8px; font-size: 24px; }
+      .section { margin-top: 28px; }
+      .section h2 { margin: 0 0 12px; font-size: 21px; }
+      .panel { background: white; border: 1px solid var(--line); border-radius: 8px; padding: 20px; }
+      .radar-wrap { display: grid; grid-template-columns: minmax(360px, 640px) 1fr; gap: 20px; align-items: start; }
+      .legend { display: grid; gap: 10px; font-size: 13px; }
+      .legend span { display: flex; gap: 8px; align-items: center; }
+      .swatch { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+      table { width: 100%; border-collapse: collapse; background: white; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+      th, td { border-bottom: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; font-size: 13px; }
+      th { background: #eef3f5; color: #465967; font-size: 12px; text-transform: uppercase; }
+      .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+      .card { background: white; border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+      .card h3 { margin: 0 0 8px; font-size: 16px; }
+      .card p { margin: 8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+      .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+      .tag { border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; font-size: 11px; font-weight: 700; color: #465967; }
+      a { color: #006b6f; }
+      footer { margin-top: 32px; padding: 18px 0 30px; color: var(--muted); font-size: 12px; }
+      @media print {
+        body { background: white; }
+        main { max-width: none; padding: 18px; }
+        .card, table, .panel { break-inside: avoid; }
+      }
+      @media (max-width: 860px) {
+        main { padding: 18px; }
+        .summary, .radar-wrap { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Radar Tecnologico e TRM - Engenharia de Software</h1>
+      <p>Snapshot mensal gerado em 28 de julho de 2026 às 15:41. Arquivo autônomo para avaliação da gestão.</p>
+    </header>
+    <main>
+      <section class="summary">
+        <div><span>Blips</span><strong>43</strong></div>
+        <div><span>Pilotos P&D</span><strong>12</strong></div>
+        <div><span>Atualização</span><strong>Mensal</strong></div>
+        <div><span>Versão</span><strong>2026-07</strong></div>
+      </section>
+
+      <section class="section">
+        <h2>Sumário Executivo</h2>
+        <div class="panel">
+          <p>Este Radar Tecnológico e TRM consolida tendências, ferramentas, plataformas, técnicas, linguagens e frameworks relevantes para Engenharia de Software. O objetivo é apoiar decisões de P&D, pilotos controlados e atualização mensal contínua.</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Radar</h2>
+        <div class="panel radar-wrap">
+          <svg viewBox="0 0 760 760" role="img" aria-label="Radar tecnológico"><circle cx="380" cy="380" r="90" fill="none" stroke="#a8bac4" stroke-dasharray="4 6"/><circle cx="380" cy="380" r="170" fill="none" stroke="#a8bac4" stroke-dasharray="4 6"/><circle cx="380" cy="380" r="250" fill="none" stroke="#a8bac4" stroke-dasharray="4 6"/><circle cx="380" cy="380" r="330" fill="none" stroke="#a8bac4" stroke-dasharray="0"/><path d="M380 50V710M50 380H710" stroke="#b6c5cc"/>
+    <text x="178" y="112" text-anchor="middle" font-size="16" font-weight="700">Técnicas</text>
+    <text x="582" y="112" text-anchor="middle" font-size="16" font-weight="700">Ferramentas</text>
+    <text x="178" y="668" text-anchor="middle" font-size="16" font-weight="700">Plataformas</text>
+    <text x="582" y="668" text-anchor="middle" font-size="16" font-weight="700">Linguagens</text>
+    <text x="380" y="376" text-anchor="middle" font-size="13" fill="#5f6f7b">Adopt</text>
+    <text x="380" y="286" text-anchor="middle" font-size="13" fill="#5f6f7b">Trial</text>
+    <text x="380" y="206" text-anchor="middle" font-size="13" fill="#5f6f7b">Assess</text>
+    <text x="380" y="126" text-anchor="middle" font-size="13" fill="#5f6f7b">Caution</text><g><circle cx="489" cy="224" r="13" fill="#2e7d52" stroke="white" stroke-width="3"/><text x="489" y="228" text-anchor="middle" font-size="10" font-weight="800" fill="white">1</text><title>Coding Agents</title></g><g><circle cx="248" cy="277" r="13" fill="#007f92" stroke="white" stroke-width="3"/><text x="248" y="281" text-anchor="middle" font-size="10" font-weight="800" fill="white">2</text><title>Harnesses para agentes de código</title></g><g><circle cx="352" cy="237" r="13" fill="#007f92" stroke="white" stroke-width="3"/><text x="352" y="241" text-anchor="middle" font-size="10" font-weight="800" fill="white">3</text><title>Engenharia de Contexto</title></g><g><circle cx="556" cy="469" r="13" fill="#b83549" stroke="white" stroke-width="3"/><text x="556" y="473" text-anchor="middle" font-size="10" font-weight="800" fill="white">4</text><title>Frameworks de agentes (LangGraph/Semantic Kernel)</title></g><g><circle cx="332" cy="212" r="13" fill="#007f92" stroke="white" stroke-width="3"/><text x="332" y="216" text-anchor="middle" font-size="10" font-weight="800" fill="white">5</text><title>Spec-driven development</title></g><g><circle cx="227" cy="315" r="13" fill="#007f92" stroke="white" stroke-width="3"/><text x="227" y="319" text-anchor="middle" font-size="10" font-weight="800" fill="white">6</text><title>Feedback sensors + quality gates determinísticos</title></g><g><circle cx="249" cy="224" r="13" fill="#007f92" stroke="white" stroke-width="3"/><text x="249" y="228" text-anchor="middle" font-size="10" font-weight="800" fill="white">7</text><title>Teste de mutação</title></g><g><circle cx="235" cy="270" r="13" fill="#007f92" stroke="white" stroke-width="3"/><text x="235" y="274" text-anchor="middle" font-size="10" font-weight="800" fill="white">8</text><title>Fuzz testing e property-based testing</title></g><g><circle cx="545" cy="431" r="13" fill="#b83549" stroke="white" stroke-width="3"/><text x="545" y="435" text-anchor="middle" font-size="10" font-weight="800" fill="white">9</text><title>Playwright para testes E2E e agentes</title></g><g><circle cx="298" cy="343" r="13" fill="#007f92" stroke="white" stroke-width="3"/><text x="298" y="347" text-anchor="middle" font-size="10" font-weight="800" fill="white">10</text><title>Engineering Intelligence: DORA + QE Analytics</title></g><g><circle cx="227" cy="265" r="13" fill="#007f92" stroke="white" stroke-width="3"/><text x="227" y="269" text-anchor="middle" font-size="10" font-weight="800" fill="white">11</text><title>Gestão de débito cognitivo em código gerado por IA</title></g><g><circle cx="299" cy="349" r="13" fill="#007f92" stroke="white" stroke-width="3"/><text x="299" y="353" text-anchor="middle" font-size="10" font-weight="800" fill="white">12</text><title>Revisão humana por classe de risco</title></g><g><circle cx="323" cy="365" r="13" fill="#007f92" stroke="white" stroke-width="3"/><text x="323" y="369" text-anchor="middle" font-size="10" font-weight="800" fill="white">13</text><title>Zero Trust no SDLC agentic</title></g><g><circle cx="253" cy="532" r="13" fill="#c47a00" stroke="white" stroke-width="3"/><text x="253" y="536" text-anchor="middle" font-size="10" font-weight="800" fill="white">14</text><title>Least privilege e Agentic IAM</title></g><g><circle cx="207" cy="411" r="13" fill="#c47a00" stroke="white" stroke-width="3"/><text x="207" y="415" text-anchor="middle" font-size="10" font-weight="800" fill="white">15</text><title>Sandboxes de execução para agentes</title></g><g><circle cx="309" cy="645" r="13" fill="#c47a00" stroke="white" stroke-width="3"/><text x="309" y="649" text-anchor="middle" font-size="10" font-weight="800" fill="white">16</text><title>AI Gateways</title></g><g><circle cx="270" cy="627" r="13" fill="#c47a00" stroke="white" stroke-width="3"/><text x="270" y="631" text-anchor="middle" font-size="10" font-weight="800" fill="white">17</text><title>Governança de MCP e ferramentas conectadas</title></g><g><circle cx="216" cy="300" r="13" fill="#007f92" stroke="white" stroke-width="3"/><text x="216" y="304" text-anchor="middle" font-size="10" font-weight="800" fill="white">18</text><title>Red teaming para LLMs e agentes</title></g><g><circle cx="434" cy="356" r="13" fill="#2e7d52" stroke="white" stroke-width="3"/><text x="434" y="360" text-anchor="middle" font-size="10" font-weight="800" fill="white">19</text><title>SBOM, SLSA e proveniência de supply chain</title></g><g><circle cx="472" cy="311" r="13" fill="#2e7d52" stroke="white" stroke-width="3"/><text x="472" y="315" text-anchor="middle" font-size="10" font-weight="800" fill="white">20</text><title>Policy as Code</title></g><g><circle cx="206" cy="461" r="13" fill="#c47a00" stroke="white" stroke-width="3"/><text x="206" y="465" text-anchor="middle" font-size="10" font-weight="800" fill="white">21</text><title>Platform Engineering + Golden Paths</title></g><g><circle cx="407" cy="212" r="13" fill="#2e7d52" stroke="white" stroke-width="3"/><text x="407" y="216" text-anchor="middle" font-size="10" font-weight="800" fill="white">22</text><title>Observability as Code + OpenTelemetry</title></g><g><circle cx="455" cy="417" r="13" fill="#b83549" stroke="white" stroke-width="3"/><text x="455" y="421" text-anchor="middle" font-size="10" font-weight="800" fill="white">23</text><title>TypeScript como linguagem padrão de frontend e ferramentas</title></g><g><circle cx="568" cy="445" r="13" fill="#b83549" stroke="white" stroke-width="3"/><text x="568" y="449" text-anchor="middle" font-size="10" font-weight="800" fill="white">24</text><title>Bibliotecas de validação (Pydantic/Zod)</title></g><g><circle cx="563" cy="651" r="13" fill="#b83549" stroke="white" stroke-width="3"/><text x="563" y="655" text-anchor="middle" font-size="10" font-weight="800" fill="white">25</text><title>Frameworks LLM sem manutenção ou proveniência</title></g><g><circle cx="436" cy="279" r="13" fill="#2e7d52" stroke="white" stroke-width="3"/><text x="436" y="283" text-anchor="middle" font-size="10" font-weight="800" fill="white">26</text><title>Claude Code</title></g><g><circle cx="465" cy="159" r="13" fill="#2e7d52" stroke="white" stroke-width="3"/><text x="465" y="163" text-anchor="middle" font-size="10" font-weight="800" fill="white">27</text><title>OpenSpec</title></g><g><circle cx="425" cy="201" r="13" fill="#2e7d52" stroke="white" stroke-width="3"/><text x="425" y="205" text-anchor="middle" font-size="10" font-weight="800" fill="white">28</text><title>Dev Containers</title></g><g><circle cx="415" cy="456" r="13" fill="#b83549" stroke="white" stroke-width="3"/><text x="415" y="460" text-anchor="middle" font-size="10" font-weight="800" fill="white">29</text><title>Svelte</title></g><g><circle cx="532" cy="555" r="13" fill="#b83549" stroke="white" stroke-width="3"/><text x="532" y="559" text-anchor="middle" font-size="10" font-weight="800" fill="white">30</text><title>LangExtract</title></g><g><circle cx="446" cy="561" r="13" fill="#b83549" stroke="white" stroke-width="3"/><text x="446" y="565" text-anchor="middle" font-size="10" font-weight="800" fill="white">31</text><title>DeepEval</title></g><g><circle cx="499" cy="503" r="13" fill="#b83549" stroke="white" stroke-width="3"/><text x="499" y="507" text-anchor="middle" font-size="10" font-weight="800" fill="white">32</text><title>Docling</title></g><g><circle cx="274" cy="405" r="13" fill="#c47a00" stroke="white" stroke-width="3"/><text x="274" y="409" text-anchor="middle" font-size="10" font-weight="800" fill="white">33</text><title>Google Cloud Run</title></g><g><circle cx="98" cy="523" r="13" fill="#c47a00" stroke="white" stroke-width="3"/><text x="98" y="527" text-anchor="middle" font-size="10" font-weight="800" fill="white">34</text><title>MCP by default</title></g><g><circle cx="227" cy="472" r="13" fill="#c47a00" stroke="white" stroke-width="3"/><text x="227" y="476" text-anchor="middle" font-size="10" font-weight="800" fill="white">35</text><title>Google Vertex AI</title></g><g><circle cx="333" cy="542" r="13" fill="#c47a00" stroke="white" stroke-width="3"/><text x="333" y="546" text-anchor="middle" font-size="10" font-weight="800" fill="white">36</text><title>Langfuse</title></g><g><circle cx="321" cy="296" r="13" fill="#007f92" stroke="white" stroke-width="3"/><text x="321" y="300" text-anchor="middle" font-size="10" font-weight="800" fill="white">37</text><title>Avaliação e Benchmarking DORA</title></g><g><circle cx="314" cy="344" r="13" fill="#007f92" stroke="white" stroke-width="3"/><text x="314" y="348" text-anchor="middle" font-size="10" font-weight="800" fill="white">38</text><title>Instrucoes compartilhadas curadas para times</title></g><g><circle cx="149" cy="241" r="13" fill="#007f92" stroke="white" stroke-width="3"/><text x="149" y="245" text-anchor="middle" font-size="10" font-weight="800" fill="white">39</text><title>Metrica de colaboracao com coding agents</title></g><g><circle cx="162" cy="154" r="13" fill="#007f92" stroke="white" stroke-width="3"/><text x="162" y="158" text-anchor="middle" font-size="10" font-weight="800" fill="white">40</text><title>Agent instruction bloat</title></g><g><circle cx="294" cy="81" r="13" fill="#007f92" stroke="white" stroke-width="3"/><text x="294" y="85" text-anchor="middle" font-size="10" font-weight="800" fill="white">41</text><title>AI-accelerated shadow IT</title></g><g><circle cx="216" cy="330" r="13" fill="#007f92" stroke="white" stroke-width="3"/><text x="216" y="334" text-anchor="middle" font-size="10" font-weight="800" fill="white">42</text><title>Agent Skills</title></g><g><circle cx="250" cy="282" r="13" fill="#007f92" stroke="white" stroke-width="3"/><text x="250" y="286" text-anchor="middle" font-size="10" font-weight="800" fill="white">43</text><title>Progressive context disclosure</title></g></svg>
+          <div class="legend">
+            <span><i class="swatch" style="background:#007f92"></i>Técnicas</span>
+            <span><i class="swatch" style="background:#2e7d52"></i>Ferramentas</span>
+            <span><i class="swatch" style="background:#c47a00"></i>Plataformas</span>
+            <span><i class="swatch" style="background:#b83549"></i>Linguagens e Frameworks</span>
+            <p><strong>Anéis:</strong> Adopt no centro; Trial, Assess e Caution progressivamente para fora.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Matriz Radar + TRM</h2>
+        <table>
+          <thead><tr><th>Tecnologia/Técnica</th><th>Quadrante</th><th>Anel</th><th>Horizonte</th><th>Maturidade</th><th>Risco</th><th>Esforço</th></tr></thead>
+          <tbody><tr><td>Coding Agents</td><td>Ferramentas</td><td>Trial</td><td>Curto</td><td>Emergente</td><td>Médio</td><td>Médio</td></tr><tr><td>Harnesses para agentes de código</td><td>Técnicas</td><td>Trial</td><td>Curto</td><td>Emergente</td><td>Médio</td><td>Alto</td></tr><tr><td>Engenharia de Contexto</td><td>Técnicas</td><td>Trial</td><td>Curto</td><td>Emergente</td><td>Médio</td><td>Médio</td></tr><tr><td>Frameworks de agentes (LangGraph/Semantic Kernel)</td><td>Linguagens e Frameworks</td><td>Trial</td><td>Curto</td><td>Emergente</td><td>Médio</td><td>Médio</td></tr><tr><td>Spec-driven development</td><td>Técnicas</td><td>Trial</td><td>Curto</td><td>Emergente</td><td>Médio</td><td>Médio</td></tr><tr><td>Feedback sensors + quality gates determinísticos</td><td>Técnicas</td><td>Trial</td><td>Curto</td><td>Emergente</td><td>Médio</td><td>Médio</td></tr><tr><td>Teste de mutação</td><td>Técnicas</td><td>Trial</td><td>Curto</td><td>Madura</td><td>Baixo</td><td>Médio</td></tr><tr><td>Fuzz testing e property-based testing</td><td>Técnicas</td><td>Trial</td><td>Curto</td><td>Madura</td><td>Médio</td><td>Médio</td></tr><tr><td>Playwright para testes E2E e agentes</td><td>Linguagens e Frameworks</td><td>Trial</td><td>Curto</td><td>Madura</td><td>Baixo</td><td>Médio</td></tr><tr><td>Engineering Intelligence: DORA + QE Analytics</td><td>Técnicas</td><td>Adopt</td><td>Curto</td><td>Madura</td><td>Baixo</td><td>Médio</td></tr><tr><td>Gestão de débito cognitivo em código gerado por IA</td><td>Técnicas</td><td>Trial</td><td>Curto</td><td>Emergente</td><td>Médio</td><td>Médio</td></tr><tr><td>Revisão humana por classe de risco</td><td>Técnicas</td><td>Adopt</td><td>Curto</td><td>Madura</td><td>Baixo</td><td>Baixo</td></tr><tr><td>Zero Trust no SDLC agentic</td><td>Técnicas</td><td>Adopt</td><td>Curto</td><td>Madura</td><td>Médio</td><td>Alto</td></tr><tr><td>Least privilege e Agentic IAM</td><td>Plataformas</td><td>Trial</td><td>Médio</td><td>Emergente</td><td>Alto</td><td>Alto</td></tr><tr><td>Sandboxes de execução para agentes</td><td>Plataformas</td><td>Trial</td><td>Curto</td><td>Emergente</td><td>Médio</td><td>Alto</td></tr><tr><td>AI Gateways</td><td>Plataformas</td><td>Assess</td><td>Médio</td><td>Emergente</td><td>Médio</td><td>Alto</td></tr><tr><td>Governança de MCP e ferramentas conectadas</td><td>Plataformas</td><td>Assess</td><td>Médio</td><td>Experimental</td><td>Alto</td><td>Alto</td></tr><tr><td>Red teaming para LLMs e agentes</td><td>Técnicas</td><td>Trial</td><td>Curto</td><td>Emergente</td><td>Médio</td><td>Médio</td></tr><tr><td>SBOM, SLSA e proveniência de supply chain</td><td>Ferramentas</td><td>Adopt</td><td>Curto</td><td>Madura</td><td>Baixo</td><td>Médio</td></tr><tr><td>Policy as Code</td><td>Ferramentas</td><td>Adopt</td><td>Curto</td><td>Madura</td><td>Baixo</td><td>Médio</td></tr><tr><td>Platform Engineering + Golden Paths</td><td>Plataformas</td><td>Trial</td><td>Médio</td><td>Madura</td><td>Médio</td><td>Alto</td></tr><tr><td>Observability as Code + OpenTelemetry</td><td>Ferramentas</td><td>Trial</td><td>Curto</td><td>Madura</td><td>Baixo</td><td>Médio</td></tr><tr><td>TypeScript como linguagem padrão de frontend e ferramentas</td><td>Linguagens e Frameworks</td><td>Adopt</td><td>Curto</td><td>Madura</td><td>Baixo</td><td>Baixo</td></tr><tr><td>Bibliotecas de validação (Pydantic/Zod)</td><td>Linguagens e Frameworks</td><td>Trial</td><td>Curto</td><td>Madura</td><td>Baixo</td><td>Médio</td></tr><tr><td>Frameworks LLM sem manutenção ou proveniência</td><td>Linguagens e Frameworks</td><td>Caution</td><td>Longo</td><td>Experimental</td><td>Alto</td><td>Alto</td></tr><tr><td>Claude Code</td><td>Ferramentas</td><td>Adopt</td><td>Curto</td><td>Emergente</td><td>Baixo</td><td>Baixo</td></tr><tr><td>OpenSpec</td><td>Ferramentas</td><td>Assess</td><td>Médio</td><td>Emergente</td><td>Médio</td><td>Médio</td></tr><tr><td>Dev Containers</td><td>Ferramentas</td><td>Trial</td><td>Curto</td><td>Madura</td><td>Baixo</td><td>Médio</td></tr><tr><td>Svelte</td><td>Linguagens e Frameworks</td><td>Adopt</td><td>Curto</td><td>Madura</td><td>Baixo</td><td>Médio</td></tr><tr><td>LangExtract</td><td>Linguagens e Frameworks</td><td>Assess</td><td>Médio</td><td>Experimental</td><td>Médio</td><td>Médio</td></tr><tr><td>DeepEval</td><td>Linguagens e Frameworks</td><td>Trial</td><td>Curto</td><td>Emergente</td><td>Médio</td><td>Médio</td></tr><tr><td>Docling</td><td>Linguagens e Frameworks</td><td>Trial</td><td>Médio</td><td>Emergente</td><td>Médio</td><td>Médio</td></tr><tr><td>Google Cloud Run</td><td>Plataformas</td><td>Adopt</td><td>Curto</td><td>Madura</td><td>Baixo</td><td>Médio</td></tr><tr><td>MCP by default</td><td>Plataformas</td><td>Caution</td><td>Curto</td><td>Emergente</td><td>Alto</td><td>Médio</td></tr><tr><td>Google Vertex AI</td><td>Plataformas</td><td>Trial</td><td>Médio</td><td>Emergente</td><td>Médio</td><td>Médio</td></tr><tr><td>Langfuse</td><td>Plataformas</td><td>Trial</td><td>Curto</td><td>Emergente</td><td>Médio</td><td>Médio</td></tr><tr><td>Avaliação e Benchmarking DORA</td><td>Técnicas</td><td>Adopt</td><td>Curto</td><td>Madura</td><td>Baixo</td><td>Baixo</td></tr><tr><td>Instrucoes compartilhadas curadas para times</td><td>Técnicas</td><td>Adopt</td><td>Curto</td><td>Madura</td><td>Baixo</td><td>Baixo</td></tr><tr><td>Metrica de colaboracao com coding agents</td><td>Técnicas</td><td>Assess</td><td>Médio</td><td>Experimental</td><td>Médio</td><td>Médio</td></tr><tr><td>Agent instruction bloat</td><td>Técnicas</td><td>Caution</td><td>Curto</td><td>Emergente</td><td>Alto</td><td>Médio</td></tr><tr><td>AI-accelerated shadow IT</td><td>Técnicas</td><td>Caution</td><td>Curto</td><td>Emergente</td><td>Alto</td><td>Médio</td></tr><tr><td>Agent Skills</td><td>Técnicas</td><td>Trial</td><td>Curto</td><td>Emergente</td><td>Médio</td><td>Médio</td></tr><tr><td>Progressive context disclosure</td><td>Técnicas</td><td>Trial</td><td>Curto</td><td>Emergente</td><td>Médio</td><td>Médio</td></tr></tbody>
+        </table>
+      </section>
+
+      <section class="section"><h2>Curto Prazo</h2><div class="cards"><article class="card">
+    <h3>ES-01 - Coding Agents</h3>
+    <div class="tags">
+      <span class="tag">Ferramentas</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Acelerar protótipos, refatorações e geração de testes em ciclos de P&amp;D, mantendo revisão humana e rastreabilidade.</p>
+    <p><strong>Gargalos:</strong> Pode introduzir alucinação, código pouco compreendido, vulnerabilidades e decisões arquiteturais não intencionais.</p>
+    
+  </article><article class="card">
+    <h3>ES-02 - Harnesses para agentes de código</h3>
+    <div class="tags">
+      <span class="tag">Técnicas</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Criar controles de feedforward e feedback para aumentar confiança em agentes e reduzir supervisão manual repetitiva.</p>
+    <p><strong>Gargalos:</strong> Exige arquitetura de qualidade, testes confiáveis, regras estruturais e maturidade de engenharia para funcionar bem.</p>
+    
+  </article><article class="card">
+    <h3>ES-03 - Engenharia de Contexto</h3>
+    <div class="tags">
+      <span class="tag">Técnicas</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Padronizar como contexto, restrições, exemplos e decisões são fornecidos a agentes para melhorar consistência de entrega.</p>
+    <p><strong>Gargalos:</strong> Contexto excessivo cria instruction bloat, ruído e decisões baseadas em informações desatualizadas.</p>
+    
+  </article><article class="card">
+    <h3>ES-04 - Frameworks de agentes (LangGraph/Semantic Kernel)</h3>
+    <div class="tags">
+      <span class="tag">Linguagens e Frameworks</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Estruturar agentes, fluxos, memória, ferramentas e supervisão em aplicações de P&amp;D com menor esforço de orquestração.</p>
+    <p><strong>Gargalos:</strong> Ecossistema ainda muda rápido; risco de lock-in conceitual, sobreengenharia e lacunas de observabilidade.</p>
+    
+  </article><article class="card">
+    <h3>ES-05 - Spec-driven development</h3>
+    <div class="tags">
+      <span class="tag">Técnicas</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Converter hipóteses de P&amp;D em especificações verificáveis antes da implementação assistida por IA.</p>
+    <p><strong>Gargalos:</strong> Sem disciplina de produto e arquitetura, especificações viram documentação frágil e não testável.</p>
+    
+  </article><article class="card">
+    <h3>ES-06 - Feedback sensors + quality gates determinísticos</h3>
+    <div class="tags">
+      <span class="tag">Técnicas</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Conectar compiladores, testes, linters, análise estática e regras arquiteturais ao loop de autocorreção dos agentes.</p>
+    <p><strong>Gargalos:</strong> Gates fracos dão falsa confiança; gates ruidosos criam lentidão e rejeição pelos times.</p>
+    
+  </article><article class="card">
+    <h3>ES-07 - Teste de mutação</h3>
+    <div class="tags">
+      <span class="tag">Técnicas</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Madura</span>
+      <span class="tag">Baixo</span>
+    </div>
+    <p><strong>Justificativa:</strong> Medir força real dos testes e revelar suites que passam sem proteger comportamento crítico.</p>
+    <p><strong>Gargalos:</strong> Pode aumentar custo de pipeline; exige seleção cuidadosa de módulos e metas de cobertura.</p>
+    
+  </article><article class="card">
+    <h3>ES-08 - Fuzz testing e property-based testing</h3>
+    <div class="tags">
+      <span class="tag">Técnicas</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Madura</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Encontrar falhas em APIs, parsers, regras complexas e integrações com entrada imprevisível.</p>
+    <p><strong>Gargalos:</strong> A curva de modelagem é maior que testes exemplo-a-exemplo e pode produzir falsos positivos.</p>
+    
+  </article><article class="card">
+    <h3>ES-09 - Playwright para testes E2E e agentes</h3>
+    <div class="tags">
+      <span class="tag">Linguagens e Frameworks</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Madura</span>
+      <span class="tag">Baixo</span>
+    </div>
+    <p><strong>Justificativa:</strong> Automatizar fluxos reais de usuário e dar aos agentes um sensor determinístico de regressão visual e funcional.</p>
+    <p><strong>Gargalos:</strong> Testes E2E frágeis e ambientes instáveis podem gerar ruído; exige dados e seletores bem governados.</p>
+    
+  </article><article class="card">
+    <h3>ES-10 - Engineering Intelligence: DORA + QE Analytics</h3>
+    <div class="tags">
+      <span class="tag">Técnicas</span>
+      <span class="tag">Adopt</span>
+      <span class="tag">Madura</span>
+      <span class="tag">Baixo</span>
+    </div>
+    <p><strong>Justificativa:</strong> Medir fluxo, estabilidade, qualidade e impacto da IA com indicadores que orientam decisão executiva.</p>
+    <p><strong>Gargalos:</strong> Métricas mal desenhadas viram vaidade ou pressão comportamental sem melhoria sistêmica.</p>
+    
+  </article><article class="card">
+    <h3>ES-11 - Gestão de débito cognitivo em código gerado por IA</h3>
+    <div class="tags">
+      <span class="tag">Técnicas</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Evitar que velocidade de geração resulte em sistemas que o time não consegue explicar, evoluir ou depurar.</p>
+    <p><strong>Gargalos:</strong> Difícil medir entendimento; requer revisões, ADRs, documentação viva e ownership explícito.</p>
+    
+  </article><article class="card">
+    <h3>ES-12 - Revisão humana por classe de risco</h3>
+    <div class="tags">
+      <span class="tag">Técnicas</span>
+      <span class="tag">Adopt</span>
+      <span class="tag">Madura</span>
+      <span class="tag">Baixo</span>
+    </div>
+    <p><strong>Justificativa:</strong> Definir quando PRs, prompts, mudanças de infraestrutura e ações de agentes exigem aprovação humana.</p>
+    <p><strong>Gargalos:</strong> Processo burocrático demais reduz adoção; processo vago demais não reduz risco.</p>
+    
+  </article><article class="card">
+    <h3>ES-13 - Zero Trust no SDLC agentic</h3>
+    <div class="tags">
+      <span class="tag">Técnicas</span>
+      <span class="tag">Adopt</span>
+      <span class="tag">Madura</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Tratar agentes, plugins, pipelines e ferramentas como identidades não confiáveis por padrão.</p>
+    <p><strong>Gargalos:</strong> Integração com IAM, segredos, repositórios e ambientes de execução pode ser trabalhosa.</p>
+    
+  </article><article class="card">
+    <h3>ES-15 - Sandboxes de execução para agentes</h3>
+    <div class="tags">
+      <span class="tag">Plataformas</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Permitir experimentação com menor risco isolando filesystem, rede, credenciais e comandos de agentes.</p>
+    <p><strong>Gargalos:</strong> Isolamento incompleto, custo computacional e exceções de rede podem limitar utilidade.</p>
+    
+  </article><article class="card">
+    <h3>ES-18 - Red teaming para LLMs e agentes</h3>
+    <div class="tags">
+      <span class="tag">Técnicas</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Encontrar prompt injection, tool misuse, vazamento de dados, overreliance e ações indevidas antes de produção.</p>
+    <p><strong>Gargalos:</strong> Exige conhecimento adversarial, documentação de ameaças e integração com processos de aceite.</p>
+    
+  </article><article class="card">
+    <h3>ES-19 - SBOM, SLSA e proveniência de supply chain</h3>
+    <div class="tags">
+      <span class="tag">Ferramentas</span>
+      <span class="tag">Adopt</span>
+      <span class="tag">Madura</span>
+      <span class="tag">Baixo</span>
+    </div>
+    <p><strong>Justificativa:</strong> Rastrear dependências, artefatos, builds e assinaturas para reduzir risco de componentes comprometidos.</p>
+    <p><strong>Gargalos:</strong> Cobertura parcial e baixa ação sobre achados reduzem valor executivo.</p>
+    
+  </article><article class="card">
+    <h3>ES-20 - Policy as Code</h3>
+    <div class="tags">
+      <span class="tag">Ferramentas</span>
+      <span class="tag">Adopt</span>
+      <span class="tag">Madura</span>
+      <span class="tag">Baixo</span>
+    </div>
+    <p><strong>Justificativa:</strong> Automatizar compliance, segurança e padrões arquiteturais em pipelines e plataformas.</p>
+    <p><strong>Gargalos:</strong> Políticas ruidosas ou não versionadas travam entrega e criam bypass informal.</p>
+    
+  </article><article class="card">
+    <h3>ES-22 - Observability as Code + OpenTelemetry</h3>
+    <div class="tags">
+      <span class="tag">Ferramentas</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Madura</span>
+      <span class="tag">Baixo</span>
+    </div>
+    <p><strong>Justificativa:</strong> Padronizar telemetria, SLOs e rastreabilidade como parte do ciclo de vida da aplicação.</p>
+    <p><strong>Gargalos:</strong> Excesso de sinais, custo de armazenamento e baixa higiene de cardinalidade atrapalham adoção.</p>
+    
+  </article><article class="card">
+    <h3>ES-23 - TypeScript como linguagem padrão de frontend e ferramentas</h3>
+    <div class="tags">
+      <span class="tag">Linguagens e Frameworks</span>
+      <span class="tag">Adopt</span>
+      <span class="tag">Madura</span>
+      <span class="tag">Baixo</span>
+    </div>
+    <p><strong>Justificativa:</strong> Reduzir defeitos em interfaces, CLIs e ferramentas internas com tipagem estática e ecossistema amplo.</p>
+    <p><strong>Gargalos:</strong> Pode aumentar atrito em scripts simples; exige padrões de build, lint e versionamento coerentes.</p>
+    
+  </article><article class="card">
+    <h3>ES-24 - Bibliotecas de validação (Pydantic/Zod)</h3>
+    <div class="tags">
+      <span class="tag">Linguagens e Frameworks</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Madura</span>
+      <span class="tag">Baixo</span>
+    </div>
+    <p><strong>Justificativa:</strong> Fortalecer contratos de entrada/saída em APIs, pipelines e respostas estruturadas de IA.</p>
+    <p><strong>Gargalos:</strong> Validação de schema não substitui validação semântica, autorização nem testes de comportamento.</p>
+    
+  </article><article class="card">
+    <h3>ES-26 - Claude Code</h3>
+    <div class="tags">
+      <span class="tag">Ferramentas</span>
+      <span class="tag">Adopt</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Baixo</span>
+    </div>
+    <p><strong>Justificativa:</strong> Permite automação e assistência de programação direto na linha de comando de forma integrada ao fluxo do desenvolvedor.</p>
+    <p><strong>Gargalos:</strong> Requer atenção ao conceder permissões excessivas para ações externas ou modificações não revisadas.</p>
+    
+  </article><article class="card">
+    <h3>ES-28 - Dev Containers</h3>
+    <div class="tags">
+      <span class="tag">Ferramentas</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Madura</span>
+      <span class="tag">Baixo</span>
+    </div>
+    <p><strong>Justificativa:</strong> Padronizar ambientes de desenvolvimento e execucao de agentes, reduzindo divergencia de setup e bugs de ambiente.</p>
+    <p><strong>Gargalos:</strong> Exige manutencao das imagens, tempo de build controlado e alinhamento com seguranca de dependencias.</p>
+    <p><a href="https://containers.dev/">Mais detalhes</a></p>
+  </article><article class="card">
+    <h3>ES-29 - Svelte</h3>
+    <div class="tags">
+      <span class="tag">Linguagens e Frameworks</span>
+      <span class="tag">Adopt</span>
+      <span class="tag">Madura</span>
+      <span class="tag">Baixo</span>
+    </div>
+    <p><strong>Justificativa:</strong> Gera bundles pequenos e oferece alto desempenho em tempo de execução sem dependência de um DOM virtual pesado.</p>
+    <p><strong>Gargalos:</strong> Mudanças de paradigma em relação a frameworks tradicionais baseados em Virtual DOM exigem adaptação da equipe.</p>
+    
+  </article><article class="card">
+    <h3>ES-31 - DeepEval</h3>
+    <div class="tags">
+      <span class="tag">Linguagens e Frameworks</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Criar testes e metricas para respostas, ferramentas, completude de tarefas e fluxos multi-turno em agentes.</p>
+    <p><strong>Gargalos:</strong> Metricas automaticas precisam ser calibradas com casos reais, avaliacao humana e criterios de aceitacao do negocio.</p>
+    <p><a href="https://github.com/confident-ai/deepeval">Mais detalhes</a></p>
+  </article><article class="card">
+    <h3>ES-33 - Google Cloud Run</h3>
+    <div class="tags">
+      <span class="tag">Plataformas</span>
+      <span class="tag">Adopt</span>
+      <span class="tag">Madura</span>
+      <span class="tag">Baixo</span>
+    </div>
+    <p><strong>Justificativa:</strong> Permite escalar aplicações containerizadas sob demanda sem a necessidade de gerenciar nós ou clusters de infraestrutura.</p>
+    <p><strong>Gargalos:</strong> Lock-in no ecossistema Google Cloud e limitações em cenários com cargas de trabalho estritamente stateful ou de longíssima duração contínua sem interrupções.</p>
+    <p><a href="https://cloud.google.com/run">Mais detalhes</a></p>
+  </article><article class="card">
+    <h3>ES-34 - MCP by default</h3>
+    <div class="tags">
+      <span class="tag">Plataformas</span>
+      <span class="tag">Caution</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Alto</span>
+    </div>
+    <p><strong>Justificativa:</strong> Impedir conectividade indiscriminada entre agentes e ferramentas sensiveis, exigindo allowlist, escopo minimo e auditoria.</p>
+    <p><strong>Gargalos:</strong> Pode limitar velocidade inicial de prototipos; precisa de alternativas aprovadas para casos de uso de baixo risco.</p>
+    <p><a href="https://www.thoughtworks.com/radar">Mais detalhes</a></p>
+  </article><article class="card">
+    <h3>ES-36 - Langfuse</h3>
+    <div class="tags">
+      <span class="tag">Plataformas</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Instrumentar prompts, traces, avaliacoes e custos de aplicacoes com LLM para suportar pilotos auditaveis.</p>
+    <p><strong>Gargalos:</strong> Deve ser validado contra requisitos de dados sensiveis, retencao, custo e integracao com observabilidade corporativa.</p>
+    <p><a href="https://langfuse.com/">Mais detalhes</a></p>
+  </article><article class="card">
+    <h3>ES-37 - Avaliação e Benchmarking DORA</h3>
+    <div class="tags">
+      <span class="tag">Técnicas</span>
+      <span class="tag">Adopt</span>
+      <span class="tag">Madura</span>
+      <span class="tag">Baixo</span>
+    </div>
+    <p><strong>Justificativa:</strong> Permite avaliar e comparar métricas fundamentais de entrega de software (frequência de deployment, lead time, MTTR e change fail rate) para direcionar investimentos de modernização com base em evidências.</p>
+    <p><strong>Gargalos:</strong> Exige engajamento cultural e abertura das equipes para que os resultados sejam utilizados em melhoria contínua e não como métrica punitiva.</p>
+    <p><a href="https://dora.dev">Mais detalhes</a></p>
+  </article><article class="card">
+    <h3>ES-38 - Instrucoes compartilhadas curadas para times</h3>
+    <div class="tags">
+      <span class="tag">Técnicas</span>
+      <span class="tag">Adopt</span>
+      <span class="tag">Madura</span>
+      <span class="tag">Baixo</span>
+    </div>
+    <p><strong>Justificativa:</strong> Transformar prompts, convencoes e regras de arquitetura em ativo compartilhado do time, reduzindo variacao entre desenvolvedores e agentes.</p>
+    <p><strong>Gargalos:</strong> Pode envelhecer rapido se nao houver dono, revisao periodica e alinhamento com templates reais de servicos.</p>
+    <p><a href="https://www.thoughtworks.com/radar">Mais detalhes</a></p>
+  </article><article class="card">
+    <h3>ES-40 - Agent instruction bloat</h3>
+    <div class="tags">
+      <span class="tag">Técnicas</span>
+      <span class="tag">Caution</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Alto</span>
+    </div>
+    <p><strong>Justificativa:</strong> Tratar crescimento descontrolado de instrucoes como risco de qualidade, custo, contexto e comportamento imprevisivel.</p>
+    <p><strong>Gargalos:</strong> Nao deve ser combatido apenas com modelos maiores; precisa de decomposicao, habilidades versionadas e revisao editorial.</p>
+    <p><a href="https://www.thoughtworks.com/radar">Mais detalhes</a></p>
+  </article><article class="card">
+    <h3>ES-41 - AI-accelerated shadow IT</h3>
+    <div class="tags">
+      <span class="tag">Técnicas</span>
+      <span class="tag">Caution</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Alto</span>
+    </div>
+    <p><strong>Justificativa:</strong> Evitar que times criem automacoes, integrações e agentes fora de controle de seguranca, arquitetura e conformidade.</p>
+    <p><strong>Gargalos:</strong> Bloqueio excessivo pode empurrar experimentos para canais informais; precisa de sandbox oficial e trilha rapida de aprovacao.</p>
+    <p><a href="https://www.thoughtworks.com/radar">Mais detalhes</a></p>
+  </article><article class="card">
+    <h3>ES-42 - Agent Skills</h3>
+    <div class="tags">
+      <span class="tag">Técnicas</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Empacotar tarefas, padroes e fluxos de qualidade em habilidades reutilizaveis para acelerar projetos de P&amp;D com governanca.</p>
+    <p><strong>Gargalos:</strong> Mercado de plugins ainda e instavel; exige curadoria, versionamento e analise de seguranca antes de uso amplo.</p>
+    <p><a href="https://www.thoughtworks.com/radar">Mais detalhes</a></p>
+  </article><article class="card">
+    <h3>ES-43 - Progressive context disclosure</h3>
+    <div class="tags">
+      <span class="tag">Técnicas</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Melhorar a qualidade de respostas de agentes em tarefas longas ao fornecer indice inicial e carregar detalhes sob demanda.</p>
+    <p><strong>Gargalos:</strong> Requer catalogacao de contexto, convencoes de recuperacao e testes para evitar omissao de informacao critica.</p>
+    <p><a href="https://www.thoughtworks.com/radar">Mais detalhes</a></p>
+  </article></div></section><section class="section"><h2>Médio Prazo</h2><div class="cards"><article class="card">
+    <h3>ES-14 - Least privilege e Agentic IAM</h3>
+    <div class="tags">
+      <span class="tag">Plataformas</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Alto</span>
+    </div>
+    <p><strong>Justificativa:</strong> Reduzir raio de impacto de agentes com permissões temporárias, escopo mínimo e trilha de auditoria.</p>
+    <p><strong>Gargalos:</strong> Ferramentas e provedores ainda estão amadurecendo modelos de identidade para agentes.</p>
+    
+  </article><article class="card">
+    <h3>ES-16 - AI Gateways</h3>
+    <div class="tags">
+      <span class="tag">Plataformas</span>
+      <span class="tag">Assess</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Centralizar política, logs, roteamento de modelos, custo, proteção de dados e observabilidade de uso de IA.</p>
+    <p><strong>Gargalos:</strong> Pode criar lock-in, latência e sensação falsa de governança se não houver controles reais.</p>
+    
+  </article><article class="card">
+    <h3>ES-17 - Governança de MCP e ferramentas conectadas</h3>
+    <div class="tags">
+      <span class="tag">Plataformas</span>
+      <span class="tag">Assess</span>
+      <span class="tag">Experimental</span>
+      <span class="tag">Alto</span>
+    </div>
+    <p><strong>Justificativa:</strong> Controlar tool sprawl, contexto, escopos e confiabilidade de servidores conectados a agentes.</p>
+    <p><strong>Gargalos:</strong> Padrões, ameaças e ecossistema ainda mudam rapidamente; precisa de catálogo e avaliação contínua.</p>
+    
+  </article><article class="card">
+    <h3>ES-21 - Platform Engineering + Golden Paths</h3>
+    <div class="tags">
+      <span class="tag">Plataformas</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Madura</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Oferecer caminhos padronizados para criação, entrega, observabilidade e segurança de serviços.</p>
+    <p><strong>Gargalos:</strong> Pode virar plataforma pesada sem adoção real se não resolver dores práticas dos times.</p>
+    
+  </article><article class="card">
+    <h3>ES-27 - OpenSpec</h3>
+    <div class="tags">
+      <span class="tag">Ferramentas</span>
+      <span class="tag">Assess</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Estrutura o processo de criação e refinamento de especificações antes da geração de código por IA.</p>
+    <p><strong>Gargalos:</strong> Exige disciplina na escrita de especificações e adaptação nos fluxos de trabalho tradicionais.</p>
+    
+  </article><article class="card">
+    <h3>ES-30 - LangExtract</h3>
+    <div class="tags">
+      <span class="tag">Linguagens e Frameworks</span>
+      <span class="tag">Assess</span>
+      <span class="tag">Experimental</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Extrair entidades e evidencias de fontes longas com rastreabilidade, apoiando curadoria mensal do radar.</p>
+    <p><strong>Gargalos:</strong> Deve ser comparado com validacao por schema, Pydantic/Zod e revisao humana para reduzir erros de extracao.</p>
+    <p><a href="https://github.com/google/langextract">Mais detalhes</a></p>
+  </article><article class="card">
+    <h3>ES-32 - Docling</h3>
+    <div class="tags">
+      <span class="tag">Linguagens e Frameworks</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Melhorar ingestao de PDFs, tabelas e documentos complexos para alimentar atualizacoes do radar e pipelines RAG.</p>
+    <p><strong>Gargalos:</strong> Pode exigir GPU ou ajustes para documentos grandes, escaneados ou com layouts institucionais complexos.</p>
+    <p><a href="https://github.com/docling-project/docling">Mais detalhes</a></p>
+  </article><article class="card">
+    <h3>ES-35 - Google Vertex AI</h3>
+    <div class="tags">
+      <span class="tag">Plataformas</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Integra fluxos de trabalho de engenharia de dados e aprendizado de máquina em uma única plataforma gerenciada para aceleração de soluções analíticas.</p>
+    <p><strong>Gargalos:</strong> Exige governança rigorosa de custos de treinamento e maturidade da equipe em práticas de MLOps.</p>
+    <p><a href="https://cloud.google.com/vertex-ai">Mais detalhes</a></p>
+  </article><article class="card">
+    <h3>ES-39 - Metrica de colaboracao com coding agents</h3>
+    <div class="tags">
+      <span class="tag">Técnicas</span>
+      <span class="tag">Assess</span>
+      <span class="tag">Experimental</span>
+      <span class="tag">Médio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Criar indicadores de qualidade da interacao humano-agente para evitar que produtividade aparente esconda retrabalho e risco.</p>
+    <p><strong>Gargalos:</strong> Metricas ruins podem incentivar comportamento localmente otimizado e mascarar queda de compreensao do sistema.</p>
+    <p><a href="https://www.thoughtworks.com/radar">Mais detalhes</a></p>
+  </article></div></section><section class="section"><h2>Longo Prazo</h2><div class="cards"><article class="card">
+    <h3>ES-25 - Frameworks LLM sem manutenção ou proveniência</h3>
+    <div class="tags">
+      <span class="tag">Linguagens e Frameworks</span>
+      <span class="tag">Caution</span>
+      <span class="tag">Experimental</span>
+      <span class="tag">Alto</span>
+    </div>
+    <p><strong>Justificativa:</strong> Evitar dependência de wrappers, SDKs e frameworks de IA criados rapidamente sem comunidade, manutenção ou postura de segurança.</p>
+    <p><strong>Gargalos:</strong> Alto risco de abandono, vulnerabilidades, mudanças incompatíveis e semântica instável em componentes críticos.</p>
+    
+  </article></div></section>
+
+      <section class="section">
+        <h2>Plano de Ação</h2>
+        <div class="panel"><ul><li><strong>Coding Agents</strong>: piloto controlado com metricas de valor, qualidade e risco.</li><li><strong>Harnesses para agentes de código</strong>: piloto controlado com metricas de valor, qualidade e risco.</li><li><strong>Engenharia de Contexto</strong>: piloto controlado com metricas de valor, qualidade e risco.</li><li><strong>Feedback sensors + quality gates determinísticos</strong>: piloto controlado com metricas de valor, qualidade e risco.</li><li><strong>Playwright para testes E2E e agentes</strong>: piloto controlado com metricas de valor, qualidade e risco.</li><li><strong>Red teaming para LLMs e agentes</strong>: piloto controlado com metricas de valor, qualidade e risco.</li><li><strong>Dev Containers</strong>: piloto controlado com metricas de valor, qualidade e risco.</li><li><strong>DeepEval</strong>: piloto controlado com metricas de valor, qualidade e risco.</li><li><strong>Docling</strong>: piloto controlado com metricas de valor, qualidade e risco.</li><li><strong>Langfuse</strong>: piloto controlado com metricas de valor, qualidade e risco.</li><li><strong>Agent Skills</strong>: piloto controlado com metricas de valor, qualidade e risco.</li><li><strong>Progressive context disclosure</strong>: piloto controlado com metricas de valor, qualidade e risco.</li></ul></div>
+      </section>
+
+      <section class="section">
+        <h2>Fontes Monitoradas</h2>
+        <table>
+          <thead><tr><th>Fonte</th><th>Força</th><th>Cadência</th><th>Sinal</th><th>URL</th></tr></thead>
+          <tbody><tr><td>Thoughtworks Technology Radar</td><td>Alta</td><td>Semestral + insights</td><td>Blips, anéis, temas macro e práticas emergentes de engenharia.</td><td><a href="https://www.thoughtworks.com/radar">https://www.thoughtworks.com/radar</a></td></tr><tr><td>DORA / Google Cloud Research</td><td>Alta</td><td>Anual + guias</td><td>Métricas, capacidades organizacionais, IA assistida e desempenho de entrega.</td><td><a href="https://dora.dev/research/">https://dora.dev/research/</a></td></tr><tr><td>OWASP GenAI Security</td><td>Alta</td><td>Contínua</td><td>Top 10 LLM, Agentic AI, MCP, threat modeling e mitigação.</td><td><a href="https://genai.owasp.org/">https://genai.owasp.org/</a></td></tr><tr><td>GitHub Blog, Changelog e Octoverse</td><td>Média</td><td>Semanal</td><td>Adoção de linguagens, agentes, Copilot, supply chain e workflows.</td><td><a href="https://github.blog/">https://github.blog/</a></td></tr><tr><td>GitLab DevSecOps Reports</td><td>Média</td><td>Anual + pesquisas</td><td>DevSecOps, platform engineering, toolchain, governança e AI accountability.</td><td><a href="https://about.gitlab.com/resources/">https://about.gitlab.com/resources/</a></td></tr><tr><td>Stack Overflow Developer Survey</td><td>Média</td><td>Anual</td><td>Adoção por desenvolvedores, confiança em IA, linguagens e ferramentas.</td><td><a href="https://survey.stackoverflow.co/">https://survey.stackoverflow.co/</a></td></tr><tr><td>CNCF Landscape</td><td>Alta</td><td>Contínua</td><td>Cloud native, observabilidade, segurança, runtime, plataforma e maturidade de projetos.</td><td><a href="https://landscape.cncf.io/">https://landscape.cncf.io/</a></td></tr><tr><td>OpenSSF</td><td>Alta</td><td>Contínua</td><td>Supply chain, Scorecard, SLSA, Sigstore, segurança open source.</td><td><a href="https://openssf.org/">https://openssf.org/</a></td></tr><tr><td>NIST AI RMF e SSDF</td><td>Alta</td><td>Conforme publicação</td><td>Gestão de risco de IA, avaliação, governança e desenvolvimento seguro.</td><td><a href="https://www.nist.gov/itl/ai-risk-management-framework">https://www.nist.gov/itl/ai-risk-management-framework</a></td></tr><tr><td>Martin Fowler</td><td>Média</td><td>Contínua</td><td>Arquitetura, engenharia com agentes, práticas e linguagem conceitual.</td><td><a href="https://martinfowler.com/">https://martinfowler.com/</a></td></tr><tr><td>InfoQ Trends Reports</td><td>Complementar</td><td>Periódica</td><td>Tendências para arquitetura, dados, IA, cultura e métodos.</td><td><a href="https://www.infoq.com/infoq-trends-report/">https://www.infoq.com/infoq-trends-report/</a></td></tr><tr><td>SIG State of Software</td><td>Média</td><td>Anual</td><td>Qualidade estrutural, débito técnico, riscos de IA e sustentabilidade.</td><td><a href="https://www.softwareimprovementgroup.com/">https://www.softwareimprovementgroup.com/</a></td></tr></tbody>
+        </table>
+      </section>
+
+      <footer>Radar gerado pelo sistema local Technology-Radar. Recomenda-se manter revisão humana antes de adoção institucional.</footer>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,1368 @@
+{
+  "generatedAt": "2026-07-23T17:04:39.275Z",
+  "engine": "playwright",
+  "engineNote": "Chrome instalado via Playwright channel.",
+  "options": {
+    "force": false,
+    "noDownload": false,
+    "noAnalyze": false,
+    "maxPdfsPerSource": 2,
+    "sourceFilter": null
+  },
+  "sources": [
+    {
+      "name": "Thoughtworks Technology Radar",
+      "url": "https://www.thoughtworks.com/radar",
+      "strength": "Alta",
+      "strategy": "playwright",
+      "discoverPdfs": true,
+      "maxPdfDownloads": 2,
+      "preferredPdfPatterns": [
+        "technology_radar",
+        "tr_technology_radar",
+        "/radar/"
+      ],
+      "excludedPdfPatterns": [
+        "code_of_conduct",
+        "slavery",
+        "speak_up",
+        "procurement",
+        "anti-bribery"
+      ],
+      "themes": [
+        "radar",
+        "agentic",
+        "engineering",
+        "software quality"
+      ],
+      "strategyUsed": "playwright",
+      "ok": true,
+      "status": 200,
+      "checkedAt": "2026-07-23T17:04:39.670Z",
+      "finalUrl": "https://www.thoughtworks.com/radar",
+      "title": "Technology Radar | Guide to technology landscape | Thoughtworks",
+      "pdfCandidates": [
+        {
+          "url": "https://www.thoughtworks.com/content/dam/thoughtworks/documents/radar/2026/04/tr_technology_radar_vol_34_en_1.pdf",
+          "label": "English",
+          "isPdf": true,
+          "score": 246,
+          "reasons": [
+            "URL PDF",
+            "relatorio",
+            "preferido: technology_radar",
+            "preferido: tr_technology_radar",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        },
+        {
+          "url": "https://www.thoughtworks.com/content/dam/thoughtworks/documents/radar/2026/04/tr_technology_radar_vol_34_pt_1.pdf",
+          "label": "Português",
+          "isPdf": true,
+          "score": 246,
+          "reasons": [
+            "URL PDF",
+            "relatorio",
+            "preferido: technology_radar",
+            "preferido: tr_technology_radar",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        },
+        {
+          "url": "https://www.thoughtworks.com/radar#download",
+          "label": "Download",
+          "isPdf": false,
+          "score": 91,
+          "reasons": [
+            "acao de download",
+            "relatorio",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        },
+        {
+          "url": "https://www.thoughtworks.com/de-de/radar",
+          "label": "Deutsch Deutsch",
+          "isPdf": false,
+          "score": 66,
+          "reasons": [
+            "relatorio",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        },
+        {
+          "url": "https://www.thoughtworks.com/en-au/radar",
+          "label": "English English",
+          "isPdf": false,
+          "score": 66,
+          "reasons": [
+            "relatorio",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        },
+        {
+          "url": "https://www.thoughtworks.com/en-br/radar",
+          "label": "English English",
+          "isPdf": false,
+          "score": 66,
+          "reasons": [
+            "relatorio",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        },
+        {
+          "url": "https://www.thoughtworks.com/en-ca/radar",
+          "label": "English English",
+          "isPdf": false,
+          "score": 66,
+          "reasons": [
+            "relatorio",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        },
+        {
+          "url": "https://www.thoughtworks.com/en-cl/radar",
+          "label": "English English",
+          "isPdf": false,
+          "score": 66,
+          "reasons": [
+            "relatorio",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        },
+        {
+          "url": "https://www.thoughtworks.com/en-cn/radar",
+          "label": "English English",
+          "isPdf": false,
+          "score": 66,
+          "reasons": [
+            "relatorio",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        },
+        {
+          "url": "https://www.thoughtworks.com/en-de/radar",
+          "label": "English English",
+          "isPdf": false,
+          "score": 66,
+          "reasons": [
+            "relatorio",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        },
+        {
+          "url": "https://www.thoughtworks.com/en-ec/radar",
+          "label": "English English",
+          "isPdf": false,
+          "score": 66,
+          "reasons": [
+            "relatorio",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        },
+        {
+          "url": "https://www.thoughtworks.com/en-es/radar",
+          "label": "English English",
+          "isPdf": false,
+          "score": 66,
+          "reasons": [
+            "relatorio",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        },
+        {
+          "url": "https://www.thoughtworks.com/en-gb/radar",
+          "label": "English English",
+          "isPdf": false,
+          "score": 66,
+          "reasons": [
+            "relatorio",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        },
+        {
+          "url": "https://www.thoughtworks.com/en-in/radar",
+          "label": "English English",
+          "isPdf": false,
+          "score": 66,
+          "reasons": [
+            "relatorio",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        },
+        {
+          "url": "https://www.thoughtworks.com/en-sg/radar",
+          "label": "English English",
+          "isPdf": false,
+          "score": 66,
+          "reasons": [
+            "relatorio",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        },
+        {
+          "url": "https://www.thoughtworks.com/en-th/radar",
+          "label": "English English",
+          "isPdf": false,
+          "score": 66,
+          "reasons": [
+            "relatorio",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        },
+        {
+          "url": "https://www.thoughtworks.com/en-us/radar",
+          "label": "English English",
+          "isPdf": false,
+          "score": 66,
+          "reasons": [
+            "relatorio",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        },
+        {
+          "url": "https://www.thoughtworks.com/es-cl/radar",
+          "label": "Español Español",
+          "isPdf": false,
+          "score": 66,
+          "reasons": [
+            "relatorio",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        },
+        {
+          "url": "https://www.thoughtworks.com/es-ec/radar",
+          "label": "Español Español",
+          "isPdf": false,
+          "score": 66,
+          "reasons": [
+            "relatorio",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        },
+        {
+          "url": "https://www.thoughtworks.com/es-es/radar",
+          "label": "Español Español",
+          "isPdf": false,
+          "score": 66,
+          "reasons": [
+            "relatorio",
+            "preferido: /radar/",
+            "tema: radar"
+          ]
+        }
+      ],
+      "downloads": [
+        {
+          "url": "https://www.thoughtworks.com/content/dam/thoughtworks/documents/radar/2026/04/tr_technology_radar_vol_34_en_1.pdf",
+          "label": "English",
+          "isPdf": true,
+          "score": 246,
+          "reasons": [
+            "URL PDF",
+            "relatorio",
+            "preferido: technology_radar",
+            "preferido: tr_technology_radar",
+            "preferido: /radar/",
+            "tema: radar"
+          ],
+          "path": "data/downloads/thoughtworks-technology-radar/tr_technology_radar_vol_34_en_1.pdf",
+          "sha256": "ccc6aa829197e4f27bdc537df82433fdcad2be1dd2f12dcc52d702fae2057bba",
+          "bytes": 4839699,
+          "downloaded": false,
+          "skipped": true,
+          "reason": "cached-url",
+          "analysis": {
+            "ok": true,
+            "exitCode": 0,
+            "textPath": "data/pdf/tr_technology_radar_vol_34_en_1.txt",
+            "signalsPath": "data/pdf/tr_technology_radar_vol_34_en_1-signals.json",
+            "briefPath": "docs/tr_technology_radar_vol_34_en_1-brief.md",
+            "proposalsPath": "data/pdf/tr_technology_radar_vol_34_en_1-proposals.json",
+            "stdout": "Análise de PDF concluída.\nTexto extraído: data/pdf/tr_technology_radar_vol_34_en_1.txt\nSinais: data/pdf/tr_technology_radar_vol_34_en_1-signals.json\nBrief para IA: docs/tr_technology_radar_vol_34_en_1-brief.md\nPropostas para importar no app: data/pdf/tr_technology_radar_vol_34_en_1-proposals.json\nPróximo passo: cole o brief em uma IA, salve o JSON de resposta no arquivo de propostas e importe no app.",
+            "stderr": ""
+          }
+        },
+        {
+          "url": "https://www.thoughtworks.com/content/dam/thoughtworks/documents/radar/2026/04/tr_technology_radar_vol_34_pt_1.pdf",
+          "label": "Português",
+          "isPdf": true,
+          "score": 246,
+          "reasons": [
+            "URL PDF",
+            "relatorio",
+            "preferido: technology_radar",
+            "preferido: tr_technology_radar",
+            "preferido: /radar/",
+            "tema: radar"
+          ],
+          "path": "data/downloads/thoughtworks-technology-radar/tr_technology_radar_vol_34_pt_1.pdf",
+          "sha256": "af2ce31db15904cf718df4b7bbe33d98dd058e76917eb11c0f85d40fe16f714c",
+          "bytes": 4934101,
+          "downloaded": false,
+          "skipped": true,
+          "reason": "cached-url",
+          "analysis": {
+            "ok": true,
+            "exitCode": 0,
+            "textPath": "data/pdf/tr_technology_radar_vol_34_pt_1.txt",
+            "signalsPath": "data/pdf/tr_technology_radar_vol_34_pt_1-signals.json",
+            "briefPath": "docs/tr_technology_radar_vol_34_pt_1-brief.md",
+            "proposalsPath": "data/pdf/tr_technology_radar_vol_34_pt_1-proposals.json",
+            "stdout": "Análise de PDF concluída.\nTexto extraído: data/pdf/tr_technology_radar_vol_34_pt_1.txt\nSinais: data/pdf/tr_technology_radar_vol_34_pt_1-signals.json\nBrief para IA: docs/tr_technology_radar_vol_34_pt_1-brief.md\nPropostas para importar no app: data/pdf/tr_technology_radar_vol_34_pt_1-proposals.json\nPróximo passo: cole o brief em uma IA, salve o JSON de resposta no arquivo de propostas e importe no app.",
+            "stderr": ""
+          }
+        }
+      ],
+      "strategyRequested": "playwright"
+    },
+    {
+      "name": "DORA Research",
+      "url": "https://dora.dev/research/",
+      "strength": "Alta",
+      "strategy": "playwright",
+      "discoverPdfs": true,
+      "maxPdfDownloads": 2,
+      "themes": [
+        "metrics",
+        "AI-assisted software development",
+        "DevOps"
+      ],
+      "strategyUsed": "playwright",
+      "ok": true,
+      "status": 200,
+      "checkedAt": "2026-07-23T17:04:44.678Z",
+      "finalUrl": "https://dora.dev/research/",
+      "title": "DORA | Research",
+      "pdfCandidates": [
+        {
+          "url": "https://dora.dev/research/core/assets/dora-core-v2.1.0-summary.pdf",
+          "label": "PDF",
+          "isPdf": true,
+          "score": 155,
+          "reasons": [
+            "URL PDF",
+            "rotulo PDF",
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://services.google.com/fh/files/misc/devops_awards_fullebook_final.pdf",
+          "label": "Read ebook",
+          "isPdf": true,
+          "score": 126,
+          "reasons": [
+            "URL PDF",
+            "relatorio",
+            "tema: DevOps"
+          ]
+        },
+        {
+          "url": "https://cloud.google.com/resources/content/dora-roi-of-ai-assisted-software-development",
+          "label": "Download the ROI of AI-assisted Software Development report.",
+          "isPdf": false,
+          "score": 51,
+          "reasons": [
+            "acao de download",
+            "relatorio",
+            "tema: AI-assisted software development"
+          ]
+        },
+        {
+          "url": "https://dora.dev/research/2020/",
+          "label": "Download Whitepaper",
+          "isPdf": false,
+          "score": 45,
+          "reasons": [
+            "acao de download",
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://dora.dev/research/2014/",
+          "label": "DevOps is a cultural shift, not just technical practices, that drives significant improvements in IT and organizational performance.",
+          "isPdf": false,
+          "score": 26,
+          "reasons": [
+            "relatorio",
+            "tema: DevOps"
+          ]
+        },
+        {
+          "url": "https://dora.dev/research/2015/",
+          "label": "High-performing IT organizations consistently outperform their counterparts in terms of four key software delivery metrics.",
+          "isPdf": false,
+          "score": 26,
+          "reasons": [
+            "relatorio",
+            "tema: metrics"
+          ]
+        },
+        {
+          "url": "https://dora.dev/research/2018/",
+          "label": "Operational performance joins the metrics, and the \"Elite\" cluster is introduced to define the highest level of software delivery.",
+          "isPdf": false,
+          "score": 26,
+          "reasons": [
+            "relatorio",
+            "tema: metrics"
+          ]
+        },
+        {
+          "url": "https://dora.dev/ai/",
+          "label": "View research",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://dora.dev/research/",
+          "label": "Research",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://dora.dev/research/#dora_research_archives",
+          "label": "DORA Reports",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://dora.dev/research/#publications-legacy",
+          "label": "link click to copy link",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://dora.dev/research/2016/",
+          "label": "2016",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://dora.dev/research/2017/",
+          "label": "2017",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://dora.dev/research/2019/",
+          "label": "2019",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://dora.dev/research/2021/",
+          "label": "2021",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://dora.dev/research/2022/",
+          "label": "2022",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://dora.dev/research/2023/",
+          "label": "2023",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://dora.dev/research/2024/",
+          "label": "2024",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://dora.dev/research/2025/",
+          "label": "2025",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://dora.dev/research/core/assets/dora-core-v2.1.0-summary.png",
+          "label": "PNG",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        }
+      ],
+      "downloads": [
+        {
+          "url": "https://dora.dev/research/core/assets/dora-core-v2.1.0-summary.pdf",
+          "label": "PDF",
+          "isPdf": true,
+          "score": 155,
+          "reasons": [
+            "URL PDF",
+            "rotulo PDF",
+            "relatorio"
+          ],
+          "path": "data/downloads/dora-research/dora-core-v2.1.0-summary.pdf",
+          "sha256": "7ca15b8bfcfd3eaf0006ea63564bf7ba9beb3c1371d165cd25578428e1b5e08c",
+          "bytes": 140816,
+          "contentType": "application/pdf",
+          "downloaded": true,
+          "skipped": false,
+          "analysis": {
+            "ok": true,
+            "exitCode": 0,
+            "textPath": "data/pdf/dora-core-v2.1.0-summary.txt",
+            "signalsPath": "data/pdf/dora-core-v2.1.0-summary-signals.json",
+            "briefPath": "docs/dora-core-v2.1.0-summary-brief.md",
+            "proposalsPath": "data/pdf/dora-core-v2.1.0-summary-proposals.json",
+            "stdout": "Análise de PDF concluída.\nTexto extraído: data/pdf/dora-core-v2.1.0-summary.txt\nSinais: data/pdf/dora-core-v2.1.0-summary-signals.json\nBrief para IA: docs/dora-core-v2.1.0-summary-brief.md\nPropostas para importar no app: data/pdf/dora-core-v2.1.0-summary-proposals.json\nPróximo passo: cole o brief em uma IA, salve o JSON de resposta no arquivo de propostas e importe no app.",
+            "stderr": ""
+          }
+        },
+        {
+          "url": "https://services.google.com/fh/files/misc/devops_awards_fullebook_final.pdf",
+          "label": "Read ebook",
+          "isPdf": true,
+          "score": 126,
+          "reasons": [
+            "URL PDF",
+            "relatorio",
+            "tema: DevOps"
+          ],
+          "path": "data/downloads/dora-research/devops_awards_fullebook_final.pdf",
+          "sha256": "6c6b3311807c02832390408c7afe25da7168f1443d251ef9fc6539e737d94332",
+          "bytes": 1987920,
+          "contentType": "application/pdf",
+          "downloaded": true,
+          "skipped": false,
+          "analysis": {
+            "ok": true,
+            "exitCode": 0,
+            "textPath": "data/pdf/devops_awards_fullebook_final.txt",
+            "signalsPath": "data/pdf/devops_awards_fullebook_final-signals.json",
+            "briefPath": "docs/devops_awards_fullebook_final-brief.md",
+            "proposalsPath": "data/pdf/devops_awards_fullebook_final-proposals.json",
+            "stdout": "Análise de PDF concluída.\nTexto extraído: data/pdf/devops_awards_fullebook_final.txt\nSinais: data/pdf/devops_awards_fullebook_final-signals.json\nBrief para IA: docs/devops_awards_fullebook_final-brief.md\nPropostas para importar no app: data/pdf/devops_awards_fullebook_final-proposals.json\nPróximo passo: cole o brief em uma IA, salve o JSON de resposta no arquivo de propostas e importe no app.",
+            "stderr": ""
+          }
+        }
+      ],
+      "strategyRequested": "playwright"
+    },
+    {
+      "name": "OWASP GenAI Security",
+      "url": "https://genai.owasp.org/",
+      "strength": "Alta",
+      "strategy": "playwright",
+      "discoverPdfs": true,
+      "maxPdfDownloads": 2,
+      "themes": [
+        "LLM security",
+        "agentic security",
+        "MCP",
+        "AI governance"
+      ],
+      "strategyUsed": "playwright",
+      "ok": true,
+      "status": 200,
+      "checkedAt": "2026-07-23T17:04:49.548Z",
+      "finalUrl": "https://genai.owasp.org/",
+      "title": "Home - OWASP Gen AI Security Project",
+      "pdfCandidates": [
+        {
+          "url": "https://genai.owasp.org/resource/ai-security-solutions-landscape-for-ai-and-agentic-red-teaming-q2-2026/",
+          "label": "Download Now",
+          "isPdf": false,
+          "score": 25,
+          "reasons": [
+            "acao de download"
+          ]
+        },
+        {
+          "url": "https://genai.owasp.org/resource/aiuc-1-crosswalks-owasp-top-10-for-agentic-applications/",
+          "label": "Download Now",
+          "isPdf": false,
+          "score": 25,
+          "reasons": [
+            "acao de download"
+          ]
+        },
+        {
+          "url": "https://genai.owasp.org/resource/state-of-agentic-ai-security-and-governance/",
+          "label": "Download Now",
+          "isPdf": false,
+          "score": 25,
+          "reasons": [
+            "acao de download"
+          ]
+        },
+        {
+          "url": "https://genai.owasp.org/2026/04/14/owasp-genai-exploit-round-up-report-q1-2026/",
+          "label": "Learn More",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://genai.owasp.org/resources/?e-filter-3b7adda-resource-item=whitepaper",
+          "label": "WHITEPAPERS",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        }
+      ],
+      "downloads": [],
+      "strategyRequested": "playwright"
+    },
+    {
+      "name": "GitLab Resources",
+      "url": "https://about.gitlab.com/resources/",
+      "strength": "Média",
+      "strategy": "playwright",
+      "discoverPdfs": true,
+      "maxPdfDownloads": 2,
+      "themes": [
+        "DevSecOps",
+        "platform engineering",
+        "AI accountability"
+      ],
+      "strategyUsed": "playwright",
+      "ok": true,
+      "status": 200,
+      "checkedAt": "2026-07-23T17:04:56.424Z",
+      "finalUrl": "https://about.gitlab.com/pt-br/resources/",
+      "title": "Recursos | GitLab",
+      "pdfCandidates": [],
+      "downloads": [],
+      "strategyRequested": "playwright"
+    },
+    {
+      "name": "Stack Overflow Developer Survey",
+      "url": "https://survey.stackoverflow.co/",
+      "strength": "Média",
+      "strategy": "playwright",
+      "discoverPdfs": true,
+      "maxPdfDownloads": 1,
+      "themes": [
+        "developer adoption",
+        "AI trust",
+        "languages",
+        "tools"
+      ],
+      "strategyUsed": "playwright",
+      "ok": true,
+      "status": 200,
+      "checkedAt": "2026-07-23T17:05:05.822Z",
+      "finalUrl": "https://survey.stackoverflow.co/",
+      "title": "Stack Overflow Insights - Developer Hiring, Marketing, and User Research",
+      "pdfCandidates": [
+        {
+          "url": "https://github.com/StackExchange/Survey",
+          "label": "View on GitHub",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://github.com/StackExchange/Survey/raw/refs/heads/main/packages/archive/2011/results.csv",
+          "label": "Data (CSV) developer-survey-2011.csv",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://github.com/StackExchange/Survey/raw/refs/heads/main/packages/archive/2012/results.csv",
+          "label": "Data (CSV) developer-survey-2012.csv",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://github.com/StackExchange/Survey/raw/refs/heads/main/packages/archive/2013/results.csv",
+          "label": "Data (CSV) developer-survey-2013.csv",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://github.com/StackExchange/Survey/raw/refs/heads/main/packages/archive/2014/results.csv",
+          "label": "Data (CSV) developer-survey-2014.csv",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://github.com/StackExchange/Survey/raw/refs/heads/main/packages/archive/2015/results.csv",
+          "label": "Data (CSV) developer-survey-2015.csv",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://github.com/StackExchange/Survey/raw/refs/heads/main/packages/archive/2016/results.csv",
+          "label": "Data (CSV) developer-survey-2016.csv",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://github.com/StackExchange/Survey/raw/refs/heads/main/packages/archive/2017/results.csv",
+          "label": "Data (CSV) developer-survey-2017.csv",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://github.com/StackExchange/Survey/raw/refs/heads/main/packages/archive/2018/results.csv",
+          "label": "Data (CSV) developer-survey-2018.csv",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://github.com/StackExchange/Survey/raw/refs/heads/main/packages/archive/2019/results.csv",
+          "label": "Data (CSV) developer-survey-2019.csv",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://github.com/StackExchange/Survey/raw/refs/heads/main/packages/archive/2020/results.csv",
+          "label": "Data (CSV) developer-survey-2020.csv",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://github.com/StackExchange/Survey/raw/refs/heads/main/packages/archive/2021/results.csv",
+          "label": "Data (CSV) developer-survey-2021.csv",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://github.com/StackExchange/Survey/raw/refs/heads/main/packages/archive/2022/results.csv",
+          "label": "Data (CSV) developer-survey-2022.csv",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://github.com/StackExchange/Survey/raw/refs/heads/main/packages/archive/2023/results.csv",
+          "label": "Data (CSV) developer-survey-2023.csv",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://github.com/StackExchange/Survey/raw/refs/heads/main/packages/archive/2024/results.csv",
+          "label": "Data (CSV) developer-survey-2024.csv",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://github.com/StackExchange/Survey/raw/refs/heads/main/packages/archive/2025/results.csv",
+          "label": "Data (CSV) developer-survey-2025.csv",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://github.com/StackExchange/Survey/tree/main/packages/archive/2011",
+          "label": "Archive",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://github.com/StackExchange/Survey/tree/main/packages/archive/2012",
+          "label": "Archive",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://github.com/StackExchange/Survey/tree/main/packages/archive/2013",
+          "label": "Archive",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://github.com/StackExchange/Survey/tree/main/packages/archive/2014",
+          "label": "Archive",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        }
+      ],
+      "downloads": [],
+      "strategyRequested": "playwright"
+    },
+    {
+      "name": "OpenSSF",
+      "url": "https://openssf.org/",
+      "strength": "Alta",
+      "strategy": "playwright",
+      "discoverPdfs": true,
+      "maxPdfDownloads": 2,
+      "themes": [
+        "supply chain",
+        "SLSA",
+        "Scorecard",
+        "Sigstore"
+      ],
+      "strategyUsed": "playwright",
+      "ok": true,
+      "status": 200,
+      "checkedAt": "2026-07-23T17:05:07.625Z",
+      "finalUrl": "https://openssf.org/",
+      "title": "Open Source Security Foundation – Linux Foundation Projects",
+      "pdfCandidates": [
+        {
+          "url": "https://openssf.org/resources/publications/2026-cra-awareness-and-readiness-report/",
+          "label": "2026 CRA Awareness and Readiness Report",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://openssf.org/resources/securing-open-source-in-the-age-of-ai-a-practical-guide/",
+          "label": "Securing Open Source in the Age of AI",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        }
+      ],
+      "downloads": [],
+      "strategyRequested": "playwright"
+    },
+    {
+      "name": "NIST AI RMF",
+      "url": "https://www.nist.gov/itl/ai-risk-management-framework",
+      "strength": "Alta",
+      "strategy": "playwright",
+      "discoverPdfs": true,
+      "maxPdfDownloads": 2,
+      "themes": [
+        "AI risk",
+        "governance",
+        "secure development"
+      ],
+      "strategyUsed": "playwright",
+      "ok": true,
+      "status": 200,
+      "checkedAt": "2026-07-23T17:05:15.093Z",
+      "finalUrl": "https://www.nist.gov/itl/ai-risk-management-framework",
+      "title": "AI Risk Management Framework | NIST",
+      "pdfCandidates": [
+        {
+          "url": "https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-1.pdf",
+          "label": "Download the AI RMF 1.0",
+          "isPdf": true,
+          "score": 125,
+          "reasons": [
+            "URL PDF",
+            "acao de download"
+          ]
+        },
+        {
+          "url": "https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-1.ara.pdf",
+          "label": "NIST AI Risk Management Framework",
+          "isPdf": true,
+          "score": 106,
+          "reasons": [
+            "URL PDF",
+            "tema: AI risk"
+          ]
+        },
+        {
+          "url": "https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-1.jpn.pdf",
+          "label": "NIST AI Risk Management Framework",
+          "isPdf": true,
+          "score": 106,
+          "reasons": [
+            "URL PDF",
+            "tema: AI risk"
+          ]
+        },
+        {
+          "url": "https://www.nist.gov/document/airmfconceptpaper",
+          "label": "Concept paper to help guide development of the AI Risk Management Framework AI_RMF_ConceptPaper",
+          "isPdf": false,
+          "score": 26,
+          "reasons": [
+            "relatorio",
+            "tema: AI risk"
+          ]
+        },
+        {
+          "url": "https://www.nist.gov/laboratories/projects-programs",
+          "label": "Research Projects",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://www.nist.gov/ncnr",
+          "label": "NIST Center for Neutron Research",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://www.nist.gov/neutron-research",
+          "label": "Neutron research",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://www.nist.gov/nist-research-library",
+          "label": "NIST Research Library",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://www.nist.gov/research-test-beds",
+          "label": "Research Test Beds",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://www.nist.gov/summary-report-scientific-integrity",
+          "label": "Scientific Integrity",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        }
+      ],
+      "downloads": [
+        {
+          "url": "https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-1.pdf",
+          "label": "Download the AI RMF 1.0",
+          "isPdf": true,
+          "score": 125,
+          "reasons": [
+            "URL PDF",
+            "acao de download"
+          ],
+          "path": "data/downloads/nist-ai-rmf/nist.ai.100-1.pdf",
+          "sha256": "7576edb531d9848825814ee88e28b1795d3a84b435b4b797d3670eafdc4a89f1",
+          "bytes": 1946127,
+          "contentType": "application/pdf",
+          "downloaded": true,
+          "skipped": false,
+          "analysis": {
+            "ok": true,
+            "exitCode": 0,
+            "textPath": "data/pdf/nist.ai.100-1.txt",
+            "signalsPath": "data/pdf/nist.ai.100-1-signals.json",
+            "briefPath": "docs/nist.ai.100-1-brief.md",
+            "proposalsPath": "data/pdf/nist.ai.100-1-proposals.json",
+            "stdout": "Análise de PDF concluída.\nTexto extraído: data/pdf/nist.ai.100-1.txt\nSinais: data/pdf/nist.ai.100-1-signals.json\nBrief para IA: docs/nist.ai.100-1-brief.md\nPropostas para importar no app: data/pdf/nist.ai.100-1-proposals.json\nPróximo passo: cole o brief em uma IA, salve o JSON de resposta no arquivo de propostas e importe no app.",
+            "stderr": ""
+          }
+        },
+        {
+          "url": "https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-1.ara.pdf",
+          "label": "NIST AI Risk Management Framework",
+          "isPdf": true,
+          "score": 106,
+          "reasons": [
+            "URL PDF",
+            "tema: AI risk"
+          ],
+          "path": "data/downloads/nist-ai-rmf/nist.ai.100-1.ara.pdf",
+          "sha256": "caa672a14c337952fc8c1d42f58233c73a5a1c6520eee49ace337c67f6c0a79f",
+          "bytes": 1302275,
+          "contentType": "application/pdf",
+          "downloaded": true,
+          "skipped": false,
+          "analysis": {
+            "ok": true,
+            "exitCode": 0,
+            "textPath": "data/pdf/nist.ai.100-1.ara.txt",
+            "signalsPath": "data/pdf/nist.ai.100-1.ara-signals.json",
+            "briefPath": "docs/nist.ai.100-1.ara-brief.md",
+            "proposalsPath": "data/pdf/nist.ai.100-1.ara-proposals.json",
+            "stdout": "Análise de PDF concluída.\nTexto extraído: data/pdf/nist.ai.100-1.ara.txt\nSinais: data/pdf/nist.ai.100-1.ara-signals.json\nBrief para IA: docs/nist.ai.100-1.ara-brief.md\nPropostas para importar no app: data/pdf/nist.ai.100-1.ara-proposals.json\nPróximo passo: cole o brief em uma IA, salve o JSON de resposta no arquivo de propostas e importe no app.",
+            "stderr": ""
+          }
+        }
+      ],
+      "strategyRequested": "playwright"
+    },
+    {
+      "name": "InfoQ Trends",
+      "url": "https://www.infoq.com/infoq-trends-report/",
+      "strength": "Complementar",
+      "strategy": "playwright",
+      "discoverPdfs": true,
+      "maxPdfDownloads": 1,
+      "themes": [
+        "architecture",
+        "AI",
+        "data",
+        "methods"
+      ],
+      "strategyUsed": "playwright",
+      "ok": true,
+      "status": 200,
+      "checkedAt": "2026-07-23T17:05:24.893Z",
+      "finalUrl": "https://www.infoq.com/infoq-trends-report/",
+      "title": "InfoQ Trends Report - InfoQ",
+      "pdfCandidates": [
+        {
+          "url": "https://www.infoq.com/articles/ai-ml-data-engineering-trends-2023/",
+          "label": "InfoQ AI, ML, and Data Engineering Trends Report - September 2023 InfoQ AI, ML, and Data Engineering Trends Report - September 2023",
+          "isPdf": false,
+          "score": 32,
+          "reasons": [
+            "relatorio",
+            "tema: AI",
+            "tema: data"
+          ]
+        },
+        {
+          "url": "https://www.infoq.com/articles/ai-ml-data-engineering-trends-2024/",
+          "label": "InfoQ AI, ML and Data Engineering Trends Report - September 2024 InfoQ AI, ML and Data Engineering Trends Report - September 2024",
+          "isPdf": false,
+          "score": 32,
+          "reasons": [
+            "relatorio",
+            "tema: AI",
+            "tema: data"
+          ]
+        },
+        {
+          "url": "https://www.infoq.com/articles/ai-ml-data-engineering-trends-2025/",
+          "label": "InfoQ AI, ML and Data Engineering Trends Report - 2025 InfoQ AI, ML and Data Engineering Trends Report - 2025",
+          "isPdf": false,
+          "score": 32,
+          "reasons": [
+            "relatorio",
+            "tema: AI",
+            "tema: data"
+          ]
+        },
+        {
+          "url": "https://www.infoq.com/podcasts/ai-ml-data-engineering-trends-2023/",
+          "label": "InfoQ AI, ML, and Data Engineering Trends Report - September 2023 InfoQ AI, ML, and Data Engineering Trends Report - September 2023",
+          "isPdf": false,
+          "score": 32,
+          "reasons": [
+            "relatorio",
+            "tema: AI",
+            "tema: data"
+          ]
+        },
+        {
+          "url": "https://www.infoq.com/podcasts/ai-ml-data-engineering-trends-2024/",
+          "label": "AI, ML, and Data Engineering InfoQ Trends Report 2024 AI, ML, and Data Engineering InfoQ Trends Report 2024",
+          "isPdf": false,
+          "score": 32,
+          "reasons": [
+            "relatorio",
+            "tema: AI",
+            "tema: data"
+          ]
+        },
+        {
+          "url": "https://www.infoq.com/podcasts/ai-ml-data-engineering-trends-2025/",
+          "label": "AI, ML, and Data Engineering InfoQ Trends Report 2025 AI, ML, and Data Engineering InfoQ Trends Report 2025",
+          "isPdf": false,
+          "score": 32,
+          "reasons": [
+            "relatorio",
+            "tema: AI",
+            "tema: data"
+          ]
+        },
+        {
+          "url": "https://www.infoq.com/articles/architecture-trends-2023/",
+          "label": "InfoQ Software Architecture and Design Trends Report - April 2023 InfoQ Software Architecture and Design Trends Report - April 2023",
+          "isPdf": false,
+          "score": 26,
+          "reasons": [
+            "relatorio",
+            "tema: architecture"
+          ]
+        },
+        {
+          "url": "https://www.infoq.com/articles/architecture-trends-2024/",
+          "label": "InfoQ Software Architecture and Design Trends Report - April 2024 InfoQ Software Architecture and Design Trends Report - April 2024",
+          "isPdf": false,
+          "score": 26,
+          "reasons": [
+            "relatorio",
+            "tema: architecture"
+          ]
+        },
+        {
+          "url": "https://www.infoq.com/articles/architecture-trends-2025/",
+          "label": "InfoQ Software Architecture and Design Trends Report - 2025 InfoQ Software Architecture and Design Trends Report - 2025",
+          "isPdf": false,
+          "score": 26,
+          "reasons": [
+            "relatorio",
+            "tema: architecture"
+          ]
+        },
+        {
+          "url": "https://www.infoq.com/articles/culture-trends-2023/",
+          "label": "InfoQ Culture & Methods Trends Report - March 2023 InfoQ Culture & Methods Trends Report - March 2023",
+          "isPdf": false,
+          "score": 26,
+          "reasons": [
+            "relatorio",
+            "tema: methods"
+          ]
+        },
+        {
+          "url": "https://www.infoq.com/articles/culture-trends-2024/",
+          "label": "InfoQ Culture & Methods Trends Report - April 2024 InfoQ Culture & Methods Trends Report - April 2024",
+          "isPdf": false,
+          "score": 26,
+          "reasons": [
+            "relatorio",
+            "tema: methods"
+          ]
+        },
+        {
+          "url": "https://www.infoq.com/articles/culture-trends-2025/",
+          "label": "InfoQ Culture and Methods Trends Report - 2025 InfoQ Culture and Methods Trends Report - 2025",
+          "isPdf": false,
+          "score": 26,
+          "reasons": [
+            "relatorio",
+            "tema: methods"
+          ]
+        },
+        {
+          "url": "https://www.infoq.com/podcasts/infoq-architecture-trends-report-2023/",
+          "label": "InfoQ Software Architecture & Design Trends 2023 InfoQ Software Architecture & Design Trends 2023",
+          "isPdf": false,
+          "score": 26,
+          "reasons": [
+            "relatorio",
+            "tema: architecture"
+          ]
+        },
+        {
+          "url": "https://feed.infoq.com/InfoQ-trends-report/",
+          "label": "RSS Feed",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://feed.infoq.com/InfoQ-trends-report/articles/",
+          "label": "RSS Feed",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://feed.infoq.com/InfoQ-trends-report/minibooks/",
+          "label": "RSS Feed",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://feed.infoq.com/InfoQ-trends-report/podcasts/",
+          "label": "RSS Feed",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://www.infoq.com/articles/cloud-devops-trends-2023/",
+          "label": "InfoQ DevOps and Cloud Trends Report – July 2023 InfoQ DevOps and Cloud Trends Report – July 2023",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://www.infoq.com/articles/cloud-devops-trends-2025/",
+          "label": "InfoQ Cloud and DevOps Trends Report - 2025 InfoQ Cloud and DevOps Trends Report - 2025",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        },
+        {
+          "url": "https://www.infoq.com/articles/infoq-software-trends-report-2022/",
+          "label": "",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        }
+      ],
+      "downloads": [],
+      "strategyRequested": "playwright"
+    },
+    {
+      "name": "SIG State of Software",
+      "url": "https://www.softwareimprovementgroup.com/",
+      "strength": "Média",
+      "strategy": "playwright",
+      "discoverPdfs": true,
+      "maxPdfDownloads": 1,
+      "themes": [
+        "software quality",
+        "technical debt",
+        "AI-generated code"
+      ],
+      "strategyUsed": "playwright",
+      "ok": true,
+      "status": 200,
+      "checkedAt": "2026-07-23T17:05:31.380Z",
+      "finalUrl": "https://www.softwareimprovementgroup.com/",
+      "title": "Software Improvement Group - SIG",
+      "pdfCandidates": [
+        {
+          "url": "https://www.softwareimprovementgroup.com/gartner-mq-download/",
+          "label": "Access the full report",
+          "isPdf": false,
+          "score": 20,
+          "reasons": [
+            "relatorio"
+          ]
+        }
+      ],
+      "downloads": [],
+      "strategyRequested": "playwright"
+    }
+  ]
+}

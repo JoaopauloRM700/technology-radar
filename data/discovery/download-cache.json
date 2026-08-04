@@ -1,0 +1,58 @@
+{
+  "downloads": [
+    {
+      "source": "Thoughtworks Technology Radar",
+      "url": "https://www.thoughtworks.com/content/dam/thoughtworks/documents/radar/2026/04/tr_technology_radar_vol_34_en_1.pdf",
+      "path": "data/downloads/thoughtworks-technology-radar/tr_technology_radar_vol_34_en_1.pdf",
+      "sha256": "ccc6aa829197e4f27bdc537df82433fdcad2be1dd2f12dcc52d702fae2057bba",
+      "bytes": 4839699,
+      "contentType": "application/pdf",
+      "downloadedAt": "2026-07-23T16:48:35.311Z"
+    },
+    {
+      "source": "Thoughtworks Technology Radar",
+      "url": "https://www.thoughtworks.com/content/dam/thoughtworks/documents/radar/2026/04/tr_technology_radar_vol_34_pt_1.pdf",
+      "path": "data/downloads/thoughtworks-technology-radar/tr_technology_radar_vol_34_pt_1.pdf",
+      "sha256": "af2ce31db15904cf718df4b7bbe33d98dd058e76917eb11c0f85d40fe16f714c",
+      "bytes": 4934101,
+      "contentType": "application/pdf",
+      "downloadedAt": "2026-07-23T16:48:35.693Z"
+    },
+    {
+      "source": "DORA Research",
+      "url": "https://dora.dev/research/core/assets/dora-core-v2.1.0-summary.pdf",
+      "path": "data/downloads/dora-research/dora-core-v2.1.0-summary.pdf",
+      "sha256": "7ca15b8bfcfd3eaf0006ea63564bf7ba9beb3c1371d165cd25578428e1b5e08c",
+      "bytes": 140816,
+      "contentType": "application/pdf",
+      "downloadedAt": "2026-07-23T17:04:47.574Z"
+    },
+    {
+      "source": "DORA Research",
+      "url": "https://services.google.com/fh/files/misc/devops_awards_fullebook_final.pdf",
+      "path": "data/downloads/dora-research/devops_awards_fullebook_final.pdf",
+      "sha256": "6c6b3311807c02832390408c7afe25da7168f1443d251ef9fc6539e737d94332",
+      "bytes": 1987920,
+      "contentType": "application/pdf",
+      "downloadedAt": "2026-07-23T17:04:49.071Z"
+    },
+    {
+      "source": "NIST AI RMF",
+      "url": "https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-1.pdf",
+      "path": "data/downloads/nist-ai-rmf/nist.ai.100-1.pdf",
+      "sha256": "7576edb531d9848825814ee88e28b1795d3a84b435b4b797d3670eafdc4a89f1",
+      "bytes": 1946127,
+      "contentType": "application/pdf",
+      "downloadedAt": "2026-07-23T17:05:22.275Z"
+    },
+    {
+      "source": "NIST AI RMF",
+      "url": "https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-1.ara.pdf",
+      "path": "data/downloads/nist-ai-rmf/nist.ai.100-1.ara.pdf",
+      "sha256": "caa672a14c337952fc8c1d42f58233c73a5a1c6520eee49ace337c67f6c0a79f",
+      "bytes": 1302275,
+      "contentType": "application/pdf",
+      "downloadedAt": "2026-07-23T17:05:23.722Z"
+    }
+  ]
+}

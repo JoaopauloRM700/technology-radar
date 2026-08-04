@@ -1,0 +1,113 @@
+{
+  "generatedAt": "2026-07-23T17:45:06.239Z",
+  "proposals": [
+    {
+      "action": "add",
+      "reason": "O Context Engineering evoluiu de uma tática de otimização de prompts para uma disciplina arquitetural fundamental no desenvolvimento com IA, tratando a janela de contexto de forma dinâmica e estruturada.",
+      "confidence": 0.95,
+      "evidence": [
+        {
+          "source": "2026-07-23T17-45-05-773Z-tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/uploads/2026-07-23T17-45-05-773Z-tr_technology_radar_vol_34_en_1.pdf",
+          "note": "Context engineering has evolved from an optimization tactic into a foundational architectural concern for modern AI systems."
+        }
+      ],
+      "blip": {
+        "name": "Context Engineering",
+        "quadrant": "Técnicas",
+        "ring": "Adopt",
+        "horizon": "Curto",
+        "maturity": "Madura",
+        "risk": "Baixo",
+        "effort": "Médio",
+        "status": "Adotado",
+        "source": "2026-07-23T17-45-05-773Z-tr_technology_radar_vol_34_en_1.pdf",
+        "theme": "Inteligência Artificial e Engenharia de Software",
+        "detailsUrl": "",
+        "strategic": "Fundamental para evitar alucinações e gerenciar eficiência no uso de LLMs e agentes autônomos em sistemas corporativos.",
+        "constraints": "Tratar o contexto apenas como uma caixa de texto estática sem pipeline dinâmico leva a alucinações e perda de desempenho."
+      }
+    },
+    {
+      "action": "add",
+      "reason": "Agent Skills permite carregar capacidades e contextos sob demanda com base em descrições, reduzindo o consumo de tokens e a sobrecarga de instruções do agente.",
+      "confidence": 0.9,
+      "evidence": [
+        {
+          "source": "2026-07-23T17-45-05-773Z-tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/uploads/2026-07-23T17-45-05-773Z-tr_technology_radar_vol_34_en_1.pdf",
+          "note": "Agents load skills only when needed based on their descriptions, which reduces token consumption and mitigates context window exhaustion."
+        }
+      ],
+      "blip": {
+        "name": "Agent Skills",
+        "quadrant": "Técnicas",
+        "ring": "Trial",
+        "horizon": "Curto",
+        "maturity": "Emergente",
+        "risk": "Médio",
+        "effort": "Baixo",
+        "status": "Em Avaliação",
+        "source": "2026-07-23T17-45-05-773Z-tr_technology_radar_vol_34_en_1.pdf",
+        "theme": "Agentes de IA e Automação",
+        "detailsUrl": "",
+        "strategic": "Permite escalar a capacidade dos agentes sem inflacionar o prompt nem depender de chamadas complexas de protocolos adicionais.",
+        "constraints": "Manter as skills atualizadas e bem documentadas exige disciplina semelhante ao gerenciamento de documentação executável."
+      }
+    },
+    {
+      "action": "add",
+      "reason": "Passkeys maturaram com suporte nativo dos principais provedores de identidade e sistemas operacionais, tornando-se o padrão resistente a phishing para autenticação.",
+      "confidence": 0.95,
+      "evidence": [
+        {
+          "source": "2026-07-23T17-45-05-773Z-tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/uploads/2026-07-23T17-45-05-773Z-tr_technology_radar_vol_34_en_1.pdf",
+          "note": "Passkeys have matured into Adopt... structurally phishing-resistant: a lookalike site cannot trigger credential use."
+        }
+      ],
+      "blip": {
+        "name": "Passkeys",
+        "quadrant": "Técnicas",
+        "ring": "Adopt",
+        "horizon": "Curto",
+        "maturity": "Madura",
+        "risk": "Baixo",
+        "effort": "Médio",
+        "status": "Padrão de Indústria",
+        "source": "2026-07-23T17-45-05-773Z-tr_technology_radar_vol_34_en_1.pdf",
+        "theme": "Segurança e Autenticação",
+        "detailsUrl": "",
+        "strategic": "Substitui senhas e elimina ataques de phishing baseados em engenharia social.",
+        "constraints": "Exige planejamento cuidadoso nos fluxos de recuperação de conta para evitar fallbacks vulneráveis como SMS OTP."
+      }
+    },
+    {
+      "action": "add",
+      "reason": "Claude Code consolidou-se como uma das principais ferramentas para desenvolvedores ao oferecer suporte nativo a fluxos de trabalho baseados em agentes e orquestração de subagentes.",
+      "confidence": 0.88,
+      "evidence": [
+        {
+          "source": "2026-07-23T17-45-05-773Z-tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/uploads/2026-07-23T17-45-05-773Z-tr_technology_radar_vol_34_en_1.pdf",
+          "note": "Claude Code now includes an agent teams feature that provides built-in orchestration."
+        }
+      ],
+      "blip": {
+        "name": "Claude Code",
+        "quadrant": "Ferramentas",
+        "ring": "Adopt",
+        "horizon": "Curto",
+        "maturity": "Emergente",
+        "risk": "Baixo",
+        "effort": "Baixo",
+        "status": "Em Uso Expandido",
+        "source": "2026-07-23T17-45-05-773Z-tr_technology_radar_vol_34_en_1.pdf",
+        "theme": "Desenvolvimento Acelerado por IA",
+        "detailsUrl": "https://claude.ai",
+        "strategic": "Aumenta significativamente a produtividade no desenvolvimento e refatoração de código quando combinado com boas práticas de engenharia.",
+        "constraints": "Risco de dependência excessiva em geração automática de código sem mecanismos adequados de verificação e testes."
+      }
+    }
+  ]
+}

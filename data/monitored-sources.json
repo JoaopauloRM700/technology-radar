@@ -1,0 +1,109 @@
+[
+  {
+    "name": "Thoughtworks Technology Radar",
+    "url": "https://www.thoughtworks.com/radar",
+    "strength": "Alta",
+    "strategy": "playwright",
+    "discoverPdfs": true,
+    "maxPdfDownloads": 2,
+    "preferredPdfPatterns": ["technology_radar", "tr_technology_radar", "/radar/"],
+    "excludedPdfPatterns": ["code_of_conduct", "slavery", "speak_up", "procurement", "anti-bribery"],
+    "themes": ["radar", "agentic", "engineering", "software quality"]
+  },
+  {
+    "name": "DORA Research",
+    "url": "https://dora.dev/research/",
+    "strength": "Alta",
+    "strategy": "playwright",
+    "discoverPdfs": true,
+    "maxPdfDownloads": 2,
+    "themes": ["metrics", "AI-assisted software development", "DevOps"]
+  },
+  {
+    "name": "OWASP GenAI Security",
+    "url": "https://genai.owasp.org/",
+    "strength": "Alta",
+    "strategy": "playwright",
+    "discoverPdfs": true,
+    "maxPdfDownloads": 2,
+    "themes": ["LLM security", "agentic security", "MCP", "AI governance"]
+  },
+  {
+    "name": "GitHub Blog",
+    "url": "https://github.blog/",
+    "strength": "Média",
+    "strategy": "playwright",
+    "discoverPdfs": false,
+    "themes": ["coding agents", "Copilot", "languages", "supply chain"]
+  },
+  {
+    "name": "GitLab Resources",
+    "url": "https://about.gitlab.com/resources/",
+    "strength": "Média",
+    "strategy": "playwright",
+    "discoverPdfs": true,
+    "maxPdfDownloads": 2,
+    "themes": ["DevSecOps", "platform engineering", "AI accountability"]
+  },
+  {
+    "name": "Stack Overflow Developer Survey",
+    "url": "https://survey.stackoverflow.co/",
+    "strength": "Média",
+    "strategy": "playwright",
+    "discoverPdfs": true,
+    "maxPdfDownloads": 1,
+    "themes": ["developer adoption", "AI trust", "languages", "tools"]
+  },
+  {
+    "name": "CNCF Landscape",
+    "url": "https://landscape.cncf.io/",
+    "strength": "Alta",
+    "strategy": "fetch",
+    "discoverPdfs": false,
+    "themes": ["cloud native", "observability", "platform", "security"]
+  },
+  {
+    "name": "OpenSSF",
+    "url": "https://openssf.org/",
+    "strength": "Alta",
+    "strategy": "playwright",
+    "discoverPdfs": true,
+    "maxPdfDownloads": 2,
+    "themes": ["supply chain", "SLSA", "Scorecard", "Sigstore"]
+  },
+  {
+    "name": "NIST AI RMF",
+    "url": "https://www.nist.gov/itl/ai-risk-management-framework",
+    "strength": "Alta",
+    "strategy": "playwright",
+    "discoverPdfs": true,
+    "maxPdfDownloads": 2,
+    "themes": ["AI risk", "governance", "secure development"]
+  },
+  {
+    "name": "Martin Fowler",
+    "url": "https://martinfowler.com/",
+    "strength": "Média",
+    "strategy": "fetch",
+    "discoverPdfs": false,
+    "themes": ["architecture", "agentic programming", "software engineering"]
+  },
+  {
+    "name": "InfoQ Trends",
+    "url": "https://www.infoq.com/infoq-trends-report/",
+    "strength": "Complementar",
+    "strategy": "playwright",
+    "discoverPdfs": true,
+    "maxPdfDownloads": 1,
+    "themes": ["architecture", "AI", "data", "methods"]
+  },
+  {
+    "name": "SIG State of Software",
+    "url": "https://www.softwareimprovementgroup.com/",
+    "strength": "Média",
+    "strategy": "playwright",
+    "discoverPdfs": true,
+    "maxPdfDownloads": 1,
+    "themes": ["software quality", "technical debt", "AI-generated code"]
+  }
+]

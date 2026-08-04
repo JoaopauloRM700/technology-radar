@@ -1,0 +1,115 @@
+{
+  "generatedAt": "2026-07-23T17:32:21.274Z",
+  "generatedBy": "gemini",
+  "sourceBrief": "docs/2026-07-23t17-32-20-843z-tr_technology_radar_vol_34_en_1-brief.md",
+  "proposals": [
+    {
+      "action": "add",
+      "reason": "Context engineering evoluiu de uma tática de otimização de prompts para uma preocupação arquitetural fundamental em sistemas modernos de IA, devendo ser adotada como padrão.",
+      "confidence": 0.95,
+      "evidence": [
+        {
+          "source": "2026-07-23T17-32-20-843Z-tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/uploads/2026-07-23T17-32-20-843Z-tr_technology_radar_vol_34_en_1.pdf",
+          "note": "Context engineering has evolved from an optimization tactic into a foundational architectural concern for modern AI systems. Unlike prompt engineering, which focuses on wording, context engineering treats the context window as a design surface."
+        }
+      ],
+      "blip": {
+        "name": "Context engineering",
+        "quadrant": "Técnicas",
+        "ring": "Adopt",
+        "horizon": "Curto",
+        "maturity": "Madura",
+        "risk": "Baixo",
+        "effort": "Médio",
+        "status": "Adoção Recomendada",
+        "source": "2026-07-23T17-32-20-843Z-tr_technology_radar_vol_34_en_1.pdf",
+        "theme": "Engenharia de IA e Agentes",
+        "detailsUrl": "",
+        "strategic": "Projeta a janela de contexto de forma dinâmica e estruturada para construir agentes corporativos resilientes e evitar alucinações.",
+        "constraints": "Requer disciplina na gestão de dados e pipelines de contexto para evitar sobrecarga e vazamento de dados."
+      }
+    },
+    {
+      "action": "add",
+      "reason": "Passkeys amadureceram para Adopt como padrão seguro de autenticação sem senha baseada no padrão FIDO2 com amplo suporte da indústria.",
+      "confidence": 0.9,
+      "evidence": [
+        {
+          "source": "2026-07-23T17-32-20-843Z-tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/uploads/2026-07-23T17-32-20-843Z-tr_technology_radar_vol_34_en_1.pdf",
+          "note": "Passkeys have matured into Adopt. They are FIDO2 credentials that can replace passwords using asymmetric public-key cryptography. Major identity providers including Auth0, Okta and Azure AD now support passkeys as a first-class feature."
+        }
+      ],
+      "blip": {
+        "name": "Passkeys",
+        "quadrant": "Técnicas",
+        "ring": "Adopt",
+        "horizon": "Curto",
+        "maturity": "Madura",
+        "risk": "Baixo",
+        "effort": "Médio",
+        "status": "Adoção Recomendada",
+        "source": "2026-07-23T17-32-20-843Z-tr_technology_radar_vol_34_en_1.pdf",
+        "theme": "Segurança e Identidade",
+        "detailsUrl": "https://fidoalliance.org/passkeys/",
+        "strategic": "Elimina vulnerabilidades críticas de phishing e senhas fracas no acesso de usuários.",
+        "constraints": "Necessidade de planejar cuidadosamente fluxos de recuperação de conta sem reintroduzir SMS OTP vulnerável."
+      }
+    },
+    {
+      "action": "add",
+      "reason": "Claude Code consolidou-se como uma ferramenta de desenvolvimento assistido por IA de alta eficácia com suporte nativo para orquestração de subagentes.",
+      "confidence": 0.9,
+      "evidence": [
+        {
+          "source": "2026-07-23T17-32-20-843Z-tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/uploads/2026-07-23T17-32-20-843Z-tr_technology_radar_vol_34_en_1.pdf",
+          "note": "Claude Code is positioned in Adopt under Tools and now includes an agent teams feature that provides built-in orchestration for coding tasks."
+        }
+      ],
+      "blip": {
+        "name": "Claude Code",
+        "quadrant": "Ferramentas",
+        "ring": "Adopt",
+        "horizon": "Curto",
+        "maturity": "Emergente",
+        "risk": "Médio",
+        "effort": "Baixo",
+        "status": "Adoção Recomendada",
+        "source": "2026-07-23T17-32-20-843Z-tr_technology_radar_vol_34_en_1.pdf",
+        "theme": "Ferramentas de Desenvolvimento com IA",
+        "detailsUrl": "https://www.anthropic.com",
+        "strategic": "Aumenta significativamente a produtividade do time ao integrar fluxos de código agentivos diretamente no terminal/ambiente de desenvolvimento.",
+        "constraints": "Exige revisão de código humana contínua e inclusão de testes para evitar 'codebase cognitive debt'."
+      }
+    },
+    {
+      "action": "add",
+      "reason": "LangGraph destaca-se como framework para criação de fluxos de agentes orquestrados de forma cíclica e orientada a grafos.",
+      "confidence": 0.85,
+      "evidence": [
+        {
+          "source": "2026-07-23T17-32-20-843Z-tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/uploads/2026-07-23T17-32-20-843Z-tr_technology_radar_vol_34_en_1.pdf",
+          "note": "LangGraph is listed under Trial in Languages and Frameworks as a key framework for building stateful, multi-actor applications with LLMs."
+        }
+      ],
+      "blip": {
+        "name": "LangGraph",
+        "quadrant": "Linguagens e Frameworks",
+        "ring": "Trial",
+        "horizon": "Médio",
+        "maturity": "Emergente",
+        "risk": "Médio",
+        "effort": "Médio",
+        "status": "Em Avaliação Prática",
+        "source": "2026-07-23T17-32-20-843Z-tr_technology_radar_vol_34_en_1.pdf",
+        "theme": "Frameworks de IA",
+        "detailsUrl": "https://www.langchain.com/langgraph",
+        "strategic": "Permite criar aplicações LLM estaduais complexas com controle refinado sobre o ciclo de execução dos agentes.",
+        "constraints": "Complexidade na gestão do estado persistente e depuração de execuções assíncronas cíclicas."
+      }
+    }
+  ]
+}

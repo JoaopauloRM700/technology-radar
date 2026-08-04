@@ -1,0 +1,542 @@
+{
+  "generatedAt": "2026-07-23T17:17:07.049Z",
+  "generatedBy": "scripts/run-radar-full.mjs",
+  "sourceFiles": [
+    {
+      "file": "data/pdf/devops_awards_fullebook_final-proposals.json",
+      "ok": true,
+      "proposals": 3
+    },
+    {
+      "file": "data/pdf/dora-core-v2.1.0-summary-proposals.json",
+      "ok": true,
+      "proposals": 0
+    },
+    {
+      "file": "data/pdf/nist.ai.100-1-proposals.json",
+      "ok": true,
+      "proposals": 0
+    },
+    {
+      "file": "data/pdf/nist.ai.100-1.ara-proposals.json",
+      "ok": true,
+      "proposals": 0
+    },
+    {
+      "file": "data/pdf/tr_technology_radar_vol_34_en_1-proposals.json",
+      "ok": true,
+      "proposals": 12
+    },
+    {
+      "file": "data/pdf/tr_technology_radar_vol_34_pt_1-proposals.json",
+      "ok": true,
+      "proposals": 3
+    }
+  ],
+  "proposals": [
+    {
+      "action": "add",
+      "reason": "Ferramenta de agentes de IA integrada ao terminal que agiliza fluxos de desenvolvimento com execução direta e contextualização do repositório.",
+      "confidence": 0.9,
+      "evidence": [
+        {
+          "source": "tr_technology_radar_vol_34_pt_1.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/downloads/thoughtworks-technology-radar/tr_technology_radar_vol_34_pt_1.pdf",
+          "note": "Destacado na seção Ferramentas no anel Adote (Adote Claude Code Cursor Kafbat UI mise)."
+        }
+      ],
+      "blip": {
+        "name": "Claude Code",
+        "quadrant": "Ferramentas",
+        "ring": "Adopt",
+        "horizon": "Curto",
+        "maturity": "Emergente",
+        "risk": "Baixo",
+        "effort": "Baixo",
+        "status": "Adotar",
+        "source": "tr_technology_radar_vol_34_pt_1.pdf",
+        "theme": "IA e Ferramentas de Desenvolvimento",
+        "detailsUrl": "",
+        "strategic": "Permite automação e assistência de programação direto na linha de comando de forma integrada ao fluxo do desenvolvedor.",
+        "constraints": "Requer atenção ao conceder permissões excessivas para ações externas ou modificações não revisadas."
+      },
+      "sourceProposalFile": "data/pdf/tr_technology_radar_vol_34_pt_1-proposals.json"
+    },
+    {
+      "action": "add",
+      "reason": "Abordagem fluida para desenvolvimento orientado a especificações, auxiliando na estruturação do contexto para agentes de programação.",
+      "confidence": 0.85,
+      "evidence": [
+        {
+          "source": "tr_technology_radar_vol_34_pt_1.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/downloads/thoughtworks-technology-radar/tr_technology_radar_vol_34_pt_1.pdf",
+          "note": "Destacado como uma abordagem minimalista de workflow de especificação para guiar agentes em planejamento, design e implementação."
+        }
+      ],
+      "blip": {
+        "name": "OpenSpec",
+        "quadrant": "Ferramentas",
+        "ring": "Assess",
+        "horizon": "Médio",
+        "maturity": "Emergente",
+        "risk": "Médio",
+        "effort": "Médio",
+        "status": "Avaliar",
+        "source": "tr_technology_radar_vol_34_pt_1.pdf",
+        "theme": "Engenharia de Prompt e Especificação",
+        "detailsUrl": "",
+        "strategic": "Estrutura o processo de criação e refinamento de especificações antes da geração de código por IA.",
+        "constraints": "Exige disciplina na escrita de especificações e adaptação nos fluxos de trabalho tradicionais."
+      },
+      "sourceProposalFile": "data/pdf/tr_technology_radar_vol_34_pt_1-proposals.json"
+    },
+    {
+      "action": "add",
+      "reason": "Ferramenta madura para ambientes reprodutiveis, util para agentes, onboarding e qualidade de setup.",
+      "confidence": 0.76,
+      "evidence": [
+        {
+          "source": "tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Downloads/tr_technology_radar_vol_34_en_1.pdf",
+          "note": "O PDF lista Dev Containers no quadrante Tools em Trial."
+        }
+      ],
+      "blip": {
+        "name": "Dev Containers",
+        "quadrant": "Ferramentas",
+        "ring": "Trial",
+        "horizon": "Curto",
+        "maturity": "Madura",
+        "risk": "Baixo",
+        "effort": "Médio",
+        "status": "Piloto recomendado",
+        "source": "Thoughtworks Radar Vol. 34",
+        "theme": "Developer Experience",
+        "detailsUrl": "https://containers.dev/",
+        "strategic": "Padronizar ambientes de desenvolvimento e execucao de agentes, reduzindo divergencia de setup e bugs de ambiente.",
+        "constraints": "Exige manutencao das imagens, tempo de build controlado e alinhamento com seguranca de dependencias."
+      },
+      "sourceProposalFile": "data/pdf/tr_technology_radar_vol_34_en_1-proposals.json"
+    },
+    {
+      "action": "add",
+      "reason": "Adoção consolidada em produção com ecossistema maduro e melhorias significativas com o lançamento do Svelte 5 e runes.",
+      "confidence": 0.95,
+      "evidence": [
+        {
+          "source": "tr_technology_radar_vol_34_pt_1.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/downloads/thoughtworks-technology-radar/tr_technology_radar_vol_34_pt_1.pdf",
+          "note": "Framework de UI em JavaScript que compila componentes em tempo de build. Movido para Adote devido ao sucesso de uso contínuo em produção e novos recursos do Svelte 5."
+        }
+      ],
+      "blip": {
+        "name": "Svelte",
+        "quadrant": "Linguagens e Frameworks",
+        "ring": "Adopt",
+        "horizon": "Curto",
+        "maturity": "Madura",
+        "risk": "Baixo",
+        "effort": "Médio",
+        "status": "Adotar",
+        "source": "tr_technology_radar_vol_34_pt_1.pdf",
+        "theme": "Desenvolvimento Frontend",
+        "detailsUrl": "",
+        "strategic": "Gera bundles pequenos e oferece alto desempenho em tempo de execução sem dependência de um DOM virtual pesado.",
+        "constraints": "Mudanças de paradigma em relação a frameworks tradicionais baseados em Virtual DOM exigem adaptação da equipe."
+      },
+      "sourceProposalFile": "data/pdf/tr_technology_radar_vol_34_pt_1-proposals.json"
+    },
+    {
+      "action": "add",
+      "reason": "Complementa Docling com extracao estruturada e rastreabilidade de evidencias.",
+      "confidence": 0.76,
+      "evidence": [
+        {
+          "source": "tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Downloads/tr_technology_radar_vol_34_en_1.pdf",
+          "note": "O PDF classifica LangExtract em Trial para extracao estruturada com grounding."
+        }
+      ],
+      "blip": {
+        "name": "LangExtract",
+        "quadrant": "Linguagens e Frameworks",
+        "ring": "Assess",
+        "horizon": "Médio",
+        "maturity": "Experimental",
+        "risk": "Médio",
+        "effort": "Médio",
+        "status": "Monitorar",
+        "source": "Thoughtworks Radar Vol. 34",
+        "theme": "Ingestao documental para IA",
+        "detailsUrl": "https://github.com/google/langextract",
+        "strategic": "Extrair entidades e evidencias de fontes longas com rastreabilidade, apoiando curadoria mensal do radar.",
+        "constraints": "Deve ser comparado com validacao por schema, Pydantic/Zod e revisao humana para reduzir erros de extracao."
+      },
+      "sourceProposalFile": "data/pdf/tr_technology_radar_vol_34_en_1-proposals.json"
+    },
+    {
+      "action": "add",
+      "reason": "Avaliacao de LLMs e agentes e uma lacuna importante para transformar pilotos em capacidade institucional.",
+      "confidence": 0.83,
+      "evidence": [
+        {
+          "source": "tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Downloads/tr_technology_radar_vol_34_en_1.pdf",
+          "note": "O PDF posiciona DeepEval em Trial para avaliar sistemas e agentes baseados em LLM."
+        }
+      ],
+      "blip": {
+        "name": "DeepEval",
+        "quadrant": "Linguagens e Frameworks",
+        "ring": "Trial",
+        "horizon": "Curto",
+        "maturity": "Emergente",
+        "risk": "Médio",
+        "effort": "Médio",
+        "status": "Piloto recomendado",
+        "source": "Thoughtworks Radar Vol. 34",
+        "theme": "Qualidade de IA",
+        "detailsUrl": "https://github.com/confident-ai/deepeval",
+        "strategic": "Criar testes e metricas para respostas, ferramentas, completude de tarefas e fluxos multi-turno em agentes.",
+        "constraints": "Metricas automaticas precisam ser calibradas com casos reais, avaliacao humana e criterios de aceitacao do negocio."
+      },
+      "sourceProposalFile": "data/pdf/tr_technology_radar_vol_34_en_1-proposals.json"
+    },
+    {
+      "action": "add",
+      "reason": "Framework citado como Trial e diretamente relacionado ao comando de analise de PDF do nosso sistema.",
+      "confidence": 0.88,
+      "evidence": [
+        {
+          "source": "tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Downloads/tr_technology_radar_vol_34_en_1.pdf",
+          "note": "O PDF descreve Docling como biblioteca para converter documentos em JSON e Markdown."
+        }
+      ],
+      "blip": {
+        "name": "Docling",
+        "quadrant": "Linguagens e Frameworks",
+        "ring": "Trial",
+        "horizon": "Médio",
+        "maturity": "Emergente",
+        "risk": "Médio",
+        "effort": "Médio",
+        "status": "Piloto recomendado",
+        "source": "Thoughtworks Radar Vol. 34",
+        "theme": "Ingestao documental para IA",
+        "detailsUrl": "https://github.com/docling-project/docling",
+        "strategic": "Melhorar ingestao de PDFs, tabelas e documentos complexos para alimentar atualizacoes do radar e pipelines RAG.",
+        "constraints": "Pode exigir GPU ou ajustes para documentos grandes, escaneados ou com layouts institucionais complexos."
+      },
+      "sourceProposalFile": "data/pdf/tr_technology_radar_vol_34_en_1-proposals.json"
+    },
+    {
+      "action": "add",
+      "reason": "Adoção de Cloud Run permite executar contêineres serverless com escalabilidade automática e redução drástica de complexidade operacional.",
+      "confidence": 0.9,
+      "evidence": [
+        {
+          "source": "devops_awards_fullebook_final.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/downloads/dora-research/devops_awards_fullebook_final.pdf",
+          "note": "A Virgin Media migrou para a plataforma de computação serverless Google Cloud Run com dimensionamento automático de contêineres para construir seu motor de precificação."
+        }
+      ],
+      "blip": {
+        "name": "Google Cloud Run",
+        "quadrant": "Plataformas",
+        "ring": "Adopt",
+        "horizon": "Curto",
+        "maturity": "Madura",
+        "risk": "Baixo",
+        "effort": "Médio",
+        "status": "Novo",
+        "source": "devops_awards_fullebook_final.pdf",
+        "theme": "Cloud & Serverless",
+        "detailsUrl": "https://cloud.google.com/run",
+        "strategic": "Permite escalar aplicações containerizadas sob demanda sem a necessidade de gerenciar nós ou clusters de infraestrutura.",
+        "constraints": "Lock-in no ecossistema Google Cloud e limitações em cenários com cargas de trabalho estritamente stateful ou de longíssima duração contínua sem interrupções."
+      },
+      "sourceProposalFile": "data/pdf/devops_awards_fullebook_final-proposals.json"
+    },
+    {
+      "action": "add",
+      "reason": "Transforma MCP de tendencia tecnica em decisao de governanca: nao conectar tudo por padrao.",
+      "confidence": 0.87,
+      "evidence": [
+        {
+          "source": "tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Downloads/tr_technology_radar_vol_34_en_1.pdf",
+          "note": "O PDF posiciona MCP by default em Caution."
+        }
+      ],
+      "blip": {
+        "name": "MCP by default",
+        "quadrant": "Plataformas",
+        "ring": "Caution",
+        "horizon": "Curto",
+        "maturity": "Emergente",
+        "risk": "Alto",
+        "effort": "Médio",
+        "status": "Evitar como padrao",
+        "source": "Thoughtworks Radar Vol. 34",
+        "theme": "Seguranca de agentes",
+        "detailsUrl": "https://www.thoughtworks.com/radar",
+        "strategic": "Impedir conectividade indiscriminada entre agentes e ferramentas sensiveis, exigindo allowlist, escopo minimo e auditoria.",
+        "constraints": "Pode limitar velocidade inicial de prototipos; precisa de alternativas aprovadas para casos de uso de baixo risco."
+      },
+      "sourceProposalFile": "data/pdf/tr_technology_radar_vol_34_en_1-proposals.json"
+    },
+    {
+      "action": "add",
+      "reason": "O uso de ambiente gerenciado de MLOps unificado simplifica o ciclo de desenvolvimento e implantação de modelos preditivos.",
+      "confidence": 0.85,
+      "evidence": [
+        {
+          "source": "devops_awards_fullebook_final.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/downloads/dora-research/devops_awards_fullebook_final.pdf",
+          "note": "A Virgin Media implementou o Google Vertex AI como ambiente de desenvolvimento para seus modelos preditivos de machine learning."
+        }
+      ],
+      "blip": {
+        "name": "Google Vertex AI",
+        "quadrant": "Plataformas",
+        "ring": "Trial",
+        "horizon": "Médio",
+        "maturity": "Emergente",
+        "risk": "Médio",
+        "effort": "Médio",
+        "status": "Novo",
+        "source": "devops_awards_fullebook_final.pdf",
+        "theme": "Inteligência Artificial e MLOps",
+        "detailsUrl": "https://cloud.google.com/vertex-ai",
+        "strategic": "Integra fluxos de trabalho de engenharia de dados e aprendizado de máquina em uma única plataforma gerenciada para aceleração de soluções analíticas.",
+        "constraints": "Exige governança rigorosa de custos de treinamento e maturidade da equipe em práticas de MLOps."
+      },
+      "sourceProposalFile": "data/pdf/devops_awards_fullebook_final-proposals.json"
+    },
+    {
+      "action": "add",
+      "reason": "Plataforma de observabilidade de LLMs e agentes com sinal forte no PDF e aderente ao roadmap.",
+      "confidence": 0.8,
+      "evidence": [
+        {
+          "source": "tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Downloads/tr_technology_radar_vol_34_en_1.pdf",
+          "note": "O PDF posiciona Langfuse em Platforms/Adopt."
+        }
+      ],
+      "blip": {
+        "name": "Langfuse",
+        "quadrant": "Plataformas",
+        "ring": "Trial",
+        "horizon": "Curto",
+        "maturity": "Emergente",
+        "risk": "Médio",
+        "effort": "Médio",
+        "status": "Piloto recomendado",
+        "source": "Thoughtworks Radar Vol. 34",
+        "theme": "Observabilidade de IA",
+        "detailsUrl": "https://langfuse.com/",
+        "strategic": "Instrumentar prompts, traces, avaliacoes e custos de aplicacoes com LLM para suportar pilotos auditaveis.",
+        "constraints": "Deve ser validado contra requisitos de dados sensiveis, retencao, custo e integracao com observabilidade corporativa."
+      },
+      "sourceProposalFile": "data/pdf/tr_technology_radar_vol_34_en_1-proposals.json"
+    },
+    {
+      "action": "add",
+      "reason": "O benchmarking DORA orienta transformações de DevOps fornecendo dados e métricas reais para priorizar capacidades de entrega de software de alto impacto.",
+      "confidence": 0.95,
+      "evidence": [
+        {
+          "source": "devops_awards_fullebook_final.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/downloads/dora-research/devops_awards_fullebook_final.pdf",
+          "note": "Organizações como Deutsche Bank e Schlumberger utilizaram a avaliação DORA para identificar gargalos, acelerar a frequência de lançamentos e reduzir incidentes."
+        }
+      ],
+      "blip": {
+        "name": "Avaliação e Benchmarking DORA",
+        "quadrant": "Técnicas",
+        "ring": "Adopt",
+        "horizon": "Curto",
+        "maturity": "Madura",
+        "risk": "Baixo",
+        "effort": "Baixo",
+        "status": "Novo",
+        "source": "devops_awards_fullebook_final.pdf",
+        "theme": "Cultura e Processos DevOps",
+        "detailsUrl": "https://dora.dev",
+        "strategic": "Permite avaliar e comparar métricas fundamentais de entrega de software (frequência de deployment, lead time, MTTR e change fail rate) para direcionar investimentos de modernização com base em evidências.",
+        "constraints": "Exige engajamento cultural e abertura das equipes para que os resultados sejam utilizados em melhoria contínua e não como métrica punitiva."
+      },
+      "sourceProposalFile": "data/pdf/devops_awards_fullebook_final-proposals.json"
+    },
+    {
+      "action": "add",
+      "reason": "Blip distinto de engenharia de contexto: padroniza instrucoes compartilhadas de times e templates de repositorio para agentes.",
+      "confidence": 0.86,
+      "evidence": [
+        {
+          "source": "tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Downloads/tr_technology_radar_vol_34_en_1.pdf",
+          "note": "O PDF posiciona instrucoes compartilhadas curadas como pratica em Adopt."
+        }
+      ],
+      "blip": {
+        "name": "Instrucoes compartilhadas curadas para times",
+        "quadrant": "Técnicas",
+        "ring": "Adopt",
+        "horizon": "Curto",
+        "maturity": "Madura",
+        "risk": "Baixo",
+        "effort": "Baixo",
+        "status": "Padronizar",
+        "source": "Thoughtworks Radar Vol. 34",
+        "theme": "Engenharia com IA",
+        "detailsUrl": "https://www.thoughtworks.com/radar",
+        "strategic": "Transformar prompts, convencoes e regras de arquitetura em ativo compartilhado do time, reduzindo variacao entre desenvolvedores e agentes.",
+        "constraints": "Pode envelhecer rapido se nao houver dono, revisao periodica e alinhamento com templates reais de servicos."
+      },
+      "sourceProposalFile": "data/pdf/tr_technology_radar_vol_34_en_1-proposals.json"
+    },
+    {
+      "action": "add",
+      "reason": "Amplia o radar de qualidade para medir colaboracao humano-agente, nao apenas throughput.",
+      "confidence": 0.78,
+      "evidence": [
+        {
+          "source": "tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Downloads/tr_technology_radar_vol_34_en_1.pdf",
+          "note": "O PDF coloca medicao de qualidade de colaboracao com agentes em Assess."
+        }
+      ],
+      "blip": {
+        "name": "Metrica de colaboracao com coding agents",
+        "quadrant": "Técnicas",
+        "ring": "Assess",
+        "horizon": "Médio",
+        "maturity": "Experimental",
+        "risk": "Médio",
+        "effort": "Médio",
+        "status": "Monitorar",
+        "source": "Thoughtworks Radar Vol. 34",
+        "theme": "Qualidade e produtividade",
+        "detailsUrl": "https://www.thoughtworks.com/radar",
+        "strategic": "Criar indicadores de qualidade da interacao humano-agente para evitar que produtividade aparente esconda retrabalho e risco.",
+        "constraints": "Metricas ruins podem incentivar comportamento localmente otimizado e mascarar queda de compreensao do sistema."
+      },
+      "sourceProposalFile": "data/pdf/tr_technology_radar_vol_34_en_1-proposals.json"
+    },
+    {
+      "action": "add",
+      "reason": "Risco explicitamente citado no PDF e altamente relevante para organizacoes adotando agentes.",
+      "confidence": 0.9,
+      "evidence": [
+        {
+          "source": "tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Downloads/tr_technology_radar_vol_34_en_1.pdf",
+          "note": "O PDF recomenda cautela para instruction bloat em agentes."
+        }
+      ],
+      "blip": {
+        "name": "Agent instruction bloat",
+        "quadrant": "Técnicas",
+        "ring": "Caution",
+        "horizon": "Curto",
+        "maturity": "Emergente",
+        "risk": "Alto",
+        "effort": "Médio",
+        "status": "Evitar como padrao",
+        "source": "Thoughtworks Radar Vol. 34",
+        "theme": "Governanca de IA",
+        "detailsUrl": "https://www.thoughtworks.com/radar",
+        "strategic": "Tratar crescimento descontrolado de instrucoes como risco de qualidade, custo, contexto e comportamento imprevisivel.",
+        "constraints": "Nao deve ser combatido apenas com modelos maiores; precisa de decomposicao, habilidades versionadas e revisao editorial."
+      },
+      "sourceProposalFile": "data/pdf/tr_technology_radar_vol_34_en_1-proposals.json"
+    },
+    {
+      "action": "add",
+      "reason": "Risco organizacional importante para manter IA de engenharia sob governanca institucional.",
+      "confidence": 0.8,
+      "evidence": [
+        {
+          "source": "tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Downloads/tr_technology_radar_vol_34_en_1.pdf",
+          "note": "O PDF lista AI-accelerated shadow IT no anel Caution."
+        }
+      ],
+      "blip": {
+        "name": "AI-accelerated shadow IT",
+        "quadrant": "Técnicas",
+        "ring": "Caution",
+        "horizon": "Curto",
+        "maturity": "Emergente",
+        "risk": "Alto",
+        "effort": "Médio",
+        "status": "Controlar",
+        "source": "Thoughtworks Radar Vol. 34",
+        "theme": "Governanca de IA",
+        "detailsUrl": "https://www.thoughtworks.com/radar",
+        "strategic": "Evitar que times criem automacoes, integrações e agentes fora de controle de seguranca, arquitetura e conformidade.",
+        "constraints": "Bloqueio excessivo pode empurrar experimentos para canais informais; precisa de sandbox oficial e trilha rapida de aprovacao."
+      },
+      "sourceProposalFile": "data/pdf/tr_technology_radar_vol_34_en_1-proposals.json"
+    },
+    {
+      "action": "add",
+      "reason": "Pratica emergente para modularizar capacidades de agentes e distribuir conhecimento de engenharia.",
+      "confidence": 0.82,
+      "evidence": [
+        {
+          "source": "tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Downloads/tr_technology_radar_vol_34_en_1.pdf",
+          "note": "O PDF destaca Agent Skills como avanco para modularizar instrucoes e convencoes."
+        }
+      ],
+      "blip": {
+        "name": "Agent Skills",
+        "quadrant": "Técnicas",
+        "ring": "Trial",
+        "horizon": "Curto",
+        "maturity": "Emergente",
+        "risk": "Médio",
+        "effort": "Médio",
+        "status": "Piloto recomendado",
+        "source": "Thoughtworks Radar Vol. 34",
+        "theme": "Engenharia com IA",
+        "detailsUrl": "https://www.thoughtworks.com/radar",
+        "strategic": "Empacotar tarefas, padroes e fluxos de qualidade em habilidades reutilizaveis para acelerar projetos de P&D com governanca.",
+        "constraints": "Mercado de plugins ainda e instavel; exige curadoria, versionamento e analise de seguranca antes de uso amplo."
+      },
+      "sourceProposalFile": "data/pdf/tr_technology_radar_vol_34_en_1-proposals.json"
+    },
+    {
+      "action": "add",
+      "reason": "Complementa engenharia de contexto com uma tecnica operacional para reduzir ruido e custo em agentes.",
+      "confidence": 0.84,
+      "evidence": [
+        {
+          "source": "tr_technology_radar_vol_34_en_1.pdf",
+          "url": "file://D:/Downloads/tr_technology_radar_vol_34_en_1.pdf",
+          "note": "O PDF relaciona progressive context disclosure a agentes que carregam contexto apenas quando necessario."
+        }
+      ],
+      "blip": {
+        "name": "Progressive context disclosure",
+        "quadrant": "Técnicas",
+        "ring": "Trial",
+        "horizon": "Curto",
+        "maturity": "Emergente",
+        "risk": "Médio",
+        "effort": "Médio",
+        "status": "Piloto recomendado",
+        "source": "Thoughtworks Radar Vol. 34",
+        "theme": "Engenharia com IA",
+        "detailsUrl": "https://www.thoughtworks.com/radar",
+        "strategic": "Melhorar a qualidade de respostas de agentes em tarefas longas ao fornecer indice inicial e carregar detalhes sob demanda.",
+        "constraints": "Requer catalogacao de contexto, convencoes de recuperacao e testes para evitar omissao de informacao critica."
+      },
+      "sourceProposalFile": "data/pdf/tr_technology_radar_vol_34_en_1-proposals.json"
+    }
+  ]
+}

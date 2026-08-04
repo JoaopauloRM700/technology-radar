@@ -1,0 +1,23 @@
+{
+  "generatedAt": "2026-07-23T17:04:49.181Z",
+  "source": "D:\\Documents\\Technology-Radar\\data\\downloads\\dora-research\\dora-core-v2.1.0-summary.pdf",
+  "textLength": 64,
+  "extractionMode": "local-pdf-text-layer",
+  "signals": {
+    "headingCandidates": [
+      "dora-core-v2.1.0-summary dora.dev/research DORACore model v2.1.0"
+    ],
+    "relevantSnippets": [
+      {
+        "keyword": "DORA",
+        "snippet": "dora-core-v2.1.0-summary dora.dev/research DORACore model v2.1.0"
+      }
+    ],
+    "candidateTerms": [
+      {
+        "term": "DORACore",
+        "count": 1
+      }
+    ]
+  }
+}

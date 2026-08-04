@@ -1,0 +1,86 @@
+{
+  "generatedAt": "2026-07-23T17:16:07.062Z",
+  "proposals": [
+    {
+      "action": "add",
+      "reason": "O benchmarking DORA orienta transformações de DevOps fornecendo dados e métricas reais para priorizar capacidades de entrega de software de alto impacto.",
+      "confidence": 0.95,
+      "evidence": [
+        {
+          "source": "devops_awards_fullebook_final.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/downloads/dora-research/devops_awards_fullebook_final.pdf",
+          "note": "Organizações como Deutsche Bank e Schlumberger utilizaram a avaliação DORA para identificar gargalos, acelerar a frequência de lançamentos e reduzir incidentes."
+        }
+      ],
+      "blip": {
+        "name": "Avaliação e Benchmarking DORA",
+        "quadrant": "Técnicas",
+        "ring": "Adopt",
+        "horizon": "Curto",
+        "maturity": "Madura",
+        "risk": "Baixo",
+        "effort": "Baixo",
+        "status": "Novo",
+        "source": "devops_awards_fullebook_final.pdf",
+        "theme": "Cultura e Processos DevOps",
+        "detailsUrl": "https://dora.dev",
+        "strategic": "Permite avaliar e comparar métricas fundamentais de entrega de software (frequência de deployment, lead time, MTTR e change fail rate) para direcionar investimentos de modernização com base em evidências.",
+        "constraints": "Exige engajamento cultural e abertura das equipes para que os resultados sejam utilizados em melhoria contínua e não como métrica punitiva."
+      }
+    },
+    {
+      "action": "add",
+      "reason": "Adoção de Cloud Run permite executar contêineres serverless com escalabilidade automática e redução drástica de complexidade operacional.",
+      "confidence": 0.9,
+      "evidence": [
+        {
+          "source": "devops_awards_fullebook_final.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/downloads/dora-research/devops_awards_fullebook_final.pdf",
+          "note": "A Virgin Media migrou para a plataforma de computação serverless Google Cloud Run com dimensionamento automático de contêineres para construir seu motor de precificação."
+        }
+      ],
+      "blip": {
+        "name": "Google Cloud Run",
+        "quadrant": "Plataformas",
+        "ring": "Adopt",
+        "horizon": "Curto",
+        "maturity": "Madura",
+        "risk": "Baixo",
+        "effort": "Médio",
+        "status": "Novo",
+        "source": "devops_awards_fullebook_final.pdf",
+        "theme": "Cloud & Serverless",
+        "detailsUrl": "https://cloud.google.com/run",
+        "strategic": "Permite escalar aplicações containerizadas sob demanda sem a necessidade de gerenciar nós ou clusters de infraestrutura.",
+        "constraints": "Lock-in no ecossistema Google Cloud e limitações em cenários com cargas de trabalho estritamente stateful ou de longíssima duração contínua sem interrupções."
+      }
+    },
+    {
+      "action": "add",
+      "reason": "O uso de ambiente gerenciado de MLOps unificado simplifica o ciclo de desenvolvimento e implantação de modelos preditivos.",
+      "confidence": 0.85,
+      "evidence": [
+        {
+          "source": "devops_awards_fullebook_final.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/downloads/dora-research/devops_awards_fullebook_final.pdf",
+          "note": "A Virgin Media implementou o Google Vertex AI como ambiente de desenvolvimento para seus modelos preditivos de machine learning."
+        }
+      ],
+      "blip": {
+        "name": "Google Vertex AI",
+        "quadrant": "Plataformas",
+        "ring": "Trial",
+        "horizon": "Médio",
+        "maturity": "Emergente",
+        "risk": "Médio",
+        "effort": "Médio",
+        "status": "Novo",
+        "source": "devops_awards_fullebook_final.pdf",
+        "theme": "Inteligência Artificial e MLOps",
+        "detailsUrl": "https://cloud.google.com/vertex-ai",
+        "strategic": "Integra fluxos de trabalho de engenharia de dados e aprendizado de máquina em uma única plataforma gerenciada para aceleração de soluções analíticas.",
+        "constraints": "Exige governança rigorosa de custos de treinamento e maturidade da equipe em práticas de MLOps."
+      }
+    }
+  ]
+}

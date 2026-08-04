@@ -1,0 +1,413 @@
+{
+  "generatedAt": "2026-07-23T17:05:24.255Z",
+  "source": "D:\\Documents\\Technology-Radar\\data\\downloads\\nist-ai-rmf\\nist.ai.100-1.pdf",
+  "textLength": 89153,
+  "extractionMode": "local-pdf-text-layer",
+  "signals": {
+    "headingCandidates": [],
+    "relevantSnippets": [
+      {
+        "keyword": "Adopt",
+        "snippet": "eration.AIriskmeasurementsincludedocumentingaspectsofsystems'functionalityandtrustworthiness.MeasuringAIrisksincludestrackingmetricsfortrustworthycharacteristics,socialimpact,andhuman-AIcon\u0002gurations.ProcessesdevelopedoradoptedintheMEASUREfunctionshouldincluderigoroussoftwaretestingandperformanceassessmentmethodologieswithassociatedmeasuresofuncertainty,comparisonstoperformancebenchmarks,andformal-izedreportinganddocumentationofresults.Processesforindependentreviewcanimprovetheeffectivenessoftestingandcanmitigateinternalbiasesandpotentialcon\u0003ictsofinter-est.Wheretradeoffsamongth"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "atarebene\u0002cial.TheAIRMFisdesignedtoaddressnewrisksastheyemerge.Thisxibilityisparticularlyimportantwhereimpactsarenoteasilyforeseeableandapplicationsareevolving.WhilesomeAIrisksandbene\u0002tsarewell-known,itcanbechallengingtoassessnegativeimpactsandthedegreeofharms.Figure1providesexamplesofpotentialharmsthatcanberelatedtoAIsystems.AIriskmanagementeffortsshouldconsiderthathumansmayassumethatAIsystemsworkandworkwellinallsettings.Forexample,whethercorrectornot,AIsystemsareoftenperceivedasbeingmoreobjectivethanhumansorasofferinggreatercapabilitiesthangeneralsoftware.Page4 NISTAI100-1AIR"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "andaloneorintegratedcomponents.Trackingemergentrisks:Organizations'riskmanagementeffortswillbeenhancedbyidentifyingandtrackingemergentrisksandconsideringtechniquesformeasuringthem.Page5 NISTAI100-1AIRMF1.0 AIsystemimpactassessmentapproachescanhelpAIactorsunderstandpotentialimpactsorharmswithinspeci\u0002ccontexts.Availabilityofreliablemetrics:Thecurrentlackofconsensusonrobustandveri\u0002ablemeasurementmethodsforriskandtrustworthiness,andapplicabilitytodifferentAIusecases,isanAIriskmeasurementchallenge.Potentialpitfallswhenseekingtomeasurenegativeriskorharmsincludetherealitythatdevelopment"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "triageineforimpracticalorwastesscarceresources.AriskmanagementculturecanhelporganizationsrecognizethatnotallAIrisksarethesame,andresourcescanbeallocatedpurposefully.ActionableriskmanagementeffortslayoutclearguidelinesforassessingtrustworthinessofeachAIsystemanorganizationdevelopsordeploys.PoliciesandresourcesshouldbeprioritizedbasedontheassessedrisklevelandpotentialimpactofanAIsystem.TheextenttowhichanAIsystemmaybecustomizedortailoredtothespeci\u0002ccontextofusebytheAIdeployercanbeacontributingfactor.Page7 NISTAI100-1AIRMF1.0 WhenapplyingtheAIRMF,riskswhichtheorganizationdeterminesto"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "hesame,andresourcescanbeallocatedpurposefully.ActionableriskmanagementeffortslayoutclearguidelinesforassessingtrustworthinessofeachAIsystemanorganizationdevelopsordeploys.PoliciesandresourcesshouldbeprioritizedbasedontheassessedrisklevelandpotentialimpactofanAIsystem.TheextenttowhichanAIsystemmaybecustomizedortailoredtothespeci\u0002ccontextofusebytheAIdeployercanbeacontributingfactor.Page7 NISTAI100-1AIRMF1.0 WhenapplyingtheAIRMF,riskswhichtheorganizationdeterminestobehighestfortheAIsystemswithinagivencontextofusecallforthemosturgentprioritizationandmostthoroughriskmanagementprocess."
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "directimpactonhumans.AIsystemsdesignedtointeractonlywithcomputationalsystemsandtrainedonnon-sensitivedatasets(forexample,datacollectedfromthephysicalenvironment)maycallforlowerinitialprioritization.Nonethe-less,regularlyassessingandprioritizingriskbasedoncontextremainsimportantbecausenon-human-facingAIsystemscanhavedownstreamsafetyorsocialimplications.Residualriskasriskremainingafterrisktreatment(Source:ISOGUIDE73)directlyimpactsendusersoraffectedindividualsandcommunities.DocumentingresidualriskswillcallforthesystemprovidertofullyconsidertherisksofdeployingtheAIproductandwillin"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "ntegratedthroughouttheAIlifecycleandareespeciallylikelytofromtheFramework.Performedregularly,TEVVtaskscanprovideinsightsrelativetotechnical,societal,legal,andethicalstandardsornorms,andcanassistwithanticipatingimpactsandassessingandtrackingemergentrisks.AsaregularprocesswithinanAIlifecycle,TEVVallowsforbothmid-courseremediationandpost-hocriskmanagement.ThePeople&PlanetdimensionatthecenterofFigure2representshumanrightsandthebroaderwell-beingofsocietyandtheplanet.TheAIactorsinthisdimensioncompriseaseparateAIRMFaudiencewhoinformstheprimaryaudience.TheseAIactorsmayin-cludetradeassoci"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "s.ItisthejointresponsibilityofallAIac-torstodeterminewhetherAItechnologyisanappropriateornecessarytoolforagivencontextorpurpose,andhowtouseitresponsibly.ThedecisiontocommissionordeployanAIsystemshouldbebasedonacontextualassessmentoftrustworthi-nesscharacteristicsandtherelativerisks,impacts,costs,andbene\u0002ts,andinformedbyabroadsetofinterestedparties. 3.1ValidandReliableValidationisthecon\u0002rmation,throughtheprovisionofobjectiveevidence,thatthere-quirementsforaspeci\u0002cintendeduseorapplicationhavebeenful\u0002lled(Source:ISO9000:2015).DeploymentofAIsystemswhichareinaccurate,unreliable,orpo"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "equiresnotonlythatthesystemperformexactlyasitdoesunderexpecteduses,butalsothatitshouldperforminwaysthatminimizepotentialharmstopeopleifitisoperatinginanunexpectedsetting.ValidityandreliabilityfordeployedAIsystemsareoftenassessedbyongoingtestingormonitoringthatcon\u0002rmsasystemisperformingasintended.Measurementofvalidity,accuracy,robustness,andreliabilitycontributetotrustworthinessandshouldtakeintocon-siderationthatcertaintypesoffailurescancausegreaterharm.AIriskmanagementeffortsshouldprioritizetheminimizationofpotentialnegativeimpacts,andmayneedtoincludehumaninterventionincaseswhere"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "ngAIsystems;outlinesprocesses,documents,andorganizationalschemesthatanticipate,identify,andmanagetherisksasystemcanpose,includingtousersandothersacrosssocietyandprocedurestoachievethoseoutcomes;incorporatesprocessestoassesspotentialimpacts;providesastructurebywhichAIriskmanagementfunctionscanalignwithorgani-zationalprinciples,policies,andstrategicpriorities;connectstechnicalaspectsofAIsystemdesignanddevelopmenttoorganizationalvaluesandprinciples,andenablesorganizationalpracticesandcompetenciesfortheindividualsinvolvedinacquiring,training,deploying,andmonitoringsuchsystems;an"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "ecyclecanbeunderminedviainteractionswithdecisionsandconditionsinother,lateractivities.Page24 NISTAI100-1AIRMF1.0 Thiscomplexityandvaryinglevelsofvisibilitycanintroduceuncertaintyintoriskman-agementpractices.Anticipating,assessing,andotherwiseaddressingpotentialsourcesofnegativeriskcanmitigatethisuncertaintyandenhancetheintegrityofthedecisionprocess.TheinformationgatheredwhilecarryingouttheMAPfunctionenablesnegativeriskpre-ventionandinformsdecisionsforprocessessuchasmodelmanagement,aswellasaninitialdecisionaboutappropriatenessortheneedforanAIsolution.OutcomesintheMAPfunctionarethe"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "rtunitiesforinterdisciplinarycol-laborationareprioritized.MAP1.3:Theorganization'smissionandrelevantgoalsforAItechnologyareunderstoodanddocumented.MAP1.4:ThebusinessvalueorcontextofbusinessusehasbeenclearlyorinthecaseofassessingexistingAIsystemsre-evaluated.MAP1.5:Organizationalrisktolerancesaredeterminedanddocumented.MAP1.6:Systemrequirements(e.g.,thesystemshallrespecttheprivacyofitsusers)areelicitedfromandunderstoodbyrel-evantAIactors.Designdecisionstakesocio-technicalimplica-tionsintoaccounttoaddressAIrisks.MAP2:CategorizationoftheAIsystemisperformed.MAP2.1:Thespeci\u0002ctasks"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "asedonthesystem'scapability,establishedcontext,andAIsystemcategorization.MAP3.4:Processesforoperatorandpractitionerpro\u0002ciencywithAIsystemperformanceandtrustworthinessandrelevanttechnicalstandardsandcerti\u0002cationsarened,assessed,anddocumented.MAP3.5:Processesforhumanoversightarede\u0002ned,assessed,anddocumentedinaccordancewithorganizationalpoliciesfromtheGOVERNfunction.MAP4:Risksandbene\u0002tsaremappedforallcomponentsoftheAIsystemincludingthird-partysoftwareanddata.MAP4.1:ApproachesformappingAItechnologyandlegalrisksofitscomponentsincludingtheuseofthird-partydataorsoft-wareareinplace,f"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "zation.MAP3.4:Processesforoperatorandpractitionerpro\u0002ciencywithAIsystemperformanceandtrustworthinessandrelevanttechnicalstandardsandcerti\u0002cationsarened,assessed,anddocumented.MAP3.5:Processesforhumanoversightarede\u0002ned,assessed,anddocumentedinaccordancewithorganizationalpoliciesfromtheGOVERNfunction.MAP4:Risksandbene\u0002tsaremappedforallcomponentsoftheAIsystemincludingthird-partysoftwareanddata.MAP4.1:ApproachesformappingAItechnologyandlegalrisksofitscomponentsincludingtheuseofthird-partydataorsoft-wareareinplace,followed,anddocumented,asarerisksofin-fringementofathirdparty'sinte"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "feedbackaboutpositive,negative,andunanticipatedimpactsareinplaceanddocumented.CategoriesSubcategories 5.3MeasureTheMEASUREfunctionemploysquantitative,qualitative,ormixed-methodtools,tech-niques,andmethodologiestoanalyze,assess,benchmark,andmonitorAIriskandrelatedimpacts.ItusesknowledgerelevanttoAIrisksidenti\u0002edintheMAPfunctionandinformstheMANAGEfunction.AIsystemsshouldbetestedbeforetheirdeploymentandregu-larlywhileinoperation.AIriskmeasurementsincludedocumentingaspectsofsystems'functionalityandtrustworthiness.MeasuringAIrisksincludestrackingmetricsfortrustworthycharacteristics,so"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "trustworthiness.MeasuringAIrisksincludestrackingmetricsfortrustworthycharacteristics,socialimpact,andhuman-AIcon\u0002gurations.ProcessesdevelopedoradoptedintheMEASUREfunctionshouldincluderigoroussoftwaretestingandperformanceassessmentmethodologieswithassociatedmeasuresofuncertainty,comparisonstoperformancebenchmarks,andformal-izedreportinganddocumentationofresults.Processesforindependentreviewcanimprovetheeffectivenessoftestingandcanmitigateinternalbiasesandpotentialcon\u0003ictsofinter-est.Wheretradeoffsamongthetrustworthycharacteristicsarise,measurementprovidesatrace-ablebasistoinformma"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "ti\u0002c,legal,andethicalnormsandbecarriedoutinanopenandtrans-parentprocess.Newtypesofmeasurement,qualitativeandquantitative,mayneedtobedeveloped.ThedegreetowhicheachmeasurementtypeprovidesuniqueandmeaningfulinformationtotheassessmentofAIrisksshouldbeconsidered.Frameworkuserswillen-hancetheircapacitytocomprehensivelyevaluatesystemtrustworthiness,identifyandtrackexistingandemergentrisks,andverifyefyofthemetrics.MeasurementoutcomeswillbeutilizedintheMANAGEfunctiontoassistriskmonitoringandresponseefforts.Itisin-cumbentonFrameworkuserstocontinueapplyingtheMEASUREfunctiontoAIsystemsasknow"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "ntationstartingwiththemostsigni\u0002cantAIrisks.Therisksortrustworthinesscharacteristicsthatwillnotorcannotbemeasuredareproperlydocumented.MEASURE1.2:AppropriatenessofAImetricsandeffectivenessofexistingcontrolsareregularlyassessedandupdated,includingreportsoferrorsandpotentialimpactsonaffectedcommunities.MEASURE1.3:Internalexpertswhodidnotserveasfront-linedevelopersforthesystemand/orindependentassessorsarein-volvedinregularassessmentsandupdates.Domainexperts,users,AIactorsexternaltotheteamthatdevelopedordeployedtheAIsystem,andaffectedcommunitiesareconsultedinsupportofassessmentsasn"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "ndeffectivenessofexistingcontrolsareregularlyassessedandupdated,includingreportsoferrorsandpotentialimpactsonaffectedcommunities.MEASURE1.3:Internalexpertswhodidnotserveasfront-linedevelopersforthesystemand/orindependentassessorsarein-volvedinregularassessmentsandupdates.Domainexperts,users,AIactorsexternaltotheteamthatdevelopedordeployedtheAIsystem,andaffectedcommunitiesareconsultedinsupportofassessmentsasnecessaryperorganizationalrisktolerance.MEASURE2:AIsystemsareevaluatedfortrustworthycharacteristics.MEASURE2.1:Testsets,metrics,anddetailsaboutthetoolsusedduringTEVVaredocument"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "olsareregularlyassessedandupdated,includingreportsoferrorsandpotentialimpactsonaffectedcommunities.MEASURE1.3:Internalexpertswhodidnotserveasfront-linedevelopersforthesystemand/orindependentassessorsarein-volvedinregularassessmentsandupdates.Domainexperts,users,AIactorsexternaltotheteamthatdevelopedordeployedtheAIsystem,andaffectedcommunitiesareconsultedinsupportofassessmentsasnecessaryperorganizationalrisktolerance.MEASURE2:AIsystemsareevaluatedfortrustworthycharacteristics.MEASURE2.1:Testsets,metrics,anddetailsaboutthetoolsusedduringTEVVaredocumented.MEASURE2.2:Evaluationsinvol"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "linedevelopersforthesystemand/orindependentassessorsarein-volvedinregularassessmentsandupdates.Domainexperts,users,AIactorsexternaltotheteamthatdevelopedordeployedtheAIsystem,andaffectedcommunitiesareconsultedinsupportofassessmentsasnecessaryperorganizationalrisktolerance.MEASURE2:AIsystemsareevaluatedfortrustworthycharacteristics.MEASURE2.1:Testsets,metrics,anddetailsaboutthetoolsusedduringTEVVaredocumented.MEASURE2.2:Evaluationsinvolvinghumansubjectsmeetap-plicablerequirements(includinghumansubjectprotection)andarerepresentativeoftherelevantpopulation.MEASURE2.3:AIsystemperform"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "umented.MEASURE2.11:Fairnessandbiasasidenti\u0002edintheMAPfunctionareevaluatedandresultsaredocumented.MEASURE2.12:EnvironmentalimpactandsustainabilityofAImodeltrainingandmanagementactivitiesasidenti\u0002edintheMAPfunctionareassessedanddocumented.MEASURE2.13:EffectivenessoftheemployedTEVVmet-ricsandprocessesintheMEASUREfunctionareevaluatedanddocumented.MEASURE3:Mechanismsfortrackingidenti\u0002edAIrisksovertimeareinplace.MEASURE3.1:Approaches,personnel,anddocumentationareinplacetoregularlyidentifyandtrackexisting,unanticipated,andemergentAIrisksbasedonfactorssuchasintendedandac-tualperform"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "inplacetoregularlyidentifyandtrackexisting,unanticipated,andemergentAIrisksbasedonfactorssuchasintendedandac-tualperformanceindeployedcontexts.MEASURE3.2:RisktrackingapproachesareconsideredforsettingswhereAIrisksarediftoassessusingcurrentlyavailablemeasurementtechniquesorwheremetricsarenotyetavailable. CategoriesSubcategories ContinuedonnextpagePage30 NISTAI100-1AIRMF1.0 Table3:CategoriesandsubcategoriesfortheMEASUREfunction.(Continued)MEASURE3.3:FeedbackprocessesforendusersandimpactedcommunitiestoreportproblemsandappealsystemoutcomesareestablishedandintegratedintoAIsystemevaluat"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": ".(Continued)MEASURE3.3:FeedbackprocessesforendusersandimpactedcommunitiestoreportproblemsandappealsystemoutcomesareestablishedandintegratedintoAIsystemevaluationmetrics.MEASURE4:Feedbackaboutefyofmeasurementisgatheredandassessed.MEASURE4.1:MeasurementapproachesforidentifyingAIrisksareconnectedtodeploymentcontext(s)andinformedthroughconsultationwithdomainexpertsandotherendusers.Ap-proachesaredocumented.MEASURE4.2:MeasurementresultsregardingAIsystemtrust-worthinessindeploymentcontext(s)andacrosstheAIlifecycleareinformedbyinputfromdomainexpertsandrelevantAIac-torstovalidatewhetherth"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "ontodecreasethelikelihoodofsystemfailuresandnegativeimpacts.SystematicdocumentationpracticesestablishedinGOVERNandutilizedinMAPandMEASUREbolsterAIriskmanagementeffortsandincreasetransparencyandaccountability.Processesforassessingemergentrisksareinplace,alongwithmechanismsforcontinualimprovement.AftercompletingtheMANAGEfunction,plansforprioritizingriskandregularmonitoringandimprovementwillbeinplace.Frameworkuserswillhaveenhancedcapacitytoman-agetherisksofdeployedAIsystemsandtoallocateriskmanagementresourcesbasedonassessedandprioritizedrisks.ItisincumbentonFrameworkuserstocontinuet"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "tercompletingtheMANAGEfunction,plansforprioritizingriskandregularmonitoringandimprovementwillbeinplace.Frameworkuserswillhaveenhancedcapacitytoman-agetherisksofdeployedAIsystemsandtoallocateriskmanagementresourcesbasedonassessedandprioritizedrisks.ItisincumbentonFrameworkuserstocontinuetoapplytheMANAGEfunctiontodeployedAIsystemsasmethods,contexts,risks,andneedsorexpectationsfromrelevantAIactorsevolveovertime.Page31 NISTAI100-1AIRMF1.0 PracticesrelatedtomanagingAIrisksaredescribedintheNISTAIRMFPlaybook.Table4liststheMANAGEfunction'scategoriesandsubcategories.Table4:Categoriesandsu"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "ISTAI100-1AIRMF1.0 PracticesrelatedtomanagingAIrisksaredescribedintheNISTAIRMFPlaybook.Table4liststheMANAGEfunction'scategoriesandsubcategories.Table4:CategoriesandsubcategoriesfortheMANAGEfunction.MANAGE1:AIrisksbasedonassessmentsandotheranalyticaloutputfromtheMAPandMEASUREfunctionsareprioritized,respondedto,andmanaged.MANAGE1.1:AdeterminationismadeastowhethertheAIsystemachievesitsintendedpurposesandstatedobjectivesandwhetheritsdevelopmentordeploymentshouldproceed.MANAGE1.2:TreatmentofdocumentedAIrisksisprioritizedbasedonimpact,likelihood,andavailableresourcesormethods.MANAGE1.3"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "rnance.OperationandMonitoringtasksareperformedintheApplicationContext/OperateandMonitorphaseofthelifecycleinFigure2.ThesetasksarecarriedoutbyAIactorswhoareresponsibleforoperatingtheAIsystemandworkingwithotherstoregularlyassesssystemoutputandimpacts.AIactorsinthiscategoryincludesystemoperators,domainexperts,AIdesigners,userswhointerpretorincorporatetheoutputofAIsystems,productdevelopers,evaluatorsandauditors,complianceexperts,organizationalmanagement,andmembersoftheresearchcommunity.Test,Evaluation,Veri\u0002cation,andValidation(TEVV)tasksareperformedthroughouttheAIlifecycle.Theyarecar"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "centeroninternalandexternalvali-dationofassumptionsforsystemdesign,datacollection,andmeasurementsrelativetotheintendedcontextofdeploymentorapplication.TEVVtasksfordevelopment(i.e.,modelbuilding)includemodelvalidationandassessment.TEVVtasksfordeploymentincludesystemvalidationandintegrationinproduction,withtesting,andrecalibrationforsystemsandprocessintegration,userexperience,andcompliancewithexistinglegal,regulatory,andethicalspeci\u0002cations.TEVVtasksforoperationsinvolveongoingmonitoringforperiodicupdates,testing,andsubjectmatterexpert(SME)recalibrationofmodels,thetrackingofincid"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "iplinaryskillsandperspectivestounderstandcontextofuse,informinterdisciplinaryanddemographicdiversity,engageinconsultativeprocesses,designandevaluateuserexperience,performhuman-centeredevaluationandtesting,andinformimpactassessments.DomainExperttasksinvolveinputfrommultidisciplinarypractitionersorscholarswhoprovideknowledgeorexpertiseinandaboutanindustrysector,economicsector,con-text,orapplicationareawhereanAIsystemisbeingused.AIactorswhoaredomainexpertscanprovideessentialguidanceforAIsystemdesignanddevelopment,andinter-pretoutputsinsupportofworkperformedbyTEVVandAIimpactassessm"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "ctor,economicsector,con-text,orapplicationareawhereanAIsystemisbeingused.AIactorswhoaredomainexpertscanprovideessentialguidanceforAIsystemdesignanddevelopment,andinter-pretoutputsinsupportofworkperformedbyTEVVandAIimpactassessmentteams.AIImpactAssessmenttasksincludeassessingandevaluatingrequirementsforAIsystemaccountability,combatingharmfulbias,examiningimpactsofAIsystems,productsafety,liability,andsecurity,amongothers.AIactorssuchasimpactassessorsandevaluatorsprovidetechnical,humanfactor,socio-cultural,andlegalexpertise.ProcurementtasksareconductedbyAIactorswith\u0002nancial,legal,or"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "text,orapplicationareawhereanAIsystemisbeingused.AIactorswhoaredomainexpertscanprovideessentialguidanceforAIsystemdesignanddevelopment,andinter-pretoutputsinsupportofworkperformedbyTEVVandAIimpactassessmentteams.AIImpactAssessmenttasksincludeassessingandevaluatingrequirementsforAIsystemaccountability,combatingharmfulbias,examiningimpactsofAIsystems,productsafety,liability,andsecurity,amongothers.AIactorssuchasimpactassessorsandevaluatorsprovidetechnical,humanfactor,socio-cultural,andlegalexpertise.ProcurementtasksareconductedbyAIactorswith\u0002nancial,legal,orpolicymanagementauthorit"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "whereanAIsystemisbeingused.AIactorswhoaredomainexpertscanprovideessentialguidanceforAIsystemdesignanddevelopment,andinter-pretoutputsinsupportofworkperformedbyTEVVandAIimpactassessmentteams.AIImpactAssessmenttasksincludeassessingandevaluatingrequirementsforAIsystemaccountability,combatingharmfulbias,examiningimpactsofAIsystems,productsafety,liability,andsecurity,amongothers.AIactorssuchasimpactassessorsandevaluatorsprovidetechnical,humanfactor,socio-cultural,andlegalexpertise.ProcurementtasksareconductedbyAIactorswith\u0002nancial,legal,orpolicymanagementauthorityforacquisitionofAImod"
+      },
+      {
+        "keyword": "Assess",
+        "snippet": "essmentteams.AIImpactAssessmenttasksincludeassessingandevaluatingrequirementsforAIsystemaccountability,combatingharmfulbias,examiningimpactsofAIsystems,productsafety,liability,andsecurity,amongothers.AIactorssuchasimpactassessorsandevaluatorsprovidetechnical,humanfactor,socio-cultural,andlegalexpertise.ProcurementtasksareconductedbyAIactorswith\u0002nancial,legal,orpolicymanagementauthorityforacquisitionofAImodels,products,orservicesfromathird-partydeveloper,vendor,orcontractor.GovernanceandOversighttasksareassumedbyAIactorswithmanagement,\u0002duciary,andlegalauthorityandresponsibilityfor"
+      },
+      {
+        "keyword": "AI",
+        "snippet": "NISTAI100-1 Arti\u0002cialIntelligenceRiskManagementFramework(AIRMF1.0) NISTAI100-1Arti\u0002cialIntelligenceRiskManagementFramework(AIRMF1.0)Thispublicationisavailablefreeofchargefrom:https://doi.org/10.6028/NIST.AI.100-1January2023 U.S.DepartmentofCommerceGinaM.Raimondo,SecretaryNationalInstituteofStandardsandTechnologyLaurieE.Locascio,NISTDirectorandUnderSecretaryofComme"
+      },
+      {
+        "keyword": "AI",
+        "snippet": "skManagementFramework(AIRMF1.0) NISTAI100-1Arti\u0002cialIntelligenceRiskManagementFramework(AIRMF1.0)Thispublicationisavailablefreeofchargefrom:https://doi.org/10.6028/NIST.AI.100-1January2023 U.S.DepartmentofCommerceGinaM.Raimondo,SecretaryNationalInstituteofStandardsandTechnologyLaurieE.Locascio,NISTDirectorandUnderSecretaryofCommerceforStandardsandTechnology Certaincommercialentities,equipment,ormaterialsmaybeidenti\u0002edinthisdocumentinordertodescribeanexperimentalprocedureorconceptadequately.Suchidenti\u0002cationisnotintendedtoimplyrecommenda-tionorendorsementbytheNationalInstitute"
+      },
+      {
+        "keyword": "AI",
+        "snippet": "s://doi.org/10.6028/NIST.AI.100-1January2023 U.S.DepartmentofCommerceGinaM.Raimondo,SecretaryNationalInstituteofStandardsandTechnologyLaurieE.Locascio,NISTDirectorandUnderSecretaryofCommerceforStandardsandTechnology Certaincommercialentities,equipment,ormaterialsmaybeidenti\u0002edinthisdocumentinordertodescribeanexperimentalprocedureorconceptadequately.Suchidenti\u0002cationisnotintendedtoimplyrecommenda-tionorendorsementbytheNationalInstituteofStandardsandTechnology,norisitintendedtoimplythattheentities,materials,orequipmentarenecessarilythebestavailableforthepurpose. Thispublication"
+      },
+      {
+        "keyword": "AI",
+        "snippet": "cedureorconceptadequately.Suchidenti\u0002cationisnotintendedtoimplyrecommenda-tionorendorsementbytheNationalInstituteofStandardsandTechnology,norisitintendedtoimplythattheentities,materials,orequipmentarenecessarilythebestavailableforthepurpose. Thispublicationisavailablefreeofchargefrom:https://doi.org/10.6028/NIST.AI.100-1UpdateScheduleandVersionsTheArti\u0002cialIntelligenceRiskManagementFramework(AIRMF)isintendedtobealivingdocument.NISTwillreviewthecontentandusefulnessoftheFrameworkregularlytodetermineifanupdateisappro-priate;areviewwithformalinputfromtheAIcommunityisexpectedtotak"
+      },
+      {
+        "keyword": "AI",
+        "snippet": "onisnotintendedtoimplyrecommenda-tionorendorsementbytheNationalInstituteofStandardsandTechnology,norisitintendedtoimplythattheentities,materials,orequipmentarenecessarilythebestavailableforthepurpose. Thispublicationisavailablefreeofchargefrom:https://doi.org/10.6028/NIST.AI.100-1UpdateScheduleandVersionsTheArti\u0002cialIntelligenceRiskManagementFramework(AIRMF)isintendedtobealivingdocument.NISTwillreviewthecontentandusefulnessoftheFrameworkregularlytodetermineifanupdateisappro-priate;areviewwithformalinputfromtheAIcommunityisexpectedtotakeplacenolaterthan2028.TheFrameworkwillemp"
+      },
+      {
+        "keyword": "AI",
+        "snippet": "heNationalInstituteofStandardsandTechnology,norisitintendedtoimplythattheentities,materials,orequipmentarenecessarilythebestavailableforthepurpose. Thispublicationisavailablefreeofchargefrom:https://doi.org/10.6028/NIST.AI.100-1UpdateScheduleandVersionsTheArti\u0002cialIntelligenceRiskManagementFramework(AIRMF)isintendedtobealivingdocument.NISTwillreviewthecontentandusefulnessoftheFrameworkregularlytodetermineifanupdateisappro-priate;areviewwithformalinputfromtheAIcommunityisexpectedtotakeplacenolaterthan2028.TheFrameworkwillemployatwo-numberversioningsystemtotrackandidentifymajor"
+      }
+    ],
+    "candidateTerms": [
+      {
+        "term": "Forexample",
+        "count": 7
+      },
+      {
+        "term": "Continued",
+        "count": 7
+      },
+      {
+        "term": "Source",
+        "count": 6
+      },
+      {
+        "term": "Adaptedfrom",
+        "count": 5
+      },
+      {
+        "term": "Ideally",
+        "count": 4
+      },
+      {
+        "term": "MEASURE",
+        "count": 4
+      },
+      {
+        "term": "ISO/IECTS5723",
+        "count": 4
+      },
+      {
+        "term": "OECDFrameworkfortheClassi",
+        "count": 3
+      },
+      {
+        "term": "OECD",
+        "count": 3
+      },
+      {
+        "term": "NISTAI100-1AIRMF1.0",
+        "count": 3
+      },
+      {
+        "term": "TEVV",
+        "count": 3
+      },
+      {
+        "term": "CategoriesSubcategories",
+        "count": 3
+      },
+      {
+        "term": "AIRMF1.0",
+        "count": 2
+      },
+      {
+        "term": "Thispublicationisavailablefreeofchargefrom",
+        "count": 2
+      },
+      {
+        "term": "Impacts",
+        "count": 2
+      },
+      {
+        "term": "OECDDigitalEconomyPapers.ThetwoinnercirclesshowAIsystems",
+        "count": 2
+      },
+      {
+        "term": "NotethatAIactorsintheAIModeldimension",
+        "count": 2
+      },
+      {
+        "term": "Figure2",
+        "count": 2
+      },
+      {
+        "term": "ISO/IECTR24368",
+        "count": 2
+      },
+      {
+        "term": "GOVERN",
+        "count": 2
+      },
+      {
+        "term": "ISO31000",
+        "count": 2
+      },
+      {
+        "term": "ISOGUIDE73",
+        "count": 2
+      },
+      {
+        "term": "CategoriesandsubcategoriesfortheGOVERNfunction",
+        "count": 2
+      },
+      {
+        "term": "Theorganization",
+        "count": 2
+      },
+      {
+        "term": "CategoriesandsubcategoriesfortheMAPfunction",
+        "count": 2
+      },
+      {
+        "term": "CategoriesandsubcategoriesfortheMEASUREfunction",
+        "count": 2
+      },
+      {
+        "term": "AIrisksandbene",
+        "count": 2
+      },
+      {
+        "term": "NISTAI100-1 Arti",
+        "count": 1
+      },
+      {
+        "term": "NISTAI100-1Arti",
+        "count": 1
+      },
+      {
+        "term": "NIST.AI.100-1January2023 U.S.DepartmentofCommerceGinaM.Raimondo",
+        "count": 1
+      },
+      {
+        "term": "SecretaryNationalInstituteofStandardsandTechnologyLaurieE.Locascio",
+        "count": 1
+      },
+      {
+        "term": "NISTDirectorandUnderSecretaryofCommerceforStandardsandTechnology Certaincommercialentities",
+        "count": 1
+      },
+      {
+        "term": "Suchidenti",
+        "count": 1
+      },
+      {
+        "term": "NIST.AI.100-1UpdateScheduleandVersionsTheArti",
+        "count": 1
+      },
+      {
+        "term": "AIRMF",
+        "count": 1
+      },
+      {
+        "term": "NISTwillreviewthecontentandusefulnessoftheFrameworkregularlytodetermineifanupdateisappro-priate",
+        "count": 1
+      },
+      {
+        "term": "TheFrameworkwillemployatwo-numberversioningsystemtotrackandidentifymajorandminorchanges.ThenumberwillrepresentthegenerationoftheAIRMFanditscompaniondocuments",
+        "count": 1
+      },
+      {
+        "term": "Minorrevisionswillbetrackedusing",
+        "count": 1
+      },
+      {
+        "term": "AllchangeswillbetrackedusingaVersionControlTablewhichidenti",
+        "count": 1
+      },
+      {
+        "term": "NISTplanstoupdatetheAIRMFPlaybookfrequently.CommentsontheAIRMFPlaybookmaybesentviaemailtoAIframework",
+        "count": 1
+      },
+      {
+        "term": "TableofContentsExecutiveSummary1Part1",
+        "count": 1
+      },
+      {
+        "term": "FoundationalInformation41FramingRisk41.1UnderstandingandAddressingRisks",
+        "count": 1
+      },
+      {
+        "term": "Enhanced173.7Fair",
+        "count": 1
+      },
+      {
+        "term": "CoreandPr205AIRMFCore205.1Govern215.2Map245.3Measure285.4Manage316AIRMFPr33AppendixA",
+        "count": 1
+      },
+      {
+        "term": "DescriptionsofAIActorTasksfromFigures2and335AppendixB",
+        "count": 1
+      },
+      {
+        "term": "HowAIRisksDifferfromTraditionalSoftwareRisks38AppendixC",
+        "count": 1
+      },
+      {
+        "term": "AIRiskManagementandHuman-AIInteraction40AppendixD",
+        "count": 1
+      },
+      {
+        "term": "AttributesoftheAIRMF42ListofTablesTable1CategoriesandsubcategoriesfortheGOVERNfunction.22Table2CategoriesandsubcategoriesfortheMAPfunction.26Table3CategoriesandsubcategoriesfortheMEASUREfunction.29Table4CategoriesandsubcategoriesfortheMANAGEfunction.32i NISTAI100-1AIRMF1.0 ListofFiguresFig.1ExamplesofpotentialharmsrelatedtoAIsystems.TrustworthyAIsystemsandtheirresponsibleusecanmitigatenegativerisksandcontributetobene-forpeople",
+        "count": 1
+      },
+      {
+        "term": "Modi",
+        "count": 1
+      },
+      {
+        "term": "SeeFigure3forrepresentativeAIactors.10Fig.3AIactorsacrossAIlifecyclestages.SeeAppendixAfordetaileddescrip-tionsofAIactortasks",
+        "count": 1
+      },
+      {
+        "term": "Valid",
+        "count": 1
+      },
+      {
+        "term": "Reliableisanecessaryconditionoftrustworthinessandisshownasthebaseforothertrustworthi-nesscharacteristics.Accountable",
+        "count": 1
+      },
+      {
+        "term": "Transparentisshownasaverticalboxbecauseitrelatestoallothercharacteristics.12Fig.5FunctionsorganizeAIriskmanagementactivitiesattheirhighestleveltogovern",
+        "count": 1
+      },
+      {
+        "term": "Governanceisdesignedtobeacross-cuttingfunctiontoinformandbeinfusedthroughouttheotherthreefunctions.20Pageii NISTAI100-1AIRMF1.0 ExecutiveSummaryArti",
+        "count": 1
+      },
+      {
+        "term": "AItechnologiescandriveinclusiveeconomicgrowthandsupportscienti",
+        "count": 1
+      },
+      {
+        "term": "AItechnologies",
+        "count": 1
+      },
+      {
+        "term": "Likerisksforothertypesoftechnology",
+        "count": 1
+      },
+      {
+        "term": "AIriskscanemergeinavarietyofwaysandcanbecharacterizedaslong-orshort-term",
+        "count": 1
+      },
+      {
+        "term": "TheAIRMFreferstoanAIsystemasanengineeredormachine-basedsystemthatcan",
+        "count": 1
+      },
+      {
+        "term": "AIsystemsaredesignedtooperatewithvaryinglevelsofautonomy",
+        "count": 1
+      }
+    ]
+  }
+}

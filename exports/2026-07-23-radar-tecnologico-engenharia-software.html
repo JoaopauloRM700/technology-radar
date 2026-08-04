@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Radar Tecnologico e TRM - Engenharia de Software</title>
+    <style>
+      :root {
+        --ink: #17212b;
+        --muted: #5f6f7b;
+        --line: #d7e0e5;
+        --shell: #f6f9fa;
+        --nav: #071724;
+        --panel: #ffffff;
+        --teal: #008a8a;
+        --green: #25985a;
+        --amber: #c47a00;
+        --red: #b83549;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; color: var(--ink); background: var(--shell); }
+      header { padding: 28px 36px; background: var(--nav); color: white; }
+      header h1 { margin: 0; font-size: 28px; line-height: 1.1; }
+      header p { margin: 8px 0 0; color: #b8cbd4; }
+      main { max-width: 1180px; margin: 0 auto; padding: 28px; }
+      .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--line); }
+      .summary div { background: white; padding: 18px; }
+      .summary span { display: block; color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+      .summary strong { display: block; margin-top: 8px; font-size: 24px; }
+      .section { margin-top: 28px; }
+      .section h2 { margin: 0 0 12px; font-size: 21px; }
+      .panel { background: white; border: 1px solid var(--line); border-radius: 8px; padding: 20px; }
+      .radar-wrap { display: grid; grid-template-columns: minmax(360px, 640px) 1fr; gap: 20px; align-items: start; }
+      .legend { display: grid; gap: 10px; font-size: 13px; }
+      .legend span { display: flex; gap: 8px; align-items: center; }
+      .swatch { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+      table { width: 100%; border-collapse: collapse; background: white; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+      th, td { border-bottom: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; font-size: 13px; }
+      th { background: #eef3f5; color: #465967; font-size: 12px; text-transform: uppercase; }
+      .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+      .card { background: white; border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+      .card h3 { margin: 0 0 8px; font-size: 16px; }
+      .card p { margin: 8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+      .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+      .tag { border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; font-size: 11px; font-weight: 700; color: #465967; }
+      a { color: #006b6f; }
+      footer { margin-top: 32px; padding: 18px 0 30px; color: var(--muted); font-size: 12px; }
+      @media print {
+        body { background: white; }
+        main { max-width: none; padding: 18px; }
+        .card, table, .panel { break-inside: avoid; }
+      }
+      @media (max-width: 860px) {
+        main { padding: 18px; }
+        .summary, .radar-wrap { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Radar Tecnologico e TRM - Engenharia de Software</h1>
+      <p>Snapshot mensal gerado em 23 de julho de 2026 às 13:58. Arquivo autônomo para avaliação da gestão.</p>
+    </header>
+    <main>
+      <section class="summary">
+        <div><span>Blips</span><strong>1</strong></div>
+        <div><span>Pilotos P&D</span><strong>1</strong></div>
+        <div><span>Atualização</span><strong>Mensal</strong></div>
+        <div><span>Versão</span><strong>2026-07</strong></div>
+      </section>
+
+      <section class="section">
+        <h2>Sumário Executivo</h2>
+        <div class="panel">
+          <p>Este Radar Tecnológico e TRM consolida tendências, ferramentas, plataformas, técnicas, linguagens e frameworks relevantes para Engenharia de Software. O objetivo é apoiar decisões de P&D, pilotos controlados e atualização mensal contínua.</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Radar</h2>
+        <div class="panel radar-wrap">
+          <svg viewBox="0 0 760 760" role="img" aria-label="Radar tecnológico"><circle cx="380" cy="380" r="90" fill="none" stroke="#a8bac4" stroke-dasharray="4 6"/><circle cx="380" cy="380" r="170" fill="none" stroke="#a8bac4" stroke-dasharray="4 6"/><circle cx="380" cy="380" r="250" fill="none" stroke="#a8bac4" stroke-dasharray="4 6"/><circle cx="380" cy="380" r="330" fill="none" stroke="#a8bac4" stroke-dasharray="0"/><path d="M380 50V710M50 380H710" stroke="#b6c5cc"/>
+    <text x="178" y="112" text-anchor="middle" font-size="16" font-weight="700">Técnicas</text>
+    <text x="582" y="112" text-anchor="middle" font-size="16" font-weight="700">Ferramentas</text>
+    <text x="178" y="668" text-anchor="middle" font-size="16" font-weight="700">Plataformas</text>
+    <text x="582" y="668" text-anchor="middle" font-size="16" font-weight="700">Linguagens</text>
+    <text x="380" y="376" text-anchor="middle" font-size="13" fill="#5f6f7b">Adopt</text>
+    <text x="380" y="286" text-anchor="middle" font-size="13" fill="#5f6f7b">Trial</text>
+    <text x="380" y="206" text-anchor="middle" font-size="13" fill="#5f6f7b">Assess</text>
+    <text x="380" y="126" text-anchor="middle" font-size="13" fill="#5f6f7b">Caution</text><g><circle cx="202" cy="301" r="13" fill="#007f92" stroke="white" stroke-width="3"/><text x="202" y="305" text-anchor="middle" font-size="10" font-weight="800" fill="white">1</text><title>Teste Snapshot</title></g></svg>
+          <div class="legend">
+            <span><i class="swatch" style="background:#007f92"></i>Técnicas</span>
+            <span><i class="swatch" style="background:#2e7d52"></i>Ferramentas</span>
+            <span><i class="swatch" style="background:#c47a00"></i>Plataformas</span>
+            <span><i class="swatch" style="background:#b83549"></i>Linguagens e Frameworks</span>
+            <p><strong>Anéis:</strong> Adopt no centro; Trial, Assess e Caution progressivamente para fora.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Matriz Radar + TRM</h2>
+        <table>
+          <thead><tr><th>Tecnologia/Técnica</th><th>Quadrante</th><th>Anel</th><th>Horizonte</th><th>Maturidade</th><th>Risco</th><th>Esforço</th></tr></thead>
+          <tbody><tr><td>Teste Snapshot</td><td>T�cnicas</td><td>Trial</td><td>Curto</td><td>Emergente</td><td>M�dio</td><td>Baixo</td></tr></tbody>
+        </table>
+      </section>
+
+      <section class="section"><h2>Curto Prazo</h2><div class="cards"><article class="card">
+    <h3>T-01 - Teste Snapshot</h3>
+    <div class="tags">
+      <span class="tag">T�cnicas</span>
+      <span class="tag">Trial</span>
+      <span class="tag">Emergente</span>
+      <span class="tag">M�dio</span>
+    </div>
+    <p><strong>Justificativa:</strong> Validar exporta��o HTML mensal.</p>
+    <p><strong>Gargalos:</strong> Remover ap�s teste.</p>
+    <p><a href="https://example.com">Mais detalhes</a></p>
+  </article></div></section><section class="section"><h2>Médio Prazo</h2><div class="cards"><p>Nenhum blip neste horizonte.</p></div></section><section class="section"><h2>Longo Prazo</h2><div class="cards"><p>Nenhum blip neste horizonte.</p></div></section>
+
+      <section class="section">
+        <h2>Plano de Ação</h2>
+        <div class="panel"><ul><li><strong>Teste Snapshot</strong>: piloto controlado com metricas de valor, qualidade e risco.</li></ul></div>
+      </section>
+
+      <section class="section">
+        <h2>Fontes Monitoradas</h2>
+        <table>
+          <thead><tr><th>Fonte</th><th>Força</th><th>Cadência</th><th>Sinal</th><th>URL</th></tr></thead>
+          <tbody><tr><td>Fonte Teste</td><td>Alta</td><td>Mensal</td><td>Valida��o</td><td><a href="https://example.com">https://example.com</a></td></tr></tbody>
+        </table>
+      </section>
+
+      <footer>Radar gerado pelo sistema local Technology-Radar. Recomenda-se manter revisão humana antes de adoção institucional.</footer>
+    </main>
+  </body>
+</html>

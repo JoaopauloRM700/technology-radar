@@ -1,0 +1,86 @@
+{
+  "generatedAt": "2026-07-23T17:16:55.093Z",
+  "proposals": [
+    {
+      "action": "add",
+      "reason": "Ferramenta de agentes de IA integrada ao terminal que agiliza fluxos de desenvolvimento com execução direta e contextualização do repositório.",
+      "confidence": 0.9,
+      "evidence": [
+        {
+          "source": "tr_technology_radar_vol_34_pt_1.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/downloads/thoughtworks-technology-radar/tr_technology_radar_vol_34_pt_1.pdf",
+          "note": "Destacado na seção Ferramentas no anel Adote (Adote Claude Code Cursor Kafbat UI mise)."
+        }
+      ],
+      "blip": {
+        "name": "Claude Code",
+        "quadrant": "Ferramentas",
+        "ring": "Adopt",
+        "horizon": "Curto",
+        "maturity": "Emergente",
+        "risk": "Baixo",
+        "effort": "Baixo",
+        "status": "Adotar",
+        "source": "tr_technology_radar_vol_34_pt_1.pdf",
+        "theme": "IA e Ferramentas de Desenvolvimento",
+        "detailsUrl": "",
+        "strategic": "Permite automação e assistência de programação direto na linha de comando de forma integrada ao fluxo do desenvolvedor.",
+        "constraints": "Requer atenção ao conceder permissões excessivas para ações externas ou modificações não revisadas."
+      }
+    },
+    {
+      "action": "add",
+      "reason": "Adoção consolidada em produção com ecossistema maduro e melhorias significativas com o lançamento do Svelte 5 e runes.",
+      "confidence": 0.95,
+      "evidence": [
+        {
+          "source": "tr_technology_radar_vol_34_pt_1.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/downloads/thoughtworks-technology-radar/tr_technology_radar_vol_34_pt_1.pdf",
+          "note": "Framework de UI em JavaScript que compila componentes em tempo de build. Movido para Adote devido ao sucesso de uso contínuo em produção e novos recursos do Svelte 5."
+        }
+      ],
+      "blip": {
+        "name": "Svelte",
+        "quadrant": "Linguagens e Frameworks",
+        "ring": "Adopt",
+        "horizon": "Curto",
+        "maturity": "Madura",
+        "risk": "Baixo",
+        "effort": "Médio",
+        "status": "Adotar",
+        "source": "tr_technology_radar_vol_34_pt_1.pdf",
+        "theme": "Desenvolvimento Frontend",
+        "detailsUrl": "",
+        "strategic": "Gera bundles pequenos e oferece alto desempenho em tempo de execução sem dependência de um DOM virtual pesado.",
+        "constraints": "Mudanças de paradigma em relação a frameworks tradicionais baseados em Virtual DOM exigem adaptação da equipe."
+      }
+    },
+    {
+      "action": "add",
+      "reason": "Abordagem fluida para desenvolvimento orientado a especificações, auxiliando na estruturação do contexto para agentes de programação.",
+      "confidence": 0.85,
+      "evidence": [
+        {
+          "source": "tr_technology_radar_vol_34_pt_1.pdf",
+          "url": "file://D:/Documents/Technology-Radar/data/downloads/thoughtworks-technology-radar/tr_technology_radar_vol_34_pt_1.pdf",
+          "note": "Destacado como uma abordagem minimalista de workflow de especificação para guiar agentes em planejamento, design e implementação."
+        }
+      ],
+      "blip": {
+        "name": "OpenSpec",
+        "quadrant": "Ferramentas",
+        "ring": "Assess",
+        "horizon": "Médio",
+        "maturity": "Emergente",
+        "risk": "Médio",
+        "effort": "Médio",
+        "status": "Avaliar",
+        "source": "tr_technology_radar_vol_34_pt_1.pdf",
+        "theme": "Engenharia de Prompt e Especificação",
+        "detailsUrl": "",
+        "strategic": "Estrutura o processo de criação e refinamento de especificações antes da geração de código por IA.",
+        "constraints": "Exige disciplina na escrita de especificações e adaptação nos fluxos de trabalho tradicionais."
+      }
+    }
+  ]
+}
