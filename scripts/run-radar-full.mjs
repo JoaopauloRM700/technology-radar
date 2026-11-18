@@ -2,6 +2,8 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { createNvidiaNimClient, NvidiaNimError } from "./lib/nvidia-nim.mjs";
+import { generateProposalFile, loadEnvFile } from "./nim-proposals.mjs";
 
 const root = process.cwd();
 const args = process.argv.slice(2);
@@ -10,8 +12,7 @@ const discoveryScript = path.join(root, "scripts", "discover-sources.mjs");
 const discoveryReportPath = path.join(root, "data", "discovery", "radar-discovery.json");
 const pdfDataDir = path.join(root, "data", "pdf");
 const consolidatedPath = path.join(root, "data", "radar-update-proposals.json");
-const summaryPath = path.join(root, "docs", "radar-full-run-summary.md");
-const rawAiDir = path.join(root, "data", "ai-raw");
+const summaryPath = path.join(root, "docs", "radar-full-run-summary-current.md");
 
 const options = {
   skipDiscover: hasArg("--skip-discover"),
@@ -21,10 +22,31 @@ const options = {
   aiLimit: numberArg("--ai-limit", Number.POSITIVE_INFINITY),
 };
 
+if (hasArg("--help") || hasArg("-h")) {
+  console.log("Uso: node scripts/run-radar-full.mjs [--skip-discover] [--fail-on-empty] [--ai nim] [--ai-overwrite] [--ai-limit N]");
+  process.exit(0);
+}
+
+const aiRequested = args.some((arg) => arg === "--ai" || arg.startsWith("--ai="));
+if (aiRequested && options.aiProvider !== "nim") {
+  console.error("Provedor de IA inválido. Use --ai nim.");
+  process.exit(2);
+}
+
 await loadEnvFile(path.join(root, ".env"));
+let nim;
+if (aiRequested) {
+  try {
+    nim = createNvidiaNimClient();
+  } catch (error) {
+    if (!(error instanceof NvidiaNimError)) throw error;
+    console.error(error.message);
+    process.exit(2);
+  }
+}
+
 await mkdir(path.dirname(consolidatedPath), { recursive: true });
 await mkdir(path.dirname(summaryPath), { recursive: true });
-await mkdir(rawAiDir, { recursive: true });
 
 if (!options.skipDiscover) {
   const discoverArgs = filterOwnArgs(args);
@@ -32,10 +54,10 @@ if (!options.skipDiscover) {
 }
 
 const discovery = await readJson(discoveryReportPath, null);
-const aiResults = options.aiProvider
-  ? await generateProposalsWithAi(options.aiProvider, { overwrite: options.aiOverwrite, limit: options.aiLimit })
-  : [];
 const proposalFiles = await findProposalFiles(pdfDataDir);
+const aiResults = nim
+  ? await generateProposalsWithAi(nim, proposalFiles, { overwrite: options.aiOverwrite, limit: options.aiLimit })
+  : [];
 const proposalBatches = await readProposalBatches(proposalFiles);
 const consolidated = consolidateProposalBatches(proposalBatches);
 const summary = buildSummary({ discovery, proposalBatches, consolidated, aiResults });
@@ -57,9 +79,10 @@ if (discovery) {
   console.log(`PDFs analisados: ${downloads.filter((item) => item.analysis?.ok).length}`);
 }
 console.log(`Arquivos de propostas encontrados: ${proposalBatches.length}`);
-if (options.aiProvider) {
-  console.log(`Arquivos processados por IA: ${aiResults.length}`);
-  console.log(`Propostas geradas por IA: ${aiResults.reduce((total, item) => total + (item.proposals ?? 0), 0)}`);
+if (nim) {
+  const processed = aiResults.filter((item) => !item.skipped);
+  console.log(`Arquivos processados por NVIDIA NIM: ${processed.length}`);
+  console.log(`Propostas geradas por NVIDIA NIM: ${processed.reduce((total, item) => total + item.proposals, 0)}`);
 }
 console.log(`Propostas consolidadas: ${consolidated.proposals.length}`);
 console.log(`Arquivo para importar no app: ${relative(consolidatedPath)}`);
@@ -107,185 +130,17 @@ async function readProposalBatches(files) {
   return batches;
 }
 
-async function generateProposalsWithAi(provider, config) {
-  if (provider !== "gemini") {
-    throw new Error(`Provedor de IA nao suportado: ${provider}. Use --ai gemini.`);
-  }
-
-  const apiKey = (process.env.GEMINI_API_KEY ?? "").trim();
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY nao encontrada. Preencha o arquivo .env antes de usar --ai gemini.");
-  }
-
-  const files = await findProposalFiles(pdfDataDir);
+async function generateProposalsWithAi(client, files, { overwrite, limit }) {
   const results = [];
   let processed = 0;
 
   for (const proposalPath of files) {
-    if (processed >= config.limit) break;
-
-    const existing = await readJson(proposalPath, null);
-    const existingCount = Array.isArray(existing?.proposals) ? existing.proposals.length : 0;
-    if (existingCount > 0 && !config.overwrite) {
-      results.push({
-        proposalPath: relative(proposalPath),
-        skipped: true,
-        reason: "propostas-existentes",
-        proposals: existingCount,
-      });
-      continue;
-    }
-
-    const briefPath = proposalPath.replace(new RegExp(`${escapeRegExp(`${path.sep}data${path.sep}pdf${path.sep}`)}`), `${path.sep}docs${path.sep}`).replace(/-proposals\.json$/, "-brief.md");
-    if (!existsSync(briefPath)) {
-      results.push({
-        proposalPath: relative(proposalPath),
-        skipped: true,
-        reason: "brief-nao-encontrado",
-        proposals: 0,
-      });
-      continue;
-    }
-
-    const brief = await readFile(briefPath, "utf8");
-    const response = await callGeminiForProposals(brief, { proposalPath, briefPath });
-    const rawPath = path.join(rawAiDir, `${path.basename(proposalPath, ".json")}-gemini-raw.txt`);
-    await writeFile(rawPath, response.rawText, "utf8");
-
-    if (!response.payload) {
-      results.push({
-        proposalPath: relative(proposalPath),
-        briefPath: relative(briefPath),
-        rawPath: relative(rawPath),
-        ok: false,
-        reason: response.error ?? "resposta-json-invalida",
-        proposals: 0,
-      });
-      processed += 1;
-      continue;
-    }
-
-    const normalized = {
-      generatedAt: response.payload.generatedAt ?? new Date().toISOString(),
-      generatedBy: "gemini",
-      sourceBrief: relative(briefPath),
-      proposals: Array.isArray(response.payload.proposals) ? response.payload.proposals : [],
-    };
-
-    await writeFile(proposalPath, `${JSON.stringify(normalized, null, 2)}\n`, "utf8");
-    results.push({
-      proposalPath: relative(proposalPath),
-      briefPath: relative(briefPath),
-      rawPath: relative(rawPath),
-      ok: true,
-      proposals: normalized.proposals.length,
-    });
-    processed += 1;
+    if (processed >= limit) break;
+    const result = await generateProposalFile(proposalPath, { root, client, overwrite });
+    results.push(result);
+    if (!result.skipped) processed += 1;
   }
-
   return results;
-}
-
-async function callGeminiForProposals(brief, context) {
-  const model = process.env.GEMINI_MODEL || "gemini-3.6-flash";
-  const apiVersion = process.env.GEMINI_API_VERSION || "v1beta";
-  const endpoint = `https://generativelanguage.googleapis.com/${apiVersion}/models/${encodeURIComponent(model)}:generateContent`;
-  const prompt = buildGeminiPrompt(brief, context);
-
-  let response;
-  try {
-    response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": (process.env.GEMINI_API_KEY ?? "").trim(),
-      },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: [
-            {
-              text: "Voce e um arquiteto estrategico de tecnologia. Retorne somente JSON valido, sem Markdown.",
-            },
-          ],
-        },
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: prompt }],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          responseMimeType: "application/json",
-        },
-      }),
-    });
-  } catch (error) {
-    return {
-      rawText: error.message,
-      payload: null,
-      error: "gemini-network-error",
-    };
-  }
-
-  const bodyText = await response.text();
-  if (!response.ok) {
-    return {
-      rawText: bodyText,
-      payload: null,
-      error: `gemini-http-${response.status}`,
-    };
-  }
-
-  const body = safeJsonParse(bodyText);
-  const rawText = extractGeminiText(body) || bodyText;
-  return {
-    rawText,
-    payload: parseJsonFromModelText(rawText),
-  };
-}
-
-function buildGeminiPrompt(brief, context) {
-  return `Analise o brief abaixo e gere propostas para o Radar Tecnologico de Engenharia de Software.
-
-Regras adicionais:
-- Retorne somente JSON valido.
-- Se o brief nao tiver evidencia suficiente, retorne {"generatedAt":"${new Date().toISOString()}","proposals":[]}.
-- Nao gere blips duplicados por sinonimo.
-- Prefira 1 a 5 propostas de alta qualidade por PDF.
-- Cada proposta deve conter action, reason, confidence, evidence e blip.
-- Use exatamente os valores permitidos pelo brief para quadrante, anel, horizonte, maturidade, risco e esforco.
-- Em evidence.url, use a URL ou file:// do proprio brief quando disponivel.
-- Em blip.detailsUrl, use uma URL publica quando existir; caso contrario, deixe string vazia.
-
-Arquivo de destino: ${relative(context.proposalPath)}
-Brief de origem: ${relative(context.briefPath)}
-
-${brief}`;
-}
-
-function extractGeminiText(body) {
-  const parts = body?.candidates?.[0]?.content?.parts;
-  if (!Array.isArray(parts)) return "";
-  return parts.map((part) => part.text ?? "").join("").trim();
-}
-
-function parseJsonFromModelText(text) {
-  const direct = safeJsonParse(text);
-  if (direct) return direct;
-
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fenced) {
-    const parsed = safeJsonParse(fenced[1]);
-    if (parsed) return parsed;
-  }
-
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start !== -1 && end > start) {
-    return safeJsonParse(text.slice(start, end + 1));
-  }
-  return null;
 }
 
 function consolidateProposalBatches(batches) {
@@ -328,7 +183,8 @@ function normalizeProposal(proposal, sourceFile) {
 
 function proposalKey(proposal) {
   const action = String(proposal.action ?? "add").toLowerCase();
-  if (proposal.id) return `${action}:id:${proposal.id}`;
+  const target = proposal.targetId ?? proposal.id;
+  if (target) return `${action}:id:${target}`;
   const name = normalize(proposal.blip?.name ?? proposal.name ?? "");
   return `${action}:name:${name.toLowerCase()}`;
 }
@@ -373,8 +229,8 @@ function buildSummary({ discovery, proposalBatches, consolidated, aiResults }) {
     ? aiResults
         .map((item) => {
           if (item.skipped) return `- ${item.proposalPath}: ignorado (${item.reason}), ${item.proposals} proposta(s) existentes`;
-          if (item.ok) return `- ${item.proposalPath}: ${item.proposals} proposta(s), raw: ${item.rawPath}`;
-          return `- ${item.proposalPath}: falhou (${item.reason}), raw: ${item.rawPath ?? "n/a"}`;
+          if (item.ok) return `- ${item.proposalPath}: ${item.proposals} proposta(s)`;
+          return `- ${item.proposalPath}: falhou (${item.reason})`;
         })
         .join("\n")
     : "- IA nao executada neste run.";
@@ -392,7 +248,7 @@ ${discoveryLines}
 - Arquivo para importar no app: \`${relative(consolidatedPath)}\`
 - Total consolidado: ${consolidated.proposals.length}
 
-## Execucao com IA
+## Execucao com NVIDIA NIM
 
 ${aiLines}
 
@@ -428,31 +284,6 @@ async function readJson(filePath, fallback) {
   }
 }
 
-async function loadEnvFile(filePath) {
-  if (!existsSync(filePath)) return;
-  const content = await readFile(filePath, "utf8");
-  for (const rawLine of content.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
-    const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
-    if (!match) continue;
-    const key = match[1];
-    let value = match[2].trim();
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-      value = value.slice(1, -1);
-    }
-    if (!process.env[key]) process.env[key] = value;
-  }
-}
-
-function safeJsonParse(value) {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
-  }
-}
-
 function hasArg(name) {
   return args.includes(name);
 }
@@ -484,10 +315,6 @@ function filterOwnArgs(values) {
     passthrough.push(value);
   }
   return passthrough;
-}
-
-function escapeRegExp(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function normalize(value) {

@@ -1,4 +1,4 @@
-const blipEnums = {
+export const blipEnums = {
   quadrant: ["Técnicas", "Plataformas", "Ferramentas", "Linguagens e Frameworks"],
   ring: ["Adopt", "Trial", "Assess", "Caution"],
   horizon: ["Curto", "Médio", "Longo"],
@@ -7,6 +7,10 @@ const blipEnums = {
   effort: ["Baixo", "Médio", "Alto"],
   status: ["Monitorar", "Piloto recomendado", "Em piloto", "Padronizar", "Segurar"],
 };
+
+export const blipTextFields = ["source", "theme", "strategic", "constraints"];
+export const proposalActions = ["add", "update", "move"];
+export const MAX_PROPOSALS = 5;
 
 function requireObject(value, field) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -29,7 +33,7 @@ function httpUrl(value, field) {
   return url;
 }
 
-function normalizeBlipFields(blip, field) {
+export function normalizeBlipFields(blip, field) {
   requireObject(blip, field);
   const normalized = { name: requiredText(blip.name, field + ".name") };
   for (const [key, allowed] of Object.entries(blipEnums)) {
@@ -37,7 +41,7 @@ function normalizeBlipFields(blip, field) {
     if (!allowed.includes(value)) throw new TypeError(field + "." + key + " inválido.");
     normalized[key] = value;
   }
-  for (const key of ["source", "theme", "strategic", "constraints"]) {
+  for (const key of blipTextFields) {
     normalized[key] = requiredText(blip[key], field + "." + key);
   }
   normalized.detailsUrl = blip.detailsUrl === undefined || blip.detailsUrl === ""
@@ -119,8 +123,8 @@ export function diffBlips(beforeBlips, afterBlips) {
 }
 
 export function applyProposals(radar, proposals, { createId = () => globalThis.crypto.randomUUID() } = {}) {
-  if (!Array.isArray(proposals) || proposals.length > 5) {
-    throw new TypeError("proposals deve ser uma lista de até 5 propostas.");
+  if (!Array.isArray(proposals) || proposals.length > MAX_PROPOSALS) {
+    throw new TypeError("proposals deve ser uma lista de até " + MAX_PROPOSALS + " propostas.");
   }
 
   const draft = normalizeRadar(radar);
@@ -131,7 +135,7 @@ export function applyProposals(radar, proposals, { createId = () => globalThis.c
     const field = "proposals[" + index + "]";
     requireObject(proposal, field);
     const { action, targetId, reason, confidence, evidence, blip } = proposal;
-    if (!["add", "update", "move"].includes(action)) throw new TypeError(field + ".action inválida.");
+    if (!proposalActions.includes(action)) throw new TypeError(field + ".action inválida.");
     requiredText(reason, field + ".reason");
     if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
       throw new TypeError(field + ".confidence deve estar entre 0 e 1.");
@@ -183,7 +187,7 @@ const legacyBlipDefaults = {
 function toCoreProposal(radar, proposal) {
   if (Object.hasOwn(proposal, "targetId")) return proposal;
   const action = String(proposal.action ?? "").toLowerCase();
-  if (!["add", "update", "move"].includes(action)) return { ...proposal, action };
+  if (!proposalActions.includes(action)) return { ...proposal, action };
 
   const adding = action === "add";
   const targetId = adding ? null : proposal.id;

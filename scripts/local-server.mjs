@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { generateProposalFile, loadEnvFile } from "./gemini-proposals.mjs";
+import { generateProposalFile, loadEnvFile } from "./nim-proposals.mjs";
 import { saveRadarHtmlSnapshot } from "./html-export.mjs";
 
 const root = process.cwd();

@@ -26,7 +26,7 @@ Depois acesse:
 http://localhost:4173
 ```
 
-Esse modo habilita o botão **Analisar PDF**, porque o backend local consegue ler `.env`, salvar o upload, analisar o PDF e chamar o Gemini.
+Esse modo habilita o botão **Analisar PDF**, porque o backend local consegue ler `.env`, salvar o upload, analisar o PDF e chamar o NVIDIA NIM.
 
 ## Funcionalidades
 
@@ -68,43 +68,34 @@ Para executar o pipeline local completo:
 npm.cmd run radar:full
 ```
 
-Para abrir o app com backend local e upload de PDF:
+O comando `radar:full` descobre fontes, baixa e analisa os PDFs novos e consolida os arquivos `data/pdf/*-proposals.json` preenchidos.
+
+- `data/radar-update-proposals.json` contém o JSON para importar no app.
+- `docs/radar-full-run-summary-current.md` contém o resumo do pipeline, com arquivos preenchidos e arquivos ainda vazios.
+
+Execute o pipeline completo com geração automática de propostas via NVIDIA NIM.
 
 ```bash
-npm.cmd run radar:app
-```
-
-Esse comando roda descoberta de fontes/PDFs, baixa arquivos novos, analisa PDFs, consolida todos os arquivos `data/pdf/*-proposals.json` preenchidos e gera:
-
-- `data/radar-update-proposals.json`: JSON único para importar no app.
-- `docs/radar-full-run-summary.md`: resumo do pipeline, com arquivos preenchidos e arquivos ainda vazios.
-
-Observação: sem uma chave de IA configurada, o comando não cria propostas novas sozinho a partir dos briefs. Ele consolida as propostas já existentes e mostra quais arquivos ainda precisam de curadoria por IA/humana.
-
-Para executar o pipeline completo com geração automática de propostas via Gemini:
-
-```bash
-npm.cmd run radar:full:gemini
+npm.cmd run radar:full:nim
 ```
 
 Antes, preencha o arquivo `.env`:
 
 ```env
-GEMINI_API_KEY=SUA_CHAVE_AQUI
-GEMINI_MODEL=gemini-3.6-flash
-GEMINI_API_VERSION=v1beta
+NVIDIA_API_KEY=SUA_CHAVE_AQUI
+NVIDIA_NIM_MODEL=nvidia/nemotron-3.5-super-vl-120b-a12b
 ```
 
-O modo Gemini preenche arquivos `data/pdf/*-proposals.json` vazios, preserva propostas já existentes e depois consolida tudo em `data/radar-update-proposals.json`. Para forçar reprocessamento de propostas já preenchidas:
+`NVIDIA_NIM_MODEL` é opcional. O modo NIM preenche arquivos `data/pdf/*-proposals.json` vazios e consolida as propostas em `data/radar-update-proposals.json`. Use `--ai-overwrite` para reprocessar lotes já preenchidos. A opção preserva os lotes históricos.
 
 ```bash
-npm.cmd run radar:full:gemini -- --ai-overwrite
+npm.cmd run radar:full:nim -- --ai-overwrite
 ```
 
 Para limitar o número de briefs processados pela IA em um teste:
 
 ```bash
-npm.cmd run radar:full:gemini -- --ai-limit 2
+npm.cmd run radar:full:nim -- --ai-limit 2
 ```
 
 ```bash
@@ -176,7 +167,7 @@ Esse comando gera:
 
 1. Rode `npm.cmd run radar:update`.
 2. Abra `docs/radar-ai-update-brief.md`.
-3. Cole o briefing em uma IA, como Gemini Studio ou ChatGPT.
+3. Cole o briefing em uma ferramenta de IA.
 4. Peça para a IA retornar somente JSON válido no formato solicitado.
 5. Salve a resposta em `data/radar-update-proposals.json`.
 6. Abra `index.html`.
@@ -200,12 +191,12 @@ Observação: PDFs com texto embutido funcionam bem. PDFs escaneados ou baseados
 
 ## Fluxo de Upload de PDF na Interface
 
-1. Preencha `.env` com `GEMINI_API_KEY`.
+1. Preencha `.env` com `NVIDIA_API_KEY`.
 2. Rode `npm.cmd run radar:app`.
 3. Abra `http://localhost:4173`.
 4. Clique em **Analisar PDF**.
 5. Escolha um PDF.
-6. O servidor local salva o upload em `data/uploads/`, gera texto/sinais/brief em `data/pdf/` e `docs/`, chama Gemini e cria um `*-proposals.json`.
+6. O servidor local salva o upload em `data/uploads/`, gera texto, sinais e briefing em `data/pdf/` e `docs/`, chama o NVIDIA NIM e cria um `*-proposals.json`.
 7. O app pergunta se você quer aplicar as propostas ao radar local.
 8. Revise os blips no editor lateral antes de exportar o Markdown.
 
@@ -231,7 +222,7 @@ Esse HTML é autônomo: pode ser enviado por e-mail, Teams, Drive ou SharePoint 
 - `scripts/discover-sources.mjs`: coletor Playwright/fetch para encontrar, baixar e analisar PDFs nas fontes.
 - `scripts/run-radar-full.mjs`: orquestrador de descoberta, análise e consolidação em um único JSON importável.
 - `scripts/local-server.mjs`: servidor local para abrir o app e processar uploads de PDF.
-- `scripts/gemini-proposals.mjs`: geração de propostas com Gemini a partir dos briefs.
+- `scripts/nim-proposals.mjs` gera propostas com NVIDIA NIM a partir dos briefs.
 - `scripts/html-export.mjs`: gerador de snapshot HTML autônomo para envio mensal.
 - `exports/`: snapshots HTML mensais compartilháveis.
 - `scripts/update-radar.mjs`: coletor de sinais das fontes monitoradas.
