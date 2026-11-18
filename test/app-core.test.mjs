@@ -237,3 +237,169 @@ test("radar labels distinguish ES sequence numbers from other IDs", async () => 
   assert.equal(blipLabel("ES-07", 2), "7");
   assert.equal(blipLabel("12345678-abcd-4abc-8123-123456789abc", 6), "#7");
 });
+
+test("resolveApiBaseUrl uses configured URL, falls back to localhost:8787 locally, and rejects non-http URLs", async () => {
+  const { resolveApiBaseUrl } = await import("../app-core.mjs");
+
+  assert.equal(
+    resolveApiBaseUrl({ configuredBase: "https://radar-api.onrender.com/", location: { hostname: "joapaulorm700.github.io" } }),
+    "https://radar-api.onrender.com",
+  );
+  assert.equal(
+    resolveApiBaseUrl({ configuredBase: "", location: { hostname: "localhost" } }),
+    "http://localhost:8787",
+  );
+  assert.equal(
+    resolveApiBaseUrl({ configuredBase: "", location: { hostname: "127.0.0.1" } }),
+    "http://localhost:8787",
+  );
+  assert.equal(
+    resolveApiBaseUrl({ configuredBase: "", location: { hostname: "joapaulorm700.github.io" } }),
+    "",
+  );
+  assert.equal(
+    resolveApiBaseUrl({ configuredBase: "javascript:alert(1)", location: { hostname: "joapaulorm700.github.io" } }),
+    "",
+  );
+});
+
+test("hasDraftChanges detects modifications to blips or sources without false positives", async () => {
+  const radar = await loadCanonical();
+  const { hasDraftChanges } = await import("../app-core.mjs");
+  const clone = structuredClone(radar);
+
+  assert.equal(hasDraftChanges(radar, clone), false);
+  clone.blips[0].ring = "Adopt";
+  assert.equal(hasDraftChanges(radar, clone), true);
+  clone.blips[0].ring = radar.blips[0].ring;
+  assert.equal(hasDraftChanges(radar, clone), false);
+  clone.sources.push({ ...radar.sources[0], id: "SRC-99" });
+  assert.equal(hasDraftChanges(radar, clone), true);
+});
+
+test("buildProposalDiff computes field-level changes for add, update and move proposals", async () => {
+  const radar = await loadCanonical();
+  const { buildProposalDiff } = await import("../app-core.mjs");
+  const [first] = radar.blips;
+  const update = proposal("update", first.id, { ...desiredBlip(first), ring: "Adopt", name: "Coding Agents v2" });
+  const added = proposal("add", null, { ...desiredBlip(first), name: "Novo Blip" });
+
+  const updateDiff = buildProposalDiff(radar, update);
+  assert.equal(updateDiff.target?.id, first.id);
+  assert.deepEqual(updateDiff.changes.map((item) => item.field), ["name", "ring"]);
+  assert.deepEqual(updateDiff.changes[1], { field: "ring", before: first.ring, after: "Adopt" });
+
+  const addDiff = buildProposalDiff(radar, added);
+  assert.equal(addDiff.target, null);
+  assert.ok(addDiff.changes.some((item) => item.field === "name" && item.before === null && item.after === "Novo Blip"));
+});
+
+test("prepareProposalsForReview supports >5 legacy batches, flags invalid/delete items, and applySelectedProposals applies only chosen items", async () => {
+  const radar = await loadCanonical();
+  const { prepareProposalsForReview, applySelectedProposals } = await import("../app-core.mjs");
+  const [first, second] = radar.blips;
+  const raw = [
+    { action: "delete", targetId: first.id, reason: "Remover", confidence: 0.9, evidence: [], blip: desiredBlip(first) },
+    proposal("move", first.id, { ...desiredBlip(first), ring: "Adopt" }),
+    proposal("add", null, { ...desiredBlip(second), name: "Blip Selecionado" }),
+    { action: "update", id: "ES-999", changes: { ring: "Caution" } },
+    proposal("add", null, { ...desiredBlip(second), name: "Extra 1" }),
+    proposal("add", null, { ...desiredBlip(second), name: "Extra 2" }),
+    proposal("add", null, { ...desiredBlip(second), name: "Extra 3" }),
+  ];
+
+  const items = prepareProposalsForReview(radar, raw);
+  assert.equal(items.length, 7);
+  assert.equal(items[0].valid, false);
+  assert.equal(items[1].valid, true);
+  assert.equal(items[2].valid, true);
+  assert.equal(items[3].valid, false);
+  assert.equal(items[4].valid, true);
+
+  const before = structuredClone(radar);
+  const result = applySelectedProposals(radar, items, [1, 2], { createId: () => "ES-26" });
+  assert.equal(result.added, 1);
+  assert.equal(result.updated, 1);
+  assert.equal(result.draft.blips[0].ring, "Adopt");
+  assert.equal(result.draft.blips.at(-1).id, "ES-26");
+  assert.equal(result.draft.blips.at(-1).name, "Blip Selecionado");
+  assert.deepEqual(radar, before);
+
+  assert.throws(() => applySelectedProposals(radar, items, [1, 2, 4, 5, 6, 0]), /5/);
+});
+
+test("sanitizeHeaderFilename strips directories and non-ASCII characters safely", async () => {
+  const { sanitizeHeaderFilename } = await import("../app-core.mjs");
+
+  assert.equal(sanitizeHeaderFilename("C:\\docs\\Relatório Técnico 2026.pdf"), "Relatorio-Tecnico-2026.pdf");
+  assert.equal(sanitizeHeaderFilename(""), "document.pdf");
+});
+
+test("wakeBackend retries /healthz until ready or 90s timeout", async () => {
+  const { wakeBackend } = await import("../app-core.mjs");
+  let nowMs = 0;
+  let calls = 0;
+  const waits = [];
+  await wakeBackend({
+    apiBase: "https://api.example.test",
+    fetch: async (url) => {
+      assert.equal(url, "https://api.example.test/healthz");
+      calls++;
+      if (calls < 3) throw new Error("cold start");
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    },
+    sleep: async (ms) => { waits.push(ms); nowMs += ms; },
+    now: () => nowMs,
+  });
+  assert.equal(calls, 3);
+  assert.equal(waits.length, 2);
+
+  let expiredMs = 0;
+  await assert.rejects(
+    wakeBackend({
+      apiBase: "https://api.example.test",
+      timeoutMs: 90_000,
+      fetch: async () => new Response(null, { status: 503 }),
+      sleep: async (ms) => { expiredMs += ms; },
+      now: () => expiredMs,
+    }),
+    /90/,
+  );
+});
+
+test("pollAnalysisJob polls every 2s, reports progress, resolves on success and reports 404 restart", async () => {
+  const { pollAnalysisJob } = await import("../app-core.mjs");
+  const sleeps = [];
+  const updates = [];
+  const snapshots = [
+    { status: 200, body: { ok: true, job: { id: "j1", status: "running", progress: { stage: "ocr", processedPages: 1, totalPages: 2 } } } },
+    { status: 200, body: { ok: true, job: { id: "j1", status: "succeeded", progress: { stage: "succeeded", processedPages: 2, totalPages: 2 }, result: { proposals: [], totalPages: 2, ocrPages: 1 } } } },
+  ];
+  const job = await pollAnalysisJob({
+    apiBase: "https://api.example.test",
+    jobId: "j1",
+    token: "secret-token",
+    fetch: async (url, init) => {
+      assert.equal(url, "https://api.example.test/api/v1/analysis-jobs/j1");
+      assert.equal(init.headers.Authorization, "Bearer secret-token");
+      const next = snapshots.shift();
+      return Response.json(next.body, { status: next.status });
+    },
+    sleep: async (ms) => { sleeps.push(ms); },
+    onUpdate: (snapshot) => updates.push(snapshot.status),
+  });
+  assert.equal(job.status, "succeeded");
+  assert.deepEqual(sleeps, [2000]);
+  assert.deepEqual(updates, ["running", "succeeded"]);
+
+  await assert.rejects(
+    pollAnalysisJob({
+      apiBase: "https://api.example.test",
+      jobId: "lost",
+      token: "secret-token",
+      fetch: async () => Response.json({ ok: false, error: "not_found" }, { status: 404 }),
+      sleep: async () => {},
+    }),
+    { code: "job_lost" },
+  );
+});

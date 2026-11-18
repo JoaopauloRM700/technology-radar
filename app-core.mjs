@@ -237,6 +237,182 @@ export function blipLabel(id, index) {
   return String(blipSequenceNumber(id) ?? "#" + (index + 1));
 }
 
+export function resolveApiBaseUrl({ configuredBase = "", location } = {}) {
+  const trimmed = String(configuredBase || "").trim().replace(/\/+$/, "");
+  if (trimmed) {
+    return /^https?:\/\//i.test(trimmed) && URL.canParse(trimmed) ? trimmed : "";
+  }
+  const hostname = location?.hostname;
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return "http://localhost:8787";
+  }
+  return "";
+}
+
+export function hasDraftChanges(canonical, draft) {
+  return JSON.stringify({ blips: canonical.blips, sources: canonical.sources }) !==
+    JSON.stringify({ blips: draft.blips, sources: draft.sources });
+}
+
+const blipComparisonKeys = [
+  "name", "quadrant", "ring", "horizon", "maturity", "risk", "effort", "status",
+  "source", "theme", "detailsUrl", "strategic", "constraints",
+];
+
+export function buildProposalDiff(radar, proposal) {
+  const target = proposal.action === "add"
+    ? null
+    : (radar.blips.find((item) => item.id === proposal.targetId) ?? null);
+  const desired = proposal.blip || {};
+  const changes = [];
+  for (const field of blipComparisonKeys) {
+    const before = target ? (target[field] ?? "") : null;
+    const after = desired[field] ?? "";
+    if (before !== after) changes.push({ field, before, after });
+  }
+  return { target, changes };
+}
+
+export function prepareProposalsForReview(radar, rawProposals) {
+  if (!Array.isArray(rawProposals)) return [];
+  return rawProposals.map((raw, index) => {
+    try {
+      const normalized = toCoreProposal(radar, raw);
+      if (!proposalActions.includes(normalized.action)) {
+        throw new TypeError("Ação não permitida: " + String(normalized.action));
+      }
+      applyProposals(radar, [normalized], { createId: () => "preview-" + index });
+      const diff = buildProposalDiff(radar, normalized);
+      return { index, valid: true, error: null, proposal: normalized, diff };
+    } catch (error) {
+      return {
+        index,
+        valid: false,
+        error: error?.message || "Proposta inválida.",
+        proposal: raw,
+        diff: { target: null, changes: [] },
+      };
+    }
+  });
+}
+
+export function applySelectedProposals(radar, reviewItems, selectedIndices, options) {
+  const unique = [...new Set(selectedIndices)].sort((a, b) => a - b);
+  if (!unique.length) throw new TypeError("Selecione ao menos uma proposta.");
+  if (unique.length > MAX_PROPOSALS) {
+    throw new TypeError("Selecione no máximo " + MAX_PROPOSALS + " propostas por vez.");
+  }
+  const chosen = unique.map((index) => {
+    const item = reviewItems[index];
+    if (!item || !item.valid) throw new TypeError("Proposta selecionada inválida.");
+    return item.proposal;
+  });
+  return applyProposalBatch(radar, chosen, options);
+}
+
+export function sanitizeHeaderFilename(fileName = "document.pdf") {
+  const base = String(fileName || "document.pdf").split(/[\\/]/).pop() || "document.pdf";
+  const cleaned = base
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120);
+  return cleaned || "document.pdf";
+}
+
+function defaultSleep(ms, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(signal.reason || new Error("Operação cancelada."));
+      return;
+    }
+    const timer = globalThis.setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    function onAbort() {
+      globalThis.clearTimeout(timer);
+      reject(signal.reason || new Error("Operação cancelada."));
+    }
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+export async function wakeBackend({
+  apiBase,
+  fetch = globalThis.fetch,
+  sleep = defaultSleep,
+  now = () => Date.now(),
+  timeoutMs = 90_000,
+  intervalMs = 3000,
+  signal,
+  onRetry = () => {},
+}) {
+  const start = now();
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const response = await fetch(apiBase + "/healthz", { method: "GET", signal, cache: "no-store" });
+      if (response.ok) return true;
+    } catch (error) {
+      if (signal?.aborted) throw error;
+    }
+    const elapsed = now() - start;
+    if (elapsed >= timeoutMs) {
+      const err = new Error("O servidor de análise não respondeu em 90 segundos.");
+      err.code = "backend_unavailable";
+      throw err;
+    }
+    onRetry({ attempt: attempt + 1, elapsedMs: elapsed, timeoutMs });
+    await sleep(Math.min(intervalMs, timeoutMs - elapsed), signal);
+  }
+}
+
+export async function pollAnalysisJob({
+  apiBase,
+  jobId,
+  token,
+  fetch = globalThis.fetch,
+  sleep = defaultSleep,
+  intervalMs = 2000,
+  signal,
+  onUpdate = () => {},
+}) {
+  for (;;) {
+    const response = await fetch(apiBase + "/api/v1/analysis-jobs/" + encodeURIComponent(jobId), {
+      method: "GET",
+      headers: { Authorization: "Bearer " + token },
+      signal,
+      cache: "no-store",
+    });
+    if (response.status === 404) {
+      const err = new Error("A análise foi interrompida por reinício do servidor. Envie o PDF novamente; o radar não foi alterado.");
+      err.code = "job_lost";
+      throw err;
+    }
+    if (response.status === 401) {
+      const err = new Error("Sessão administrativa inválida ou expirada.");
+      err.code = "unauthorized";
+      throw err;
+    }
+    const payload = await response.json().catch(() => null);
+    if (!response.ok || !payload?.ok || !payload.job) {
+      const err = new Error("Não foi possível consultar o progresso da análise.");
+      err.code = payload?.error || "poll_failed";
+      throw err;
+    }
+    const { job } = payload;
+    onUpdate(job);
+    if (job.status === "succeeded") return job;
+    if (job.status === "failed") {
+      const err = new Error(job.error?.message || "A análise do PDF falhou.");
+      err.code = job.error?.code || "analysis_failed";
+      throw err;
+    }
+    await sleep(intervalMs, signal);
+  }
+}
+
 const quadrantColors = {
   "Técnicas": "#007f92",
   "Plataformas": "#c47a00",

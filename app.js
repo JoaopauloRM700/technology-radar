@@ -1,4 +1,17 @@
-import { applyProposalBatch, blipLabel, buildRadarHtmlSnapshot, nextBlipId, normalizeRadar } from "./app-core.mjs";
+import {
+  applySelectedProposals,
+  blipLabel,
+  buildRadarHtmlSnapshot,
+  hasDraftChanges,
+  MAX_PROPOSALS,
+  nextBlipId,
+  normalizeRadar,
+  pollAnalysisJob,
+  prepareProposalsForReview,
+  resolveApiBaseUrl,
+  sanitizeHeaderFilename,
+  wakeBackend,
+} from "./app-core.mjs";
 
 const DEFAULT_DETAIL_URLS = {
   "ES-01": "https://github.blog/ai-and-ml/github-copilot/whats-new-with-github-copilot-coding-agent/",
@@ -28,6 +41,36 @@ const DEFAULT_DETAIL_URLS = {
   "ES-25": "https://www.thoughtworks.com/radar",
 };
 
+const MAX_PDF_BYTES = 10 * 1024 * 1024;
+const FIELD_LABELS = {
+  name: "Nome",
+  quadrant: "Quadrante",
+  ring: "Anel",
+  horizon: "Horizonte",
+  maturity: "Maturidade",
+  risk: "Risco",
+  effort: "Esforço",
+  status: "Status",
+  source: "Fonte",
+  theme: "Tema",
+  detailsUrl: "Link",
+  strategic: "Justificativa",
+  constraints: "Gargalos",
+};
+const ACTION_LABELS = {
+  add: "Adicionar",
+  update: "Atualizar",
+  move: "Mover",
+};
+const STAGE_LABELS = {
+  queued: "Na fila para análise...",
+  preparing: "Preparando ambiente seguro...",
+  extracting: "Extraindo texto do PDF...",
+  ocr: "Executando OCR em páginas escaneadas...",
+  proposals: "Gerando propostas com NVIDIA NIM...",
+  succeeded: "Análise concluída.",
+};
+
 const quadrantColors = {
   "Técnicas": "#007f92",
   "Plataformas": "#c47a00",
@@ -38,6 +81,11 @@ const quadrantColors = {
 let canonicalState;
 let state;
 let selectedId = null;
+let adminMode = false;
+let adminToken = "";
+let pendingReviewItems = [];
+let activePdfAbort = null;
+let toastTimer = null;
 
 const elements = {
   sourceList: document.getElementById("sourceList"),
@@ -48,22 +96,69 @@ const elements = {
   blipForm: document.getElementById("blipForm"),
   detailCard: document.getElementById("detailCard"),
   selectedBlipLabel: document.getElementById("selectedBlipLabel"),
+  editorPanelTitle: document.getElementById("editorPanelTitle"),
+  radarViewHeading: document.getElementById("radarViewHeading"),
+  radarViewSubtitle: document.getElementById("radarViewSubtitle"),
   totalBlips: document.getElementById("totalBlips"),
   pilotCount: document.getElementById("pilotCount"),
+  radarUpdatedAt: document.getElementById("radarUpdatedAt"),
   radarRevision: document.getElementById("radarRevision"),
+  historyLink: document.getElementById("historyLink"),
   markdownOutput: document.getElementById("markdownOutput"),
   toast: document.getElementById("toast"),
   ringFilter: document.getElementById("ringFilter"),
   proposalFileInput: document.getElementById("proposalFileInput"),
-  pdfFileInput: document.getElementById("pdfFileInput"),
+  draftIndicator: document.getElementById("draftIndicator"),
+  publishBanner: document.getElementById("publishBanner"),
+  adminModeButton: document.getElementById("adminModeButton"),
+  resetDataButton: document.getElementById("resetDataButton"),
+  saveVersionButton: document.getElementById("saveVersionButton"),
   analyzePdfButton: document.getElementById("analyzePdfButton"),
+  adminDialog: document.getElementById("adminDialog"),
+  adminLoginForm: document.getElementById("adminLoginForm"),
+  adminTokenInput: document.getElementById("adminTokenInput"),
+  adminDialogStatus: document.getElementById("adminDialogStatus"),
+  adminSubmitButton: document.getElementById("adminSubmitButton"),
+  saveDialog: document.getElementById("saveDialog"),
+  saveVersionForm: document.getElementById("saveVersionForm"),
+  changeNoteInput: document.getElementById("changeNoteInput"),
+  saveDialogStatus: document.getElementById("saveDialogStatus"),
+  saveConflictBox: document.getElementById("saveConflictBox"),
+  saveConflictMessage: document.getElementById("saveConflictMessage"),
+  saveSuccessBox: document.getElementById("saveSuccessBox"),
+  saveSuccessMessage: document.getElementById("saveSuccessMessage"),
+  saveConfirmButton: document.getElementById("saveConfirmButton"),
+  downloadDraftButton: document.getElementById("downloadDraftButton"),
+  reloadCanonicalButton: document.getElementById("reloadCanonicalButton"),
+  pdfDialog: document.getElementById("pdfDialog"),
+  pdfAnalyzeForm: document.getElementById("pdfAnalyzeForm"),
+  pdfFileInput: document.getElementById("pdfFileInput"),
+  publicPdfCheckbox: document.getElementById("publicPdfCheckbox"),
+  pdfDialogStatus: document.getElementById("pdfDialogStatus"),
+  pdfStartButton: document.getElementById("pdfStartButton"),
+  pdfCancelButton: document.getElementById("pdfCancelButton"),
+  reviewDialog: document.getElementById("reviewDialog"),
+  reviewSummary: document.getElementById("reviewSummary"),
+  reviewSelectionCount: document.getElementById("reviewSelectionCount"),
+  reviewList: document.getElementById("reviewList"),
+  reviewDialogStatus: document.getElementById("reviewDialogStatus"),
+  applyProposalsButton: document.getElementById("applyProposalsButton"),
 };
+
+const apiBase = resolveApiBaseUrl({
+  configuredBase:
+    globalThis.RADAR_API_BASE ||
+    document.querySelector('meta[name="radar-api-base"]')?.content ||
+    "",
+  location: window.location,
+});
+
+const historyUrl = document.querySelector('meta[name="radar-history-url"]')?.content;
+if (historyUrl && elements.historyLink) elements.historyLink.href = historyUrl;
 
 try {
   canonicalState = await loadState();
   state = structuredClone(canonicalState);
-  elements.radarRevision.title = state.revision;
-  elements.radarRevision.textContent = state.revision.split("-")[0];
   renderAll();
   bindEvents();
 } catch (error) {
@@ -72,7 +167,7 @@ try {
 }
 
 async function loadState() {
-  const response = await fetch("./data/radar.json");
+  const response = await fetch("./data/radar.json", { cache: "no-store" });
   if (!response.ok) throw new Error("HTTP " + response.status);
   return normalizeRadar(await response.json());
 }
@@ -82,31 +177,565 @@ function bindEvents() {
     button.addEventListener("click", () => switchView(button.dataset.view));
   });
 
+  document.querySelectorAll("[data-close-dialog]").forEach((button) => {
+    button.addEventListener("click", () => {
+      document.getElementById(button.dataset.closeDialog)?.close();
+    });
+  });
+
+  elements.adminModeButton.addEventListener("click", handleAdminModeButton);
+  elements.adminLoginForm.addEventListener("submit", handleAdminLogin);
+
   document.getElementById("addBlipButton").addEventListener("click", addBlip);
   document.getElementById("deleteBlipButton").addEventListener("click", deleteSelectedBlip);
-  document.getElementById("resetDataButton").addEventListener("click", resetData);
+  elements.resetDataButton.addEventListener("click", discardDraft);
+  elements.saveVersionButton.addEventListener("click", openSaveDialog);
+  elements.saveVersionForm.addEventListener("submit", handleSaveVersion);
+  elements.downloadDraftButton.addEventListener("click", downloadDraftJson);
+  elements.reloadCanonicalButton.addEventListener("click", reloadCanonicalVersion);
+
   document
     .getElementById("importProposalsButton")
-    .addEventListener("click", () => elements.proposalFileInput.click());
+    .addEventListener("click", () => {
+      if (!adminMode) return;
+      elements.proposalFileInput.click();
+    });
   elements.proposalFileInput.addEventListener("change", importProposalFile);
-  elements.analyzePdfButton.addEventListener("click", () => elements.pdfFileInput.click());
-  elements.pdfFileInput.addEventListener("change", analyzePdfFile);
+
+  elements.analyzePdfButton.addEventListener("click", openPdfDialog);
+  elements.pdfAnalyzeForm.addEventListener("submit", handlePdfAnalyzeSubmit);
+  elements.pdfCancelButton.addEventListener("click", cancelPdfDialog);
+  elements.pdfDialog.addEventListener("cancel", () => {
+    activePdfAbort?.abort();
+  });
+
+  elements.applyProposalsButton.addEventListener("click", applySelectedReviewProposals);
+
   document.getElementById("exportButton").addEventListener("click", () => {
     switchView("export");
     copyMarkdown();
   });
   document.getElementById("downloadMarkdownButton").addEventListener("click", downloadMarkdown);
-  document.getElementById("downloadHtmlButton").addEventListener("click", downloadHtmlSnapshot);
-  document.getElementById("saveHtmlButton").addEventListener("click", saveHtmlSnapshot);
+  document.getElementById("saveHtmlButton").addEventListener("click", downloadHtmlSnapshot);
   document.getElementById("addSourceButton").addEventListener("click", addSource);
   elements.ringFilter.addEventListener("change", renderRadar);
 
   elements.blipForm.addEventListener("input", (event) => {
+    if (!adminMode) return;
     const blip = selectedBlip();
-    if (!blip) return;
+    if (!blip || !event.target.name) return;
     blip[event.target.name] = event.target.value;
     renderAll({ keepForm: true });
   });
+}
+
+function setAdminSession(active, token = "") {
+  adminMode = active;
+  adminToken = active ? token : "";
+  syncAdminUi();
+  renderAll();
+}
+
+function syncAdminUi() {
+  document.querySelectorAll("[data-admin-only]").forEach((node) => {
+    node.classList.toggle("hidden", !adminMode);
+  });
+  elements.adminModeButton.querySelector("span").textContent = adminMode
+    ? "Sair do admin"
+    : "Modo administrador";
+  elements.editorPanelTitle.textContent = adminMode ? "Editor de Blip" : "Detalhes do Blip";
+  elements.radarViewHeading.textContent = adminMode ? "Radar Editável" : "Radar Tecnológico";
+  elements.radarViewSubtitle.textContent = adminMode
+    ? "Edite blips ou analise PDFs públicos. Alterações ficam em rascunho até Salvar versão."
+    : "Clique em um blip para consultar detalhes estratégicos e recomendações.";
+  syncDraftUi();
+}
+
+function syncDraftUi() {
+  const dirty = adminMode && hasDraftChanges(canonicalState, state);
+  elements.draftIndicator.classList.toggle("hidden", !dirty);
+  elements.resetDataButton.disabled = !dirty;
+  elements.saveVersionButton.disabled = !dirty;
+}
+
+function handleAdminModeButton() {
+  if (adminMode) {
+    if (hasDraftChanges(canonicalState, state)) {
+      const confirmed = window.confirm(
+        "Sair do modo administrador e descartar as alterações não publicadas do rascunho?",
+      );
+      if (!confirmed) return;
+      state = structuredClone(canonicalState);
+    }
+    setAdminSession(false, "");
+    showToast("Modo somente leitura restaurado.");
+    return;
+  }
+
+  elements.adminTokenInput.value = "";
+  setStatus(elements.adminDialogStatus, "");
+  if (!apiBase) {
+    setStatus(
+      elements.adminDialogStatus,
+      "URL da API não configurada. Defina a meta tag radar-api-base em index.html.",
+      true,
+    );
+  }
+  elements.adminDialog.showModal();
+  elements.adminTokenInput.focus();
+}
+
+async function handleAdminLogin(event) {
+  event.preventDefault();
+  if (!apiBase) {
+    setStatus(
+      elements.adminDialogStatus,
+      "Configure a meta tag radar-api-base em index.html com a URL pública da API.",
+      true,
+    );
+    return;
+  }
+
+  const token = elements.adminTokenInput.value.trim();
+  if ([...token].length < 32) {
+    setStatus(elements.adminDialogStatus, "O token administrativo deve ter ao menos 32 caracteres.", true);
+    return;
+  }
+
+  elements.adminSubmitButton.disabled = true;
+  setStatus(elements.adminDialogStatus, "Conectando à API administrativa...");
+  try {
+    await wakeBackend({
+      apiBase,
+      onRetry: ({ elapsedMs }) => {
+        const seconds = Math.max(1, Math.round(elapsedMs / 1000));
+        setStatus(
+          elements.adminDialogStatus,
+          `Acordando servidor Render (${seconds}s / 90s)...`,
+        );
+      },
+    });
+    const response = await fetch(apiBase + "/api/v1/admin/verify", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+      cache: "no-store",
+    });
+    if (response.status === 401) {
+      setStatus(elements.adminDialogStatus, "Token administrativo inválido.", true);
+      return;
+    }
+    if (!response.ok) {
+      setStatus(elements.adminDialogStatus, "Não foi possível validar o acesso agora.", true);
+      return;
+    }
+    elements.adminTokenInput.value = "";
+    elements.adminDialog.close();
+    setAdminSession(true, token);
+    showToast("Modo administrador ativado.");
+  } catch (error) {
+    setStatus(
+      elements.adminDialogStatus,
+      error?.message || "Falha de comunicação com o servidor administrativo.",
+      true,
+    );
+  } finally {
+    elements.adminSubmitButton.disabled = false;
+  }
+}
+
+function openSaveDialog() {
+  if (!adminMode) return;
+  elements.changeNoteInput.value = "";
+  setStatus(elements.saveDialogStatus, "");
+  elements.saveConflictBox.classList.add("hidden");
+  elements.saveSuccessBox.classList.add("hidden");
+  elements.saveConfirmButton.disabled = false;
+  elements.saveDialog.showModal();
+  elements.changeNoteInput.focus();
+}
+
+async function handleSaveVersion(event) {
+  event.preventDefault();
+  if (!adminMode) return;
+  const changeNote = elements.changeNoteInput.value.trim();
+  if (!changeNote) {
+    setStatus(elements.saveDialogStatus, "Informe uma descrição para a versão.", true);
+    return;
+  }
+
+  elements.saveConfirmButton.disabled = true;
+  elements.saveConflictBox.classList.add("hidden");
+  elements.saveSuccessBox.classList.add("hidden");
+  setStatus(elements.saveDialogStatus, "Validando conexão com o servidor...");
+
+  try {
+    await wakeBackend({
+      apiBase,
+      onRetry: ({ elapsedMs }) => {
+        const seconds = Math.max(1, Math.round(elapsedMs / 1000));
+        setStatus(elements.saveDialogStatus, `Acordando servidor Render (${seconds}s / 90s)...`);
+      },
+    });
+    setStatus(elements.saveDialogStatus, "Criando commit versionado no GitHub...");
+    const response = await fetch(apiBase + "/api/v1/radar", {
+      method: "PUT",
+      headers: {
+        Authorization: "Bearer " + adminToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        baseRevision: canonicalState.revision,
+        changeNote,
+        radar: { blips: state.blips, sources: state.sources },
+      }),
+    });
+    const payload = await response.json().catch(() => null);
+
+    if (response.status === 409) {
+      const currentRev = payload?.currentRevision
+        ? ` (${String(payload.currentRevision).slice(0, 8)})`
+        : "";
+      elements.saveConflictMessage.textContent =
+        `Outra versão já foi publicada no GitHub${currentRev}. Seu rascunho foi preservado nesta aba. Baixe-o como JSON antes de recarregar a versão oficial.`;
+      elements.saveConflictBox.classList.remove("hidden");
+      setStatus(elements.saveDialogStatus, "");
+      return;
+    }
+
+    if (response.status === 401) {
+      setAdminSession(false, "");
+      setStatus(
+        elements.saveDialogStatus,
+        "Sessão administrativa expirada. Seu rascunho continua em memória; entre novamente para salvar.",
+        true,
+      );
+      return;
+    }
+
+    if (!response.ok || !payload?.ok) {
+      const reason = payload?.error === "invalid_payload"
+        ? "Verifique se todos os campos obrigatórios e URLs HTTP/HTTPS estão preenchidos."
+        : "Não foi possível publicar a versão no GitHub.";
+      setStatus(elements.saveDialogStatus, reason, true);
+      return;
+    }
+
+    canonicalState = normalizeRadar(payload.radar);
+    state = structuredClone(canonicalState);
+    renderAll();
+
+    const shortSha = String(payload.commit?.sha || "").slice(0, 7);
+    const safeCommitUrl =
+      typeof payload.commit?.url === "string" && /^https?:\/\//i.test(payload.commit.url)
+        ? payload.commit.url
+        : "";
+    const commitLinkHtml = safeCommitUrl
+      ? `<a href="${escapeHtml(safeCommitUrl)}" target="_blank" rel="noreferrer">commit ${escapeHtml(shortSha || "criado")}</a>`
+      : `commit ${escapeHtml(shortSha || "criado")}`;
+    const noteHtml = `Versão salva (${commitLinkHtml}). O GitHub Pages pode levar alguns minutos para atualizar a página pública.`;
+    elements.saveSuccessMessage.innerHTML = noteHtml;
+    elements.saveSuccessBox.classList.remove("hidden");
+    elements.publishBanner.innerHTML = `<span>${noteHtml}</span>`;
+    elements.publishBanner.classList.remove("hidden");
+    setStatus(elements.saveDialogStatus, "");
+    showToast("Versão publicada no GitHub.");
+  } catch (error) {
+    setStatus(
+      elements.saveDialogStatus,
+      error?.message || "Erro ao comunicar com o servidor de publicação.",
+      true,
+    );
+  } finally {
+    elements.saveConfirmButton.disabled = false;
+  }
+}
+
+function downloadDraftJson() {
+  const payload = {
+    ...state,
+    exportedDraftAt: new Date().toISOString(),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `radar-rascunho-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+  showToast("Rascunho baixado em JSON.");
+}
+
+async function reloadCanonicalVersion() {
+  try {
+    canonicalState = await loadState();
+    state = structuredClone(canonicalState);
+    selectedId = state.blips[0]?.id ?? null;
+    elements.saveDialog.close();
+    renderAll();
+    showToast("Última versão oficial recarregada.");
+  } catch (error) {
+    setStatus(elements.saveDialogStatus, "Falha ao recarregar: " + error.message, true);
+  }
+}
+
+function openPdfDialog() {
+  if (!adminMode) return;
+  elements.pdfAnalyzeForm.reset();
+  setStatus(elements.pdfDialogStatus, "");
+  elements.pdfStartButton.disabled = false;
+  elements.pdfDialog.showModal();
+}
+
+function cancelPdfDialog() {
+  activePdfAbort?.abort();
+  elements.pdfDialog.close();
+}
+
+async function handlePdfAnalyzeSubmit(event) {
+  event.preventDefault();
+  if (!adminMode) return;
+  const [file] = elements.pdfFileInput.files;
+  if (!file) {
+    setStatus(elements.pdfDialogStatus, "Selecione um arquivo PDF público.", true);
+    return;
+  }
+  if (!elements.publicPdfCheckbox.checked) {
+    setStatus(elements.pdfDialogStatus, "Confirme que o PDF é um documento público.", true);
+    return;
+  }
+  if (file.size > MAX_PDF_BYTES) {
+    setStatus(elements.pdfDialogStatus, "O PDF excede o limite de 10 MiB.", true);
+    return;
+  }
+
+  const header = new Uint8Array(await file.slice(0, 5).arrayBuffer());
+  const signature = String.fromCharCode(...header);
+  if (signature !== "%PDF-") {
+    setStatus(elements.pdfDialogStatus, "O arquivo selecionado não possui assinatura %PDF- válida.", true);
+    return;
+  }
+
+  const abortController = new AbortController();
+  activePdfAbort = abortController;
+  elements.pdfStartButton.disabled = true;
+  elements.analyzePdfButton.disabled = true;
+  elements.analyzePdfButton.classList.add("loading");
+  setStatus(elements.pdfDialogStatus, "Verificando disponibilidade do servidor...");
+
+  try {
+    await wakeBackend({
+      apiBase,
+      signal: abortController.signal,
+      onRetry: ({ elapsedMs }) => {
+        const seconds = Math.max(1, Math.round(elapsedMs / 1000));
+        setStatus(
+          elements.pdfDialogStatus,
+          `Acordando servidor Render (${seconds}s / 90s)...`,
+        );
+      },
+    });
+
+    setStatus(elements.pdfDialogStatus, "Enviando PDF para análise temporária...");
+    const uploadResponse = await fetch(apiBase + "/api/v1/analysis-jobs", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + adminToken,
+        "Content-Type": "application/pdf",
+        "X-File-Name": sanitizeHeaderFilename(file.name),
+      },
+      body: file,
+      signal: abortController.signal,
+    });
+    const uploadPayload = await uploadResponse.json().catch(() => null);
+
+    if (uploadResponse.status === 401) {
+      setAdminSession(false, "");
+      throw new Error("Sessão administrativa expirada. Entre novamente no modo administrador.");
+    }
+    if (uploadResponse.status === 429) {
+      throw new Error(
+        uploadPayload?.error === "daily_limit"
+          ? "Limite diário de 10 análises atingido. Tente novamente após 00:00 UTC."
+          : "Já existe uma análise em andamento. Aguarde a conclusão antes de enviar outro PDF.",
+      );
+    }
+    if (!uploadResponse.ok || !uploadPayload?.ok || !uploadPayload.job?.id) {
+      throw new Error(mapUploadError(uploadResponse.status, uploadPayload?.error));
+    }
+
+    const job = await pollAnalysisJob({
+      apiBase,
+      jobId: uploadPayload.job.id,
+      token: adminToken,
+      signal: abortController.signal,
+      onUpdate: (snapshot) => {
+        const stageText = STAGE_LABELS[snapshot.progress?.stage] || "Analisando PDF...";
+        const total = snapshot.progress?.totalPages || 0;
+        const done = snapshot.progress?.processedPages || 0;
+        const suffix = total > 0 ? ` (${done}/${total} páginas)` : "";
+        setStatus(elements.pdfDialogStatus, stageText + suffix);
+      },
+    });
+
+    elements.pdfDialog.close();
+    const proposals = job.result?.proposals ?? [];
+    if (!proposals.length) {
+      showToast("PDF analisado sem propostas de alteração aplicáveis.");
+      return;
+    }
+    openReviewDialog(
+      proposals,
+      `Análise concluída (${job.result.totalPages} páginas, ${job.result.ocrPages} com OCR). Selecione até ${MAX_PROPOSALS} propostas para aplicar ao rascunho.`,
+    );
+  } catch (error) {
+    if (abortController.signal.aborted) {
+      setStatus(elements.pdfDialogStatus, "Análise cancelada.");
+      return;
+    }
+    if (error?.code === "unauthorized") setAdminSession(false, "");
+    setStatus(elements.pdfDialogStatus, error?.message || "Não foi possível concluir a análise do PDF.", true);
+  } finally {
+    activePdfAbort = null;
+    elements.pdfStartButton.disabled = false;
+    elements.analyzePdfButton.disabled = false;
+    elements.analyzePdfButton.classList.remove("loading");
+  }
+}
+
+function mapUploadError(status, code) {
+  if (status === 413 || code === "pdf_too_large") return "O PDF excede o limite de 10 MiB.";
+  if (status === 415 || code === "unsupported_media_type") return "Envie um arquivo com tipo application/pdf.";
+  if (status === 400 || code === "invalid_pdf") return "O conteúdo do PDF é inválido.";
+  return "Não foi possível iniciar a análise do PDF.";
+}
+
+async function importProposalFile(event) {
+  const [file] = event.target.files;
+  event.target.value = "";
+  if (!file || !adminMode) return;
+
+  try {
+    const payload = JSON.parse(await file.text());
+    const proposals = Array.isArray(payload.proposals) ? payload.proposals : [];
+    if (!proposals.length) {
+      showToast("Arquivo sem propostas aplicáveis.");
+      return;
+    }
+    openReviewDialog(
+      proposals,
+      `${proposals.length} proposta(s) carregadas do arquivo. Todas começam desmarcadas; selecione até ${MAX_PROPOSALS} para aplicar ao rascunho.`,
+    );
+  } catch (error) {
+    showToast("Não foi possível importar o JSON de propostas.");
+    console.error(error);
+  }
+}
+
+function openReviewDialog(rawProposals, summaryText) {
+  pendingReviewItems = prepareProposalsForReview(state, rawProposals);
+  elements.reviewSummary.textContent = summaryText;
+  setStatus(elements.reviewDialogStatus, "");
+  elements.reviewList.innerHTML = "";
+
+  pendingReviewItems.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "proposal-card" + (item.valid ? "" : " invalid");
+    const proposal = item.proposal || {};
+    const action = String(proposal.action || "inválida");
+    const actionLabel = ACTION_LABELS[action] || action;
+    const confidence = Number.isFinite(proposal.confidence)
+      ? Math.round(proposal.confidence * 100) + "%"
+      : "—";
+    const title = item.valid
+      ? `${proposal.targetId ? proposal.targetId + " — " : ""}${proposal.blip.name}`
+      : `Proposta #${item.index + 1} (${actionLabel})`;
+
+    const evidenceHtml = Array.isArray(proposal.evidence) && proposal.evidence.length
+      ? `<ul class="proposal-evidence">${proposal.evidence
+          .map((ev) => `<li><strong>Pág. ${escapeHtml(ev.page)}:</strong> ${escapeHtml(ev.note)}</li>`)
+          .join("")}</ul>`
+      : "";
+
+    const diffHtml = item.valid && item.diff.changes.length
+      ? `<div class="proposal-diff">${item.diff.changes
+          .map(
+            (change) => `<div class="diff-row">
+              <span class="diff-field">${escapeHtml(FIELD_LABELS[change.field] || change.field)}</span>
+              <span>
+                ${change.before !== null ? `<span class="diff-before">${escapeHtml(change.before || "—")}</span>` : ""}
+                <span class="diff-after">${escapeHtml(change.after || "—")}</span>
+              </span>
+            </div>`,
+          )
+          .join("")}</div>`
+      : "";
+
+    card.innerHTML = `
+      <div class="proposal-card-header">
+        <input
+          type="checkbox"
+          data-proposal-index="${item.index}"
+          aria-label="Selecionar proposta: ${escapeHtml(title)}"
+          ${item.valid ? "" : "disabled"}
+        />
+        <div>
+          <div class="proposal-badges">
+            <span class="proposal-action ${escapeHtml(action)}">${escapeHtml(actionLabel)}</span>
+            <strong>${escapeHtml(title)}</strong>
+            <span class="tag">Confiança ${escapeHtml(confidence)}</span>
+          </div>
+          ${proposal.reason ? `<p class="proposal-reason">${escapeHtml(proposal.reason)}</p>` : ""}
+        </div>
+      </div>
+      ${item.valid ? "" : `<p class="proposal-error">${escapeHtml(item.error)}</p>`}
+      ${evidenceHtml}
+      ${diffHtml}
+    `;
+
+    const checkbox = card.querySelector('input[type="checkbox"]');
+    checkbox.addEventListener("change", updateReviewSelection);
+    elements.reviewList.appendChild(card);
+  });
+
+  updateReviewSelection();
+  elements.reviewDialog.showModal();
+}
+
+function selectedReviewIndices() {
+  return [...elements.reviewList.querySelectorAll('input[type="checkbox"]:checked')].map((input) =>
+    Number(input.dataset.proposalIndex),
+  );
+}
+
+function updateReviewSelection() {
+  const chosen = selectedReviewIndices();
+  elements.reviewSelectionCount.textContent = `${chosen.length} / ${MAX_PROPOSALS} selecionadas`;
+  const overLimit = chosen.length > MAX_PROPOSALS;
+  elements.applyProposalsButton.disabled = chosen.length === 0 || overLimit;
+  setStatus(
+    elements.reviewDialogStatus,
+    overLimit ? `Selecione no máximo ${MAX_PROPOSALS} propostas por aplicação.` : "",
+    overLimit,
+  );
+}
+
+function applySelectedReviewProposals() {
+  if (!adminMode) return;
+  const indices = selectedReviewIndices();
+  try {
+    let nextSequence = BigInt(nextBlipId(state.blips).slice(3));
+    const result = applySelectedProposals(state, pendingReviewItems, indices, {
+      createId: () => "ES-" + String(nextSequence++).padStart(2, "0"),
+    });
+    state = result.draft;
+    selectedId = result.selectedId ?? selectedId;
+    elements.reviewDialog.close();
+    renderAll();
+    showToast(
+      `${result.added} adicionada(s), ${result.updated} atualizada(s) no rascunho. Clique em Salvar versão para publicar.`,
+    );
+  } catch (error) {
+    setStatus(elements.reviewDialogStatus, error?.message || "Não foi possível aplicar as propostas.", true);
+  }
 }
 
 function switchView(view) {
@@ -127,12 +756,17 @@ function renderAll(options = {}) {
   elements.pilotCount.textContent = state.blips.filter((item) =>
     item.status.includes("Piloto"),
   ).length;
+  elements.radarRevision.title = canonicalState.revision;
+  elements.radarRevision.textContent = canonicalState.revision.split("-")[0];
+  elements.radarUpdatedAt.textContent = formatShortDate(canonicalState.updatedAt);
   renderSources();
   renderRadar();
   renderMatrix();
   renderPilots();
   if (!options.keepForm) renderForm();
+  else renderDetailCard(selectedBlip());
   updateMarkdown();
+  syncDraftUi();
 }
 
 function renderSources() {
@@ -147,7 +781,7 @@ function renderSources() {
         <a href="${escapeHtml(source.url)}" target="_blank" rel="noreferrer">${escapeHtml(cleanUrl(source.url))}</a>
       </div>
       <div class="source-meta">
-        <span class="strength-${source.strength.toLowerCase()}">${source.strength}</span>
+        <span class="strength-${source.strength.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")}">${escapeHtml(source.strength)}</span>
         <span>${escapeHtml(source.cadence)}</span>
       </div>
     `;
@@ -161,7 +795,7 @@ function renderSources() {
     detail.innerHTML = `
       <h3>${escapeHtml(source.name)}</h3>
       <p><a href="${escapeHtml(source.url)}" target="_blank" rel="noreferrer">${escapeHtml(cleanUrl(source.url))}</a></p>
-      <p><strong>Força:</strong> ${source.strength} | <strong>Cadência:</strong> ${escapeHtml(source.cadence)}</p>
+      <p><strong>Força:</strong> ${escapeHtml(source.strength)} | <strong>Cadência:</strong> ${escapeHtml(source.cadence)}</p>
       <ul>
         <li>${escapeHtml(source.signal)}</li>
         <li>${escapeHtml(source.agentUse)}</li>
@@ -213,11 +847,14 @@ function renderRadar() {
     group.innerHTML = `
       <circle cx="${x}" cy="${y}" r="14" fill="${quadrantColors[blip.quadrant]}" stroke="#ffffff" stroke-width="2" filter="url(#blipShadow)"></circle>
       <text x="${x}" y="${y}">${blipLabel(blip.id, index)}</text>
-      <title>${escapeHtml(blip.name)} | ${blip.quadrant} | ${blip.ring}</title>
+      <title>${escapeHtml(blip.name)} | ${escapeHtml(blip.quadrant)} | ${escapeHtml(blip.ring)}</title>
     `;
     group.addEventListener("click", () => selectBlip(blip.id));
     group.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") selectBlip(blip.id);
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        selectBlip(blip.id);
+      }
     });
     svg.appendChild(group);
   });
@@ -231,16 +868,23 @@ function renderMatrix() {
     .forEach((blip) => {
       const row = document.createElement("tr");
       row.classList.toggle("selected", blip.id === selectedId);
+      row.tabIndex = 0;
       row.innerHTML = `
         <td><strong>${escapeHtml(blip.id)}</strong> ${escapeHtml(blip.name)}</td>
-        <td>${blip.quadrant}</td>
-        <td><span class="tag ring-${blip.ring.toLowerCase()}">${blip.ring}</span></td>
-        <td>${blip.horizon}</td>
-        <td>${blip.maturity}</td>
-        <td>${blip.risk}</td>
-        <td>${blip.effort}</td>
+        <td>${escapeHtml(blip.quadrant)}</td>
+        <td><span class="tag ring-${escapeHtml(blip.ring.toLowerCase())}">${escapeHtml(blip.ring)}</span></td>
+        <td>${escapeHtml(blip.horizon)}</td>
+        <td>${escapeHtml(blip.maturity)}</td>
+        <td>${escapeHtml(blip.risk)}</td>
+        <td>${escapeHtml(blip.effort)}</td>
       `;
       row.addEventListener("click", () => selectBlip(blip.id));
+      row.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          selectBlip(blip.id);
+        }
+      });
       elements.matrixBody.appendChild(row);
     });
 }
@@ -261,7 +905,7 @@ function renderPilots() {
 function renderForm() {
   const blip = selectedBlip();
   elements.blipForm.querySelectorAll("input, select, textarea").forEach((field) => {
-    field.disabled = !blip;
+    field.disabled = !adminMode || !blip;
     field.value = field.name === "detailsUrl" && blip ? getDetailsUrl(blip) : (blip?.[field.name] ?? "");
   });
   elements.selectedBlipLabel.textContent = blip
@@ -279,11 +923,16 @@ function renderDetailCard(blip) {
   elements.detailCard.innerHTML = `
     <div class="detail-kicker">${escapeHtml(blip.quadrant)} | ${escapeHtml(blip.ring)}</div>
     <h3>${escapeHtml(blip.name)}</h3>
+    <span class="detail-section-label">Justificativa estratégica</span>
     <p>${escapeHtml(blip.strategic)}</p>
+    <span class="detail-section-label">Gargalos e contraindicações</span>
+    <p>${escapeHtml(blip.constraints)}</p>
     <div class="detail-meta">
       <span>${escapeHtml(blip.horizon)} prazo</span>
       <span>${escapeHtml(blip.maturity)}</span>
       <span>Risco ${escapeHtml(blip.risk)}</span>
+      <span>Esforço ${escapeHtml(blip.effort)}</span>
+      <span>${escapeHtml(blip.status)}</span>
     </div>
     <a class="detail-link" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
       Ver detalhes
@@ -302,6 +951,7 @@ function selectedBlip() {
 }
 
 function addBlip() {
+  if (!adminMode) return;
   const id = nextBlipId(state.blips);
   state.blips.push({
     id,
@@ -321,27 +971,32 @@ function addBlip() {
   });
   selectedId = id;
   renderAll();
-  showToast("Blip adicionado.");
+  showToast("Blip adicionado ao rascunho.");
 }
 
 function deleteSelectedBlip() {
+  if (!adminMode) return;
   const blip = selectedBlip();
   if (!blip) return;
-  const confirmed = window.confirm(`Excluir ${blip.id} - ${blip.name}?`);
+  const confirmed = window.confirm(`Excluir ${blip.id} - ${blip.name} do rascunho?`);
   if (!confirmed) return;
   state.blips = state.blips.filter((item) => item.id !== selectedId);
   selectedId = state.blips[0]?.id ?? null;
   renderAll();
-  showToast("Blip excluído.");
+  showToast("Blip excluído do rascunho.");
 }
 
 function addSource() {
-  const name = window.prompt("Nome da fonte monitorada");
+  if (!adminMode) return;
+  const name = window.prompt("Nome da fonte monitorada")?.trim();
   if (!name) return;
-  const url = window.prompt("URL da fonte");
-  if (!url) return;
+  const url = window.prompt("URL HTTP/HTTPS da fonte")?.trim();
+  if (!url || !/^https?:\/\//i.test(url)) {
+    showToast("Informe uma URL HTTP ou HTTPS válida.");
+    return;
+  }
   const nextNumber =
-    Math.max(0, ...state.sources.map((item) => Number(item.id.replace("SRC-", "")))) + 1;
+    Math.max(0, ...state.sources.map((item) => Number(item.id.replace("SRC-", "")) || 0)) + 1;
   state.sources.push({
     id: `SRC-${String(nextNumber).padStart(2, "0")}`,
     name,
@@ -358,98 +1013,19 @@ function addSource() {
     agentUse: "Coletar sinais e aguardar classificação editorial.",
   });
   renderAll();
-  showToast("Fonte adicionada.");
+  showToast("Fonte adicionada ao rascunho.");
 }
 
-async function importProposalFile(event) {
-  const [file] = event.target.files;
-  event.target.value = "";
-  if (!file) return;
-
-  try {
-    const payload = JSON.parse(await file.text());
-    const proposals = Array.isArray(payload.proposals) ? payload.proposals : [];
-    if (!proposals.length) {
-      showToast("Arquivo sem propostas aplicáveis.");
-      return;
-    }
-    const confirmed = window.confirm(`Aplicar ${proposals.length} proposta(s) ao radar local?`);
-    if (!confirmed) return;
-    const result = applyProposalChanges(proposals);
-    renderAll();
-    showToast(`${result.added} adicionadas, ${result.updated} atualizadas.`);
-  } catch (error) {
-    showToast("Não foi possível importar o JSON de propostas.");
-    console.error(error);
-  }
-}
-
-async function analyzePdfFile(event) {
-  const [file] = event.target.files;
-  event.target.value = "";
-  if (!file) return;
-
-  if (window.location.protocol === "file:") {
-    showToast("Abra com npm.cmd run radar:app para analisar PDFs pela interface.");
-    return;
-  }
-
-  elements.analyzePdfButton.disabled = true;
-  elements.analyzePdfButton.classList.add("loading");
-  showToast("Analisando PDF com IA...");
-
-  try {
-    const formData = new FormData();
-    formData.append("pdf", file);
-    const response = await fetch("/api/pdf-proposals", {
-      method: "POST",
-      body: formData,
-    });
-    const payload = await response.json();
-    if (!response.ok || !payload.ok) {
-      throw new Error(payload.error || "Falha ao analisar PDF.");
-    }
-
-    const proposals = Array.isArray(payload.proposals) ? payload.proposals : [];
-    if (!proposals.length) {
-      showToast("PDF analisado, mas sem propostas aplicáveis.");
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `O PDF gerou ${proposals.length} proposta(s). Aplicar ao radar local agora?`,
-    );
-    if (!confirmed) {
-      showToast(`Propostas salvas em ${payload.proposalPath}.`);
-      return;
-    }
-
-    const result = applyProposalChanges(proposals);
-    renderAll();
-    showToast(`${result.added} adicionadas, ${result.updated} atualizadas.`);
-  } catch (error) {
-    console.error(error);
-    showToast(error.message || "Não foi possível analisar o PDF.");
-  } finally {
-    elements.analyzePdfButton.disabled = false;
-    elements.analyzePdfButton.classList.remove("loading");
-  }
-}
-
-function applyProposalChanges(proposals) {
-  const result = applyProposalBatch(state, proposals);
-  state = result.draft;
-  selectedId = result.selectedId;
-  return result;
-}
-
-function resetData() {
-  const confirmed = window.confirm("Restaurar os dados iniciais do radar?");
+function discardDraft() {
+  if (!adminMode) return;
+  const confirmed = window.confirm(
+    "Descartar alterações do rascunho e restaurar a última versão oficial carregada?",
+  );
   if (!confirmed) return;
   state = structuredClone(canonicalState);
   selectedId = state.blips[0]?.id ?? null;
   renderAll();
-  showToast("Dados restaurados.");
+  showToast("Rascunho descartado.");
 }
 
 function coordinatesFor(blip, index) {
@@ -524,36 +1100,7 @@ function downloadHtmlSnapshot() {
   link.download = monthlySnapshotFilename(payload.generatedAt);
   link.click();
   URL.revokeObjectURL(link.href);
-  showToast("HTML gerado para download.");
-}
-
-async function saveHtmlSnapshot() {
-  if (window.location.protocol === "file:") {
-    downloadHtmlSnapshot();
-    showToast("Sem servidor local: HTML baixado pelo navegador.");
-    return;
-  }
-
-  try {
-    const response = await fetch("/api/export-html", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(snapshotPayload()),
-    });
-    const payload = await response.json();
-    if (!response.ok || !payload.ok) throw new Error(payload.error || "Falha ao salvar HTML.");
-
-    const blob = new Blob([payload.html], { type: "text/html;charset=utf-8" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = payload.path.split("/").at(-1) || monthlySnapshotFilename();
-    link.click();
-    URL.revokeObjectURL(link.href);
-    showToast(`HTML salvo em ${payload.path}.`);
-  } catch (error) {
-    console.error(error);
-    showToast(error.message || "Não foi possível salvar HTML.");
-  }
+  showToast("Snapshot HTML baixado pelo navegador.");
 }
 
 function snapshotPayload() {
@@ -608,11 +1155,7 @@ function generateMarkdown() {
 
 ## Sumário Executivo
 
-Este documento estrutura a primeira versão do Radar Tecnológico e Technology Roadmap para Engenharia de Software, com foco em desenvolvimento, qualidade, segurança, DevOps, engenharia com IA e governança técnica. A proposta institucional é acelerar inovação em propostas de projetos com um processo contínuo de curadoria, experimentação controlada e atualização mensal.
-
-## Visão Geral da Trilha
-
-Os temas prioritários são Engenharia com IA, Qualidade e Testes, Segurança e Governança, DevOps e Plataforma, Supply Chain, Medição e Sustentabilidade Técnica. A postura desta versão é inovadora para P&D: tecnologias em Trial e Assess devem ser exploradas com guardrails, métricas e revisão humana.
+Este documento estrutura a versão atual do Radar Tecnológico e Technology Roadmap para Engenharia de Software, com foco em desenvolvimento, qualidade, segurança, DevOps, engenharia com IA e governança técnica.
 
 ## Tabela Matriz de Roadmap e Radar
 
@@ -628,18 +1171,7 @@ ${details}
 
 ${pilots}
 
-Critérios mínimos dos pilotos: hipótese explícita, ambiente controlado, métricas antes/depois, política de revisão humana, evidências de segurança, plano de saída e apresentação mensal de aprendizado.
-
-## Protocolo de Atualização Mensal
-
-1. Coletar sinais nas fontes monitoradas.
-2. Agrupar evidências por tema, quadrante e tecnologia.
-3. Propor alterações de anel, horizonte, maturidade, risco e esforço.
-4. Registrar justificativa, fontes e contraindicações.
-5. Submeter a revisão humana do comitê técnico.
-6. Publicar versão mensal do radar e atualizar o backlog de pilotos.
-
-## Fontes Monitoradas pelo Agente de IA
+## Fontes Monitoradas
 
 | Fonte | Força | Cadência | Sinal Observado | URL |
 |---|---|---|---|---|
@@ -647,10 +1179,22 @@ ${sources}
 `;
 }
 
+function setStatus(element, text, isError = false) {
+  element.textContent = text;
+  element.classList.toggle("error", Boolean(isError && text));
+}
+
 function showToast(message) {
   elements.toast.textContent = message;
   elements.toast.classList.add("show");
-  window.setTimeout(() => elements.toast.classList.remove("show"), 2200);
+  if (toastTimer) window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => elements.toast.classList.remove("show"), 3200);
+}
+
+function formatShortDate(iso) {
+  const date = new Date(iso);
+  if (!Number.isFinite(date.getTime())) return "Mensal";
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(date);
 }
 
 function cleanUrl(url) {
