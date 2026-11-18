@@ -51,8 +51,8 @@ export function createGithubRadarStore({
   } = env;
   if (!token) throw new Error("GITHUB_TOKEN is required.");
 
-  const endpoint = "https://api.github.com/repos/" + encodeURIComponent(owner) +
-    "/" + encodeURIComponent(repo) + "/contents/data/radar.json";
+  const repoUrl = "https://api.github.com/repos/" + encodeURIComponent(owner) + "/" + encodeURIComponent(repo);
+  const endpoint = repoUrl + "/contents/data/radar.json";
   const readUrl = endpoint + "?" + new URLSearchParams({ ref: branch });
   const headers = {
     Accept: "application/vnd.github+json",
@@ -60,12 +60,22 @@ export function createGithubRadarStore({
     "X-GitHub-Api-Version": "2022-11-28",
   };
 
-  async function request(url, options) {
+  async function request(url, options, { retryLargeContents = false } = {}) {
     let response;
     try {
       response = await fetch(url, { headers, redirect: "error", ...options });
       if (response.ok) return await response.json();
-      await response.body?.cancel();
+      if (retryLargeContents && response.status === 403) {
+        const failure = await response.json().catch(() => null);
+        if (Array.isArray(failure?.errors) && failure.errors.some((error) => error?.code === "too_large")) {
+          return request(url, {
+            ...options,
+            headers: { ...headers, Accept: "application/vnd.github.object+json" },
+          });
+        }
+      } else {
+        await response.body?.cancel();
+      }
     } catch {
       throw new GitHubRadarError();
     }
@@ -73,13 +83,18 @@ export function createGithubRadarStore({
   }
 
   async function readRadar() {
-    const file = await request(readUrl, { method: "GET" });
+    const file = await request(readUrl, { method: "GET" }, { retryLargeContents: true });
+    const sha = file?.sha;
+    if (typeof sha !== "string" || !sha) throw new GitHubRadarError();
+
+    // Large files have a SHA but no inline content in the Contents API's object response.
+    const blob = file.encoding === "none" && file.content === ""
+      ? await request(repoUrl + "/git/blobs/" + encodeURIComponent(sha), { method: "GET" })
+      : file;
+    if (blob?.encoding !== "base64" || typeof blob.content !== "string") throw new GitHubRadarError();
+
     try {
-      const { sha, content, encoding } = file;
-      if (typeof sha !== "string" || !sha || typeof content !== "string" || encoding !== "base64") {
-        throw new GitHubRadarError();
-      }
-      const text = new TextDecoder("utf-8", { fatal: true }).decode(Buffer.from(content, "base64"));
+      const text = new TextDecoder("utf-8", { fatal: true }).decode(Buffer.from(blob.content, "base64"));
       return { radar: normalizeRadar(JSON.parse(text)), sha };
     } catch {
       throw new GitHubRadarError();

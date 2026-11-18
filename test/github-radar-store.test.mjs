@@ -23,6 +23,17 @@ function contentsResponse(radar = currentRadar, sha = "current-blob-sha") {
   });
 }
 
+function largeContentsResponse(sha, size) {
+  return Response.json({ type: "file", name: "radar.json", path: "data/radar.json", sha, size, encoding: "none", content: "" });
+}
+
+function tooLargeResponse() {
+  return Response.json({
+    message: "Large blob rejected by the default Contents media type.",
+    errors: [{ resource: "Blob", field: "data", code: "too_large" }],
+  }, { status: 403 });
+}
+
 async function setup(responses, env = {}) {
   const { createGithubRadarStore } = await import("../scripts/lib/github-radar-store.mjs");
   const calls = [];
@@ -114,6 +125,75 @@ test("commits the normalized draft with server metadata and the current blob SHA
 `);
 });
 
+test("saves and rereads a large radar through the Git Blobs API", async () => {
+  const sha = "3d21ec53a331a6f037a91c368710b99387d012c1";
+  const responses = [
+    contentsResponse(),
+    Response.json({ content: { sha, path: "data/radar.json" }, commit: { sha: "new-commit-sha" } }),
+  ];
+  const { store, calls } = await setup(responses, { GITHUB_OWNER: "custom", GITHUB_REPO: "project" });
+  const sources = Array.from({ length: 5000 }, (_, index) => ({
+    id: "fonte-" + index,
+    name: "Referência",
+    initials: "R",
+    strength: "Alta",
+    cadence: "Mensal",
+    signal: "Sinal",
+    agentUse: "Monitorar",
+    url: "https://example.test/radar",
+  }));
+  const payload = { ...savePayload, radar: { blips: [], sources } };
+  assert.ok(Buffer.byteLength(JSON.stringify(payload)) < 1024 * 1024);
+
+  const saved = await store.saveRadar(payload);
+  assert.deepEqual(saved.radar.sources, sources);
+  assert.deepEqual(saved.commit, { sha: "new-commit-sha" });
+  const { content } = JSON.parse(calls[1].body);
+  const size = Buffer.from(content, "base64").length;
+  assert.ok(size > 1024 * 1024);
+  responses.push(
+    tooLargeResponse(),
+    largeContentsResponse(sha, size),
+    Response.json({ sha, size, encoding: "base64", content }),
+  );
+
+  assert.deepEqual(await store.readRadar(), { radar: saved.radar, sha });
+  assert.deepEqual(calls.slice(2).map(({ url, method, headers }) => [url, method, new Headers(headers).get("accept")]), [
+    ["https://api.github.com/repos/custom/project/contents/data/radar.json?ref=main", "GET", "application/vnd.github+json"],
+    ["https://api.github.com/repos/custom/project/contents/data/radar.json?ref=main", "GET", "application/vnd.github.object+json"],
+    ["https://api.github.com/repos/custom/project/git/blobs/3d21ec53a331a6f037a91c368710b99387d012c1", "GET", "application/vnd.github+json"],
+  ]);
+  const headers = new Headers(calls[4].headers);
+  assert.equal(headers.get("authorization"), "Bearer fake-github-token");
+  assert.equal(headers.get("x-github-api-version"), "2022-11-28");
+});
+
+test("maps failed or malformed blob responses to safe GitHub errors", async () => {
+  const { GitHubRadarError } = await import("../scripts/lib/github-radar-store.mjs");
+  const sha = "3d21ec53a331a6f037a91c368710b99387d012c1";
+  for (const blob of [
+    Response.json({ message: "private blob details" }, { status: 404 }),
+    Response.json({ sha, encoding: "none", content: "private blob details" }),
+  ]) {
+    const { store, calls } = await setup([largeContentsResponse(sha, 1100000), blob]);
+    await assert.rejects(store.readRadar(), { name: GitHubRadarError.name, message: "GitHub radar request failed." });
+    assert.equal(calls.length, 2);
+    assert.equal(calls[1].url, "https://api.github.com/repos/JoaopauloRM700/technology-radar/git/blobs/3d21ec53a331a6f037a91c368710b99387d012c1");
+  }
+});
+
+test("maps a second Contents 403 to a safe upstream error without retrying again", async () => {
+  const { GitHubRadarError } = await import("../scripts/lib/github-radar-store.mjs");
+  const { store, calls } = await setup([tooLargeResponse(), tooLargeResponse()]);
+
+  await assert.rejects(store.readRadar(), {
+    name: GitHubRadarError.name,
+    message: "GitHub radar request failed.",
+    status: 403,
+  });
+  assert.equal(calls.length, 2);
+});
+
 test("keeps the commit SHA when GitHub omits the commit URL", async () => {
   const { store } = await setup([
     contentsResponse(),
@@ -155,8 +235,9 @@ test("classifies transport and invalid Contents responses without exposing upstr
     Response.json({ sha: "test", encoding: "base64", content: "!!!" }),
     contentsResponse({ ...currentRadar, schemaVersion: 2 }),
   ]) {
-    const { store } = await setup([response]);
+    const { store, calls } = await setup([response]);
     await assert.rejects(store.readRadar(), { name: GitHubRadarError.name, message: "GitHub radar request failed." });
+    assert.equal(calls.length, 1);
   }
 });
 
