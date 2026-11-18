@@ -13,5 +13,8 @@
     "radar:update:offline": "node scripts/update-radar.mjs --offline",
     "radar:brief": "node scripts/update-radar.mjs --brief",
     "radar:pdf": "node scripts/analyze-pdf.mjs"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0"
   }
 }
