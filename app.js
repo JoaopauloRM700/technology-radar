@@ -1,4 +1,4 @@
-import { buildRadarHtmlSnapshot, normalizeRadar } from "./app-core.mjs";
+import { applyProposals, buildRadarHtmlSnapshot, normalizeRadar } from "./app-core.mjs";
 
 const DEFAULT_DETAIL_URLS = {
   "ES-01": "https://github.blog/ai-and-ml/github-copilot/whats-new-with-github-copilot-coding-agent/",
@@ -33,6 +33,22 @@ const quadrantColors = {
   "Plataformas": "#c47a00",
   "Ferramentas": "#2e7d52",
   "Linguagens e Frameworks": "#b83549",
+};
+
+const legacyBlipDefaults = {
+  name: "Nova tecnologia",
+  quadrant: "Técnicas",
+  ring: "Assess",
+  horizon: "Médio",
+  maturity: "Experimental",
+  risk: "Médio",
+  effort: "Médio",
+  status: "Monitorar",
+  source: "Atualização por IA",
+  theme: "A definir",
+  detailsUrl: "",
+  strategic: "Proposta gerada por atualização assistida por IA.",
+  constraints: "Requer revisão humana antes de adoção.",
 };
 
 let canonicalState;
@@ -212,7 +228,7 @@ function renderRadar() {
     group.setAttribute("aria-label", `${blip.id} ${blip.name}`);
     group.innerHTML = `
       <circle cx="${x}" cy="${y}" r="14" fill="${quadrantColors[blip.quadrant]}" stroke="#ffffff" stroke-width="2" filter="url(#blipShadow)"></circle>
-      <text x="${x}" y="${y}">${Number(blip.id.split("-")[1])}</text>
+      <text x="${x}" y="${y}">${blipSequenceNumber(blip.id) ?? ("#" + (index + 1))}</text>
       <title>${escapeHtml(blip.name)} | ${blip.quadrant} | ${blip.ring}</title>
     `;
     group.addEventListener("click", () => selectBlip(blip.id));
@@ -375,7 +391,7 @@ async function importProposalFile(event) {
     }
     const confirmed = window.confirm(`Aplicar ${proposals.length} proposta(s) ao radar local?`);
     if (!confirmed) return;
-    const result = applyProposals(proposals);
+    const result = applyProposalBatch(proposals);
     renderAll();
     showToast(`${result.added} adicionadas, ${result.updated} atualizadas.`);
   } catch (error) {
@@ -424,7 +440,7 @@ async function analyzePdfFile(event) {
       return;
     }
 
-    const result = applyProposals(proposals);
+    const result = applyProposalBatch(proposals);
     renderAll();
     showToast(`${result.added} adicionadas, ${result.updated} atualizadas.`);
   } catch (error) {
@@ -436,70 +452,54 @@ async function analyzePdfFile(event) {
   }
 }
 
-function applyProposals(proposals) {
-  if (proposals.some(({ action }) => ["remove", "delete"].includes(String(action).toLowerCase()))) {
-    throw new Error("Propostas de remoção não são aceitas.");
-  }
-  const result = { added: 0, updated: 0 };
-  proposals.forEach((proposal) => {
-    const action = String(proposal.action ?? "").toLowerCase();
-    if (action === "add" && proposal.blip) {
-      const blip = normalizeBlip(proposal.blip);
-      if (state.blips.some((item) => item.id === blip.id)) {
-        blip.id = nextBlipId();
-      }
-      state.blips.push(blip);
-      selectedId = blip.id;
-      result.added += 1;
-      return;
-    }
-
-    if ((action === "update" || action === "move") && proposal.id && proposal.changes) {
-      const blip = state.blips.find((item) => item.id === proposal.id);
-      if (!blip) return;
-      Object.assign(blip, sanitizeBlipChanges(blip, proposal.changes));
-      selectedId = blip.id;
-      result.updated += 1;
-      return;
-    }
-
-  });
-  return result;
+function applyProposalBatch(proposals) {
+  const compatible = proposals.map(toCoreProposal);
+  const draft = applyProposals(state, compatible);
+  const added = draft.blips.length - state.blips.length;
+  state = draft;
+  selectedId = compatible.at(-1).targetId ?? draft.blips.at(-1).id;
+  return { added, updated: compatible.length - added };
 }
 
-function normalizeBlip(input) {
+function toCoreProposal(proposal) {
+  if (Object.hasOwn(proposal, "targetId")) return proposal;
+  const action = String(proposal.action ?? "").toLowerCase();
+  if (!["add", "update", "move"].includes(action)) return { ...proposal, action };
+
+  const adding = action === "add";
+  const targetId = adding ? null : proposal.id;
+  const current = adding ? legacyBlipDefaults : state.blips.find(({ id }) => id === targetId);
+  if (!current) throw new Error("Alvo da proposta não encontrado: " + targetId);
+
+  const input = adding ? proposal.blip : proposal.changes;
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error("Dados do blip ausentes ou inválidos.");
+  }
+  const { id, ...blip } = { ...current, ...input };
+  const { reason = "Proposta importada no formato anterior.", confidence = 0, evidence = [] } = proposal;
   return {
-    id: input.id || nextBlipId(),
-    name: input.name || "Nova tecnologia",
-    quadrant: validValue(input.quadrant, ["Técnicas", "Plataformas", "Ferramentas", "Linguagens e Frameworks"], "Técnicas"),
-    ring: validValue(input.ring, ["Adopt", "Trial", "Assess", "Caution"], "Assess"),
-    horizon: validValue(input.horizon, ["Curto", "Médio", "Longo"], "Médio"),
-    maturity: validValue(input.maturity, ["Experimental", "Emergente", "Madura"], "Experimental"),
-    risk: validValue(input.risk, ["Baixo", "Médio", "Alto"], "Médio"),
-    effort: validValue(input.effort, ["Baixo", "Médio", "Alto"], "Médio"),
-    status: input.status || "Monitorar",
-    source: input.source || "Atualização por IA",
-    theme: input.theme || "A definir",
-    detailsUrl: input.detailsUrl || "",
-    strategic: input.strategic || "Proposta gerada por atualização assistida por IA.",
-    constraints: input.constraints || "Requer revisão humana antes de adoção.",
+    action,
+    targetId,
+    reason,
+    confidence,
+    // O formato anterior registra fontes sem páginas.
+    evidence: Array.isArray(evidence) ? evidence.filter((item) => Object.hasOwn(item, "page")) : evidence,
+    blip,
   };
 }
 
-function sanitizeBlipChanges(current, changes) {
-  const base = normalizeBlip({ ...current, ...changes });
-  delete base.id;
-  return base;
-}
-
-function validValue(value, allowed, fallback) {
-  return allowed.includes(value) ? value : fallback;
+function blipSequenceNumber(id) {
+  const digits = /^ES-(\d+)$/.exec(id)?.[1];
+  return digits === undefined ? null : BigInt(digits);
 }
 
 function nextBlipId() {
-  const nextNumber =
-    Math.max(0, ...state.blips.map((item) => Number(item.id.replace("ES-", "")))) + 1;
-  return `ES-${String(nextNumber).padStart(2, "0")}`;
+  let highest = 0n;
+  for (const { id } of state.blips) {
+    const number = blipSequenceNumber(id);
+    if (number !== null && number > highest) highest = number;
+  }
+  return "ES-" + String(highest + 1n).padStart(2, "0");
 }
 
 function resetData() {
