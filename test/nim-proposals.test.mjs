@@ -185,37 +185,45 @@ test("gerador CLI rejeita o destino histórico antes de ler ou chamar NVIDIA NIM
   await assert.rejects(readFile(path.join(root, "events.txt")), { code: "ENOENT" });
 });
 
-test("pipeline reusa as saídas de um PDF em cache e completa saídas ausentes", async (t) => {
+async function discoveryFixture(t, sources) {
   const root = await fakeWorkspace(t);
-  await mkdir(path.join(root, "scripts"));
-  for (const script of ["discover-sources.mjs", "analyze-pdf.mjs"]) {
+  await mkdir(path.join(root, "scripts", "lib"), { recursive: true });
+  for (const script of ["discover-sources.mjs", "analyze-pdf.mjs", "lib/run-pdf-analyzer.mjs"]) {
     await copyFile(new URL(`../scripts/${script}`, import.meta.url), path.join(root, "scripts", script));
   }
-  await writeFile(path.join(root, "data", "monitored-sources.json"), JSON.stringify([
-    { name: "Fonte de teste", url: "https://example.org/", strategy: "fetch" },
-  ]));
+  const monitored = sources.map(({ name, url }) => ({ name, url, strategy: "fetch" }));
+  await writeFile(path.join(root, "data", "monitored-sources.json"), JSON.stringify(monitored));
   const hook = await preload(root, `
+    const sources = ${JSON.stringify(sources)};
     globalThis.fetch = async (url) => {
-      if (url === "https://example.org/") return new Response('<a href="/sample.pdf">PDF</a>');
-      if (url === "https://example.org/sample.pdf") {
-        const pdf = "%PDF-1.4\\n<<>>\\nstream\\nBT /F1 12 Tf (Tecnologia piloto) Tj ET\\nendstream\\n%%EOF\\n";
-        return new Response(pdf, { headers: { "Content-Type": "application/pdf" } });
+      for (const source of sources) {
+        if (url === source.url) return new Response('<a href="/' + source.filename + '">PDF</a>');
+        if (url === source.url + source.filename) {
+          const pdf = "%PDF-1.4\\n<<>>\\nstream\\nBT /F1 12 Tf (" + source.text + ") Tj ET\\nendstream\\n%%EOF\\n";
+          return new Response(pdf, { headers: { "Content-Type": "application/pdf" } });
+        }
       }
       throw new Error("URL inesperada");
     };
   `);
-  const historicalSummaryPath = "docs/radar-full-run-summary.md";
-  const historicalSummary = Buffer.from("Resumo histórico Gemini.\r\n");
-  await writeFile(path.join(root, historicalSummaryPath), historicalSummary);
-
-  const runPipeline = async () => {
-    const result = runCli(root, { NODE_OPTIONS: `--import=${hook}` }, "--fetch-only");
+  const runPipeline = async (...args) => {
+    const result = runCli(root, { NODE_OPTIONS: `--import=${hook}` }, "--fetch-only", ...args);
     assert.equal(result.status, 0, result.stderr);
     const report = JSON.parse(await readFile(path.join(root, "data/discovery/radar-discovery.json"), "utf8"));
     const { downloads: [download] } = report.sources[0];
     assert.equal(download.analysis.ok, true, download.analysis.stderr);
     return download;
   };
+  return { root, runPipeline };
+}
+
+test("pipeline reusa as saídas de um PDF em cache e completa saídas ausentes", async (t) => {
+  const { root, runPipeline } = await discoveryFixture(t, [
+    { name: "Fonte de teste", url: "https://example.org/", filename: "sample.pdf", text: "Tecnologia piloto" },
+  ]);
+  const historicalSummaryPath = "docs/radar-full-run-summary.md";
+  const historicalSummary = Buffer.from("Resumo histórico Gemini.\r\n");
+  await writeFile(path.join(root, historicalSummaryPath), historicalSummary);
   const first = await runPipeline();
   assert.equal(first.downloaded, true);
   assert.match(await readFile(path.join(root, first.analysis.textPath), "utf8"), /Tecnologia piloto/);
@@ -223,7 +231,7 @@ test("pipeline reusa as saídas de um PDF em cache e completa saídas ausentes",
 
   const preserved = new Map([
     ["data/pdf/sample.txt", Buffer.from("Texto histórico Gemini.\r\n")],
-    ["data/pdf/sample-signals.json", Buffer.from('{"version":"histórico Gemini"}\r\n')],
+    ["data/pdf/sample-signals.json", await readFile(path.join(root, first.analysis.signalsPath))],
     [briefPath, Buffer.from("# Brief histórico Gemini\r\n")],
     [proposalPath, Buffer.from('{"generatedBy":"gemini","proposals":[]}\r\n')],
   ]);
@@ -243,6 +251,54 @@ test("pipeline reusa as saídas de um PDF em cache e completa saídas ausentes",
   assert.match(await readFile(path.join(root, briefPath), "utf8"), /Brief para IA/);
   for (const [file, content] of preserved) {
     assert.deepEqual(await readFile(path.join(root, file)), content, file);
+  }
+
+  const legacySignals = Buffer.from('{"version":"histórico Gemini"}\r\n');
+  await writeFile(path.join(root, first.analysis.signalsPath), legacySignals);
+  preserved.set(first.analysis.signalsPath, legacySignals);
+  preserved.set(briefPath, await readFile(path.join(root, briefPath)));
+  const legacy = await runPipeline();
+  assert.notEqual(legacy.analysis.textPath, first.analysis.textPath);
+  assert.match(await readFile(path.join(root, legacy.analysis.textPath), "utf8"), /Tecnologia piloto/);
+  assert.match(legacy.analysis.textPath, /^data\/pdf\/sample-[a-f\d]+\.txt$/);
+  for (const [file, content] of preserved) {
+    assert.deepEqual(await readFile(path.join(root, file)), content, file);
+  }
+});
+
+test("PDFs homônimos de fontes distintas mantêm evidências e arquivos próprios", async (t) => {
+  const { root, runPipeline } = await discoveryFixture(t, [
+    { name: "Fonte Alfa", url: "https://alfa.example.org/", filename: "report.pdf", text: "Observability Tecnologia alfa" },
+    { name: "Fonte Beta", url: "https://beta.example.org/", filename: "report.pdf", text: "Observability Tecnologia beta" },
+  ]);
+  async function readOutputs({ analysis }) {
+    return Promise.all(["textPath", "signalsPath", "briefPath", "proposalsPath"]
+      .map(async (key) => [analysis[key], await readFile(path.join(root, analysis[key]), "utf8")]));
+  }
+
+  const alfa = await runPipeline("--source", "Alfa");
+  const alfaOutputs = await readOutputs(alfa);
+  assert.match(alfaOutputs[0][1], /Tecnologia alfa/);
+
+  const beta = await runPipeline("--source", "Beta");
+  const betaOutputs = await readOutputs(beta);
+  assert.notEqual(beta.sha256, alfa.sha256);
+  assert.notEqual(beta.path, alfa.path);
+  assert.equal(path.basename(beta.path), path.basename(alfa.path));
+  assert.match(betaOutputs[0][1], /Tecnologia beta/);
+
+  const cachedAlfa = await runPipeline("--source", "Alfa");
+  assert.equal(cachedAlfa.reason, "cached-url");
+  const cachedAlfaOutputs = await readOutputs(cachedAlfa);
+  assert.match(cachedAlfaOutputs[0][1], /Tecnologia alfa/);
+  assert.match(cachedAlfaOutputs[2][1], /Tecnologia alfa/);
+  assert.deepEqual(cachedAlfaOutputs, alfaOutputs);
+  const cachedBeta = await runPipeline("--source", "Beta");
+  assert.equal(cachedBeta.reason, "cached-url");
+  assert.deepEqual(await readOutputs(cachedBeta), betaOutputs);
+  assert.equal(new Set([...alfaOutputs, ...betaOutputs].map(([file]) => file)).size, 8);
+  for (const [download, outputs] of [[alfa, alfaOutputs], [beta, betaOutputs]]) {
+    assert.equal(JSON.parse(outputs[1][1]).sourceSha256, download.sha256);
   }
 });
 

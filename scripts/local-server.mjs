@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
-import { spawn } from "node:child_process";
+import { runPdfAnalyzer } from "./lib/run-pdf-analyzer.mjs";
 import { generateProposalFile, loadEnvFile } from "./nim-proposals.mjs";
 import { saveRadarHtmlSnapshot } from "./html-export.mjs";
 
@@ -79,7 +79,7 @@ async function handlePdfUpload(request, response) {
   const uploadPath = path.join(uploadsDir, uploadName);
   await writeFile(uploadPath, filePart.data);
 
-  const analysis = await runAnalyzer(uploadPath);
+  const analysis = await runPdfAnalyzer(root, uploadPath);
   if (!analysis.ok) {
     sendJson(response, 500, {
       ok: false,
@@ -110,37 +110,6 @@ async function handlePdfUpload(request, response) {
     proposalPath: ai.proposalPath,
     proposals: ai.payload?.proposals ?? [],
     payload: ai.payload,
-  });
-}
-
-function runAnalyzer(pdfPath) {
-  return new Promise((resolve) => {
-    const analyzerPath = path.join(root, "scripts", "analyze-pdf.mjs");
-    const child = spawn(process.execPath, [analyzerPath, pdfPath], {
-      cwd: root,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    let stdout = "";
-    let stderr = "";
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk.toString();
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
-    });
-    child.on("close", (code) => {
-      const base = safeName(path.basename(pdfPath, ".pdf"));
-      resolve({
-        ok: code === 0,
-        exitCode: code,
-        textPath: relative(path.join(root, "data", "pdf", `${base}.txt`)),
-        signalsPath: relative(path.join(root, "data", "pdf", `${base}-signals.json`)),
-        briefPath: relative(path.join(root, "docs", `${base}-brief.md`)),
-        proposalsPath: relative(path.join(root, "data", "pdf", `${base}-proposals.json`)),
-        stdout: stdout.trim().slice(-800),
-        stderr: stderr.trim().slice(-800),
-      });
-    });
   });
 }
 
