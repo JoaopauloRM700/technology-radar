@@ -164,6 +164,75 @@ export function applyProposals(radar, proposals, { createId = () => globalThis.c
   return draft;
 }
 
+const legacyBlipDefaults = {
+  name: "Nova tecnologia",
+  quadrant: "Técnicas",
+  ring: "Assess",
+  horizon: "Médio",
+  maturity: "Experimental",
+  risk: "Médio",
+  effort: "Médio",
+  status: "Monitorar",
+  source: "Atualização por IA",
+  theme: "A definir",
+  detailsUrl: "",
+  strategic: "Proposta gerada por atualização assistida por IA.",
+  constraints: "Requer revisão humana antes de adoção.",
+};
+
+function toCoreProposal(radar, proposal) {
+  if (Object.hasOwn(proposal, "targetId")) return proposal;
+  const action = String(proposal.action ?? "").toLowerCase();
+  if (!["add", "update", "move"].includes(action)) return { ...proposal, action };
+
+  const adding = action === "add";
+  const targetId = adding ? null : proposal.id;
+  const current = adding ? legacyBlipDefaults : radar.blips.find(({ id }) => id === targetId);
+  if (!current) throw new Error("Alvo da proposta não encontrado: " + targetId);
+
+  const input = adding ? proposal.blip : proposal.changes;
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error("Dados do blip ausentes ou inválidos.");
+  }
+  const { id, ...blip } = { ...current, ...input };
+  const { reason = "Proposta importada no formato anterior.", confidence = 0, evidence = [] } = proposal;
+  return {
+    action,
+    targetId,
+    reason,
+    confidence,
+    // O formato anterior registra fontes sem páginas.
+    evidence: Array.isArray(evidence) ? evidence.filter((item) => Object.hasOwn(item, "page")) : evidence,
+    blip,
+  };
+}
+
+export function applyProposalBatch(radar, proposals, options) {
+  const compatible = proposals.map((proposal) => toCoreProposal(radar, proposal));
+  const draft = applyProposals(radar, compatible, options);
+  const added = draft.blips.length - radar.blips.length;
+  const selectedId = compatible.at(-1)?.targetId ?? (added ? draft.blips.at(-1).id : null);
+  return { draft, added, updated: compatible.length - added, selectedId };
+}
+
+function blipSequenceNumber(id) {
+  const digits = /^ES-(\d+)$/.exec(id)?.[1];
+  return digits === undefined ? null : BigInt(digits);
+}
+
+export function nextBlipId(blips) {
+  let highest = 0n;
+  for (const { id } of blips) {
+    const number = blipSequenceNumber(id);
+    if (number !== null && number > highest) highest = number;
+  }
+  return "ES-" + String(highest + 1n).padStart(2, "0");
+}
+
+export function blipLabel(id, index) {
+  return String(blipSequenceNumber(id) ?? "#" + (index + 1));
+}
+
 const quadrantColors = {
   "Técnicas": "#007f92",
   "Plataformas": "#c47a00",

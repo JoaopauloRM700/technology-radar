@@ -161,3 +161,79 @@ test("builds a standalone HTML snapshot with escaped text and safe links", async
   assert.equal(buildRadarHtmlSnapshot(payload), html);
   assert.deepEqual(payload, before);
 });
+
+test("frontend adapter applies legacy and modern proposals in the same draft", async () => {
+  const radar = await loadCanonical();
+  const { applyProposalBatch } = await import("../app-core.mjs");
+  const [first, second] = radar.blips;
+  const before = structuredClone(radar);
+  const proposals = [
+    {
+      action: "add",
+      blip: { name: "Inclusão legada" },
+      evidence: [{ source: "Exemplo", url: "https://example.com", note: "Evidência sem página" }],
+    },
+    { action: "update", id: first.id, changes: { name: "Atualização legada" } },
+    proposal("move", second.id, { ...desiredBlip(second), ring: "Caution" }),
+  ];
+
+  const { draft, added, updated, selectedId } = applyProposalBatch(radar, proposals, {
+    createId: () => "new-id",
+  });
+
+  assert.equal(added, 1);
+  assert.equal(updated, 2);
+  assert.equal(selectedId, second.id);
+  assert.deepEqual(draft.blips[0], { id: first.id, ...desiredBlip(first), name: "Atualização legada" });
+  assert.deepEqual(draft.blips[1], { id: second.id, ...desiredBlip(second), ring: "Caution" });
+  assert.equal(draft.blips.at(-1).id, "new-id");
+  assert.equal(draft.blips.at(-1).name, "Inclusão legada");
+  assert.deepEqual(radar, before);
+});
+
+test("frontend adapter leaves the original draft intact for invalid legacy and modern targets", async () => {
+  const radar = await loadCanonical();
+  const { applyProposalBatch } = await import("../app-core.mjs");
+  const before = structuredClone(radar);
+  const added = { action: "add", blip: { name: "Inclusão legada" } };
+  const invalidTargets = [
+    { action: "update", id: "legacy-missing", changes: { name: "Atualização" } },
+    proposal("move", "modern-missing", desiredBlip(radar.blips[0])),
+  ];
+
+  for (const invalid of invalidTargets) {
+    assert.throws(() => applyProposalBatch(radar, [added, invalid], { createId: () => "new-id" }), /missing/);
+    assert.deepEqual(radar, before);
+  }
+});
+
+test("frontend adapter rejects more than five proposals", async () => {
+  const radar = await loadCanonical();
+  const { applyProposalBatch } = await import("../app-core.mjs");
+  const before = structuredClone(radar);
+  const proposals = Array.from({ length: 6 }, (_, index) => ({
+    action: "add",
+    blip: { name: "Inclusão " + index },
+  }));
+  let nextId = 0;
+
+  assert.throws(() => applyProposalBatch(radar, proposals, { createId: () => "new-" + ++nextId }), /5/);
+  assert.deepEqual(radar, before);
+});
+
+test("manual blip IDs use only the ES sequence in a mixed radar", async () => {
+  const { nextBlipId } = await import("../app-core.mjs");
+  const blips = ["ES-03", "ES-25", "12345678-abcd-4abc-8123-123456789abc", "100000", "ES-text"]
+    .map((id) => ({ id }));
+  const first = nextBlipId(blips);
+
+  assert.equal(first, "ES-26");
+  assert.equal(nextBlipId([...blips, { id: first }]), "ES-27");
+});
+
+test("radar labels distinguish ES sequence numbers from other IDs", async () => {
+  const { blipLabel } = await import("../app-core.mjs");
+
+  assert.equal(blipLabel("ES-07", 2), "7");
+  assert.equal(blipLabel("12345678-abcd-4abc-8123-123456789abc", 6), "#7");
+});

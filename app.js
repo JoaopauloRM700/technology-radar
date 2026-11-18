@@ -1,4 +1,4 @@
-import { applyProposals, buildRadarHtmlSnapshot, normalizeRadar } from "./app-core.mjs";
+import { applyProposalBatch, blipLabel, buildRadarHtmlSnapshot, nextBlipId, normalizeRadar } from "./app-core.mjs";
 
 const DEFAULT_DETAIL_URLS = {
   "ES-01": "https://github.blog/ai-and-ml/github-copilot/whats-new-with-github-copilot-coding-agent/",
@@ -33,22 +33,6 @@ const quadrantColors = {
   "Plataformas": "#c47a00",
   "Ferramentas": "#2e7d52",
   "Linguagens e Frameworks": "#b83549",
-};
-
-const legacyBlipDefaults = {
-  name: "Nova tecnologia",
-  quadrant: "Técnicas",
-  ring: "Assess",
-  horizon: "Médio",
-  maturity: "Experimental",
-  risk: "Médio",
-  effort: "Médio",
-  status: "Monitorar",
-  source: "Atualização por IA",
-  theme: "A definir",
-  detailsUrl: "",
-  strategic: "Proposta gerada por atualização assistida por IA.",
-  constraints: "Requer revisão humana antes de adoção.",
 };
 
 let canonicalState;
@@ -228,7 +212,7 @@ function renderRadar() {
     group.setAttribute("aria-label", `${blip.id} ${blip.name}`);
     group.innerHTML = `
       <circle cx="${x}" cy="${y}" r="14" fill="${quadrantColors[blip.quadrant]}" stroke="#ffffff" stroke-width="2" filter="url(#blipShadow)"></circle>
-      <text x="${x}" y="${y}">${blipSequenceNumber(blip.id) ?? ("#" + (index + 1))}</text>
+      <text x="${x}" y="${y}">${blipLabel(blip.id, index)}</text>
       <title>${escapeHtml(blip.name)} | ${blip.quadrant} | ${blip.ring}</title>
     `;
     group.addEventListener("click", () => selectBlip(blip.id));
@@ -318,7 +302,7 @@ function selectedBlip() {
 }
 
 function addBlip() {
-  const id = nextBlipId();
+  const id = nextBlipId(state.blips);
   state.blips.push({
     id,
     name: "Nova tecnologia",
@@ -391,7 +375,7 @@ async function importProposalFile(event) {
     }
     const confirmed = window.confirm(`Aplicar ${proposals.length} proposta(s) ao radar local?`);
     if (!confirmed) return;
-    const result = applyProposalBatch(proposals);
+    const result = applyProposalChanges(proposals);
     renderAll();
     showToast(`${result.added} adicionadas, ${result.updated} atualizadas.`);
   } catch (error) {
@@ -440,7 +424,7 @@ async function analyzePdfFile(event) {
       return;
     }
 
-    const result = applyProposalBatch(proposals);
+    const result = applyProposalChanges(proposals);
     renderAll();
     showToast(`${result.added} adicionadas, ${result.updated} atualizadas.`);
   } catch (error) {
@@ -452,54 +436,11 @@ async function analyzePdfFile(event) {
   }
 }
 
-function applyProposalBatch(proposals) {
-  const compatible = proposals.map(toCoreProposal);
-  const draft = applyProposals(state, compatible);
-  const added = draft.blips.length - state.blips.length;
-  state = draft;
-  selectedId = compatible.at(-1).targetId ?? draft.blips.at(-1).id;
-  return { added, updated: compatible.length - added };
-}
-
-function toCoreProposal(proposal) {
-  if (Object.hasOwn(proposal, "targetId")) return proposal;
-  const action = String(proposal.action ?? "").toLowerCase();
-  if (!["add", "update", "move"].includes(action)) return { ...proposal, action };
-
-  const adding = action === "add";
-  const targetId = adding ? null : proposal.id;
-  const current = adding ? legacyBlipDefaults : state.blips.find(({ id }) => id === targetId);
-  if (!current) throw new Error("Alvo da proposta não encontrado: " + targetId);
-
-  const input = adding ? proposal.blip : proposal.changes;
-  if (!input || typeof input !== "object" || Array.isArray(input)) {
-    throw new Error("Dados do blip ausentes ou inválidos.");
-  }
-  const { id, ...blip } = { ...current, ...input };
-  const { reason = "Proposta importada no formato anterior.", confidence = 0, evidence = [] } = proposal;
-  return {
-    action,
-    targetId,
-    reason,
-    confidence,
-    // O formato anterior registra fontes sem páginas.
-    evidence: Array.isArray(evidence) ? evidence.filter((item) => Object.hasOwn(item, "page")) : evidence,
-    blip,
-  };
-}
-
-function blipSequenceNumber(id) {
-  const digits = /^ES-(\d+)$/.exec(id)?.[1];
-  return digits === undefined ? null : BigInt(digits);
-}
-
-function nextBlipId() {
-  let highest = 0n;
-  for (const { id } of state.blips) {
-    const number = blipSequenceNumber(id);
-    if (number !== null && number > highest) highest = number;
-  }
-  return "ES-" + String(highest + 1n).padStart(2, "0");
+function applyProposalChanges(proposals) {
+  const result = applyProposalBatch(state, proposals);
+  state = result.draft;
+  selectedId = result.selectedId;
+  return result;
 }
 
 function resetData() {
