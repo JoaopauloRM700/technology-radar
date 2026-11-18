@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "node --test",
     "radar:full": "node scripts/run-radar-full.mjs",
     "radar:full:gemini": "node scripts/run-radar-full.mjs --ai gemini",
     "radar:app": "node scripts/local-server.mjs",

@@ -1,4 +1,4 @@
-const STORAGE_KEY = "tech-radar-software-v02";
+import { buildRadarHtmlSnapshot, normalizeRadar } from "./app-core.mjs";
 
 const DEFAULT_DETAIL_URLS = {
   "ES-01": "https://github.blog/ai-and-ml/github-copilot/whats-new-with-github-copilot-coding-agent/",
@@ -35,559 +35,9 @@ const quadrantColors = {
   "Linguagens e Frameworks": "#b83549",
 };
 
-const DEFAULT_BLIPS = [
-  {
-    id: "ES-01",
-    name: "Coding Agents",
-    quadrant: "Ferramentas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Médio",
-    status: "Piloto recomendado",
-    source: "Thoughtworks, GitHub",
-    theme: "Engenharia com IA",
-    strategic:
-      "Acelerar protótipos, refatorações e geração de testes em ciclos de P&D, mantendo revisão humana e rastreabilidade.",
-    constraints:
-      "Pode introduzir alucinação, código pouco compreendido, vulnerabilidades e decisões arquiteturais não intencionais.",
-  },
-  {
-    id: "ES-02",
-    name: "Harnesses para agentes de código",
-    quadrant: "Técnicas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Alto",
-    status: "Piloto recomendado",
-    source: "Thoughtworks, Martin Fowler",
-    theme: "Engenharia com IA",
-    strategic:
-      "Criar controles de feedforward e feedback para aumentar confiança em agentes e reduzir supervisão manual repetitiva.",
-    constraints:
-      "Exige arquitetura de qualidade, testes confiáveis, regras estruturais e maturidade de engenharia para funcionar bem.",
-  },
-  {
-    id: "ES-03",
-    name: "Engenharia de Contexto",
-    quadrant: "Técnicas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Médio",
-    status: "Piloto recomendado",
-    source: "Thoughtworks, Anthropic",
-    theme: "Engenharia com IA",
-    strategic:
-      "Padronizar como contexto, restrições, exemplos e decisões são fornecidos a agentes para melhorar consistência de entrega.",
-    constraints:
-      "Contexto excessivo cria instruction bloat, ruído e decisões baseadas em informações desatualizadas.",
-  },
-  {
-    id: "ES-04",
-    name: "Frameworks de agentes (LangGraph/Semantic Kernel)",
-    quadrant: "Linguagens e Frameworks",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Médio",
-    status: "Monitorar",
-    source: "Thoughtworks, LangGraph, Microsoft",
-    theme: "Linguagens e Frameworks",
-    strategic:
-      "Estruturar agentes, fluxos, memória, ferramentas e supervisão em aplicações de P&D com menor esforço de orquestração.",
-    constraints:
-      "Ecossistema ainda muda rápido; risco de lock-in conceitual, sobreengenharia e lacunas de observabilidade.",
-  },
-  {
-    id: "ES-05",
-    name: "Spec-driven development",
-    quadrant: "Técnicas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Médio",
-    status: "Monitorar",
-    source: "Thoughtworks",
-    theme: "Engenharia com IA",
-    strategic:
-      "Converter hipóteses de P&D em especificações verificáveis antes da implementação assistida por IA.",
-    constraints:
-      "Sem disciplina de produto e arquitetura, especificações viram documentação frágil e não testável.",
-  },
-  {
-    id: "ES-06",
-    name: "Feedback sensors + quality gates determinísticos",
-    quadrant: "Técnicas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Médio",
-    status: "Piloto recomendado",
-    source: "Thoughtworks",
-    theme: "Qualidade e Testes",
-    strategic:
-      "Conectar compiladores, testes, linters, análise estática e regras arquiteturais ao loop de autocorreção dos agentes.",
-    constraints:
-      "Gates fracos dão falsa confiança; gates ruidosos criam lentidão e rejeição pelos times.",
-  },
-  {
-    id: "ES-07",
-    name: "Teste de mutação",
-    quadrant: "Técnicas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Baixo",
-    effort: "Médio",
-    status: "Monitorar",
-    source: "Thoughtworks",
-    theme: "Qualidade e Testes",
-    strategic:
-      "Medir força real dos testes e revelar suites que passam sem proteger comportamento crítico.",
-    constraints:
-      "Pode aumentar custo de pipeline; exige seleção cuidadosa de módulos e metas de cobertura.",
-  },
-  {
-    id: "ES-08",
-    name: "Fuzz testing e property-based testing",
-    quadrant: "Técnicas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Médio",
-    effort: "Médio",
-    status: "Monitorar",
-    source: "Thoughtworks, OWASP",
-    theme: "Qualidade e Testes",
-    strategic:
-      "Encontrar falhas em APIs, parsers, regras complexas e integrações com entrada imprevisível.",
-    constraints:
-      "A curva de modelagem é maior que testes exemplo-a-exemplo e pode produzir falsos positivos.",
-  },
-  {
-    id: "ES-09",
-    name: "Playwright para testes E2E e agentes",
-    quadrant: "Linguagens e Frameworks",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Baixo",
-    effort: "Médio",
-    status: "Piloto recomendado",
-    source: "Playwright, DORA",
-    theme: "Qualidade e Testes",
-    strategic:
-      "Automatizar fluxos reais de usuário e dar aos agentes um sensor determinístico de regressão visual e funcional.",
-    constraints:
-      "Testes E2E frágeis e ambientes instáveis podem gerar ruído; exige dados e seletores bem governados.",
-  },
-  {
-    id: "ES-10",
-    name: "Engineering Intelligence: DORA + QE Analytics",
-    quadrant: "Técnicas",
-    ring: "Adopt",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Baixo",
-    effort: "Médio",
-    status: "Padronizar",
-    source: "DORA, Perforce",
-    theme: "Medição e Fluxo",
-    strategic:
-      "Medir fluxo, estabilidade, qualidade e impacto da IA com indicadores que orientam decisão executiva.",
-    constraints:
-      "Métricas mal desenhadas viram vaidade ou pressão comportamental sem melhoria sistêmica.",
-  },
-  {
-    id: "ES-11",
-    name: "Gestão de débito cognitivo em código gerado por IA",
-    quadrant: "Técnicas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Médio",
-    status: "Monitorar",
-    source: "Thoughtworks, SIG",
-    theme: "Sustentabilidade Técnica",
-    strategic:
-      "Evitar que velocidade de geração resulte em sistemas que o time não consegue explicar, evoluir ou depurar.",
-    constraints:
-      "Difícil medir entendimento; requer revisões, ADRs, documentação viva e ownership explícito.",
-  },
-  {
-    id: "ES-12",
-    name: "Revisão humana por classe de risco",
-    quadrant: "Técnicas",
-    ring: "Adopt",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Baixo",
-    effort: "Baixo",
-    status: "Padronizar",
-    source: "OWASP, GitHub",
-    theme: "Governança",
-    strategic:
-      "Definir quando PRs, prompts, mudanças de infraestrutura e ações de agentes exigem aprovação humana.",
-    constraints:
-      "Processo burocrático demais reduz adoção; processo vago demais não reduz risco.",
-  },
-  {
-    id: "ES-13",
-    name: "Zero Trust no SDLC agentic",
-    quadrant: "Técnicas",
-    ring: "Adopt",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Médio",
-    effort: "Alto",
-    status: "Padronizar",
-    source: "Thoughtworks, OWASP",
-    theme: "Segurança e Governança",
-    strategic:
-      "Tratar agentes, plugins, pipelines e ferramentas como identidades não confiáveis por padrão.",
-    constraints:
-      "Integração com IAM, segredos, repositórios e ambientes de execução pode ser trabalhosa.",
-  },
-  {
-    id: "ES-14",
-    name: "Least privilege e Agentic IAM",
-    quadrant: "Plataformas",
-    ring: "Trial",
-    horizon: "Médio",
-    maturity: "Emergente",
-    risk: "Alto",
-    effort: "Alto",
-    status: "Monitorar",
-    source: "OWASP, GitHub",
-    theme: "Segurança e Governança",
-    strategic:
-      "Reduzir raio de impacto de agentes com permissões temporárias, escopo mínimo e trilha de auditoria.",
-    constraints:
-      "Ferramentas e provedores ainda estão amadurecendo modelos de identidade para agentes.",
-  },
-  {
-    id: "ES-15",
-    name: "Sandboxes de execução para agentes",
-    quadrant: "Plataformas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Alto",
-    status: "Monitorar",
-    source: "Thoughtworks, GitHub",
-    theme: "Segurança e Governança",
-    strategic:
-      "Permitir experimentação com menor risco isolando filesystem, rede, credenciais e comandos de agentes.",
-    constraints:
-      "Isolamento incompleto, custo computacional e exceções de rede podem limitar utilidade.",
-  },
-  {
-    id: "ES-16",
-    name: "AI Gateways",
-    quadrant: "Plataformas",
-    ring: "Assess",
-    horizon: "Médio",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Alto",
-    status: "Monitorar",
-    source: "DORA, NIST",
-    theme: "Plataforma de IA",
-    strategic:
-      "Centralizar política, logs, roteamento de modelos, custo, proteção de dados e observabilidade de uso de IA.",
-    constraints:
-      "Pode criar lock-in, latência e sensação falsa de governança se não houver controles reais.",
-  },
-  {
-    id: "ES-17",
-    name: "Governança de MCP e ferramentas conectadas",
-    quadrant: "Plataformas",
-    ring: "Assess",
-    horizon: "Médio",
-    maturity: "Experimental",
-    risk: "Alto",
-    effort: "Alto",
-    status: "Monitorar",
-    source: "OWASP MCP, Thoughtworks",
-    theme: "Plataforma de IA",
-    strategic:
-      "Controlar tool sprawl, contexto, escopos e confiabilidade de servidores conectados a agentes.",
-    constraints:
-      "Padrões, ameaças e ecossistema ainda mudam rapidamente; precisa de catálogo e avaliação contínua.",
-  },
-  {
-    id: "ES-18",
-    name: "Red teaming para LLMs e agentes",
-    quadrant: "Técnicas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Médio",
-    status: "Piloto recomendado",
-    source: "OWASP, NIST",
-    theme: "Segurança e Governança",
-    strategic:
-      "Encontrar prompt injection, tool misuse, vazamento de dados, overreliance e ações indevidas antes de produção.",
-    constraints:
-      "Exige conhecimento adversarial, documentação de ameaças e integração com processos de aceite.",
-  },
-  {
-    id: "ES-19",
-    name: "SBOM, SLSA e proveniência de supply chain",
-    quadrant: "Ferramentas",
-    ring: "Adopt",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Baixo",
-    effort: "Médio",
-    status: "Padronizar",
-    source: "OpenSSF, OWASP",
-    theme: "Supply Chain",
-    strategic:
-      "Rastrear dependências, artefatos, builds e assinaturas para reduzir risco de componentes comprometidos.",
-    constraints:
-      "Cobertura parcial e baixa ação sobre achados reduzem valor executivo.",
-  },
-  {
-    id: "ES-20",
-    name: "Policy as Code",
-    quadrant: "Ferramentas",
-    ring: "Adopt",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Baixo",
-    effort: "Médio",
-    status: "Padronizar",
-    source: "OpenSSF, CNCF",
-    theme: "Governança",
-    strategic:
-      "Automatizar compliance, segurança e padrões arquiteturais em pipelines e plataformas.",
-    constraints:
-      "Políticas ruidosas ou não versionadas travam entrega e criam bypass informal.",
-  },
-  {
-    id: "ES-21",
-    name: "Platform Engineering + Golden Paths",
-    quadrant: "Plataformas",
-    ring: "Trial",
-    horizon: "Médio",
-    maturity: "Madura",
-    risk: "Médio",
-    effort: "Alto",
-    status: "Monitorar",
-    source: "CNCF, GitLab",
-    theme: "DevOps e Plataforma",
-    strategic:
-      "Oferecer caminhos padronizados para criação, entrega, observabilidade e segurança de serviços.",
-    constraints:
-      "Pode virar plataforma pesada sem adoção real se não resolver dores práticas dos times.",
-  },
-  {
-    id: "ES-22",
-    name: "Observability as Code + OpenTelemetry",
-    quadrant: "Ferramentas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Baixo",
-    effort: "Médio",
-    status: "Monitorar",
-    source: "CNCF, DORA",
-    theme: "DevOps e Plataforma",
-    strategic:
-      "Padronizar telemetria, SLOs e rastreabilidade como parte do ciclo de vida da aplicação.",
-    constraints:
-      "Excesso de sinais, custo de armazenamento e baixa higiene de cardinalidade atrapalham adoção.",
-  },
-  {
-    id: "ES-23",
-    name: "TypeScript como linguagem padrão de frontend e ferramentas",
-    quadrant: "Linguagens e Frameworks",
-    ring: "Adopt",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Baixo",
-    effort: "Baixo",
-    status: "Monitorar",
-    source: "TypeScript, GitHub Octoverse",
-    theme: "Linguagens e Frameworks",
-    strategic:
-      "Reduzir defeitos em interfaces, CLIs e ferramentas internas com tipagem estática e ecossistema amplo.",
-    constraints:
-      "Pode aumentar atrito em scripts simples; exige padrões de build, lint e versionamento coerentes.",
-  },
-  {
-    id: "ES-24",
-    name: "Bibliotecas de validação (Pydantic/Zod)",
-    quadrant: "Linguagens e Frameworks",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Baixo",
-    effort: "Médio",
-    status: "Monitorar",
-    source: "Pydantic, Zod, OWASP",
-    theme: "Qualidade e Contratos",
-    strategic:
-      "Fortalecer contratos de entrada/saída em APIs, pipelines e respostas estruturadas de IA.",
-    constraints:
-      "Validação de schema não substitui validação semântica, autorização nem testes de comportamento.",
-  },
-  {
-    id: "ES-25",
-    name: "Frameworks LLM sem manutenção ou proveniência",
-    quadrant: "Linguagens e Frameworks",
-    ring: "Caution",
-    horizon: "Longo",
-    maturity: "Experimental",
-    risk: "Alto",
-    effort: "Alto",
-    status: "Segurar",
-    source: "Thoughtworks, OWASP, OpenSSF",
-    theme: "Riscos de Adoção",
-    strategic:
-      "Evitar dependência de wrappers, SDKs e frameworks de IA criados rapidamente sem comunidade, manutenção ou postura de segurança.",
-    constraints:
-      "Alto risco de abandono, vulnerabilidades, mudanças incompatíveis e semântica instável em componentes críticos.",
-  },
-];
-
-const DEFAULT_SOURCES = [
-  {
-    id: "SRC-01",
-    name: "Thoughtworks Technology Radar",
-    initials: "TW",
-    url: "https://www.thoughtworks.com/radar",
-    strength: "Alta",
-    cadence: "Semestral + insights",
-    signal: "Blips, anéis, temas macro e práticas emergentes de engenharia.",
-    agentUse: "Comparar mudanças por volume e sugerir alterações de anel.",
-  },
-  {
-    id: "SRC-02",
-    name: "DORA / Google Cloud Research",
-    initials: "DR",
-    url: "https://dora.dev/research/",
-    strength: "Alta",
-    cadence: "Anual + guias",
-    signal: "Métricas, capacidades organizacionais, IA assistida e desempenho de entrega.",
-    agentUse: "Atualizar critérios de sucesso, métricas e hipóteses de pilotos.",
-  },
-  {
-    id: "SRC-03",
-    name: "OWASP GenAI Security",
-    initials: "OA",
-    url: "https://genai.owasp.org/",
-    strength: "Alta",
-    cadence: "Contínua",
-    signal: "Top 10 LLM, Agentic AI, MCP, threat modeling e mitigação.",
-    agentUse: "Rebaixar/promover blips conforme risco de agentes e LLMs.",
-  },
-  {
-    id: "SRC-04",
-    name: "GitHub Blog, Changelog e Octoverse",
-    initials: "GH",
-    url: "https://github.blog/",
-    strength: "Média",
-    cadence: "Semanal",
-    signal: "Adoção de linguagens, agentes, Copilot, supply chain e workflows.",
-    agentUse: "Detectar adoção de ferramentas, mudanças de produto e sinais de ecossistema.",
-  },
-  {
-    id: "SRC-05",
-    name: "GitLab DevSecOps Reports",
-    initials: "GL",
-    url: "https://about.gitlab.com/resources/",
-    strength: "Média",
-    cadence: "Anual + pesquisas",
-    signal: "DevSecOps, platform engineering, toolchain, governança e AI accountability.",
-    agentUse: "Coletar sinais de gargalos organizacionais e adoção de plataforma.",
-  },
-  {
-    id: "SRC-06",
-    name: "Stack Overflow Developer Survey",
-    initials: "SO",
-    url: "https://survey.stackoverflow.co/",
-    strength: "Média",
-    cadence: "Anual",
-    signal: "Adoção por desenvolvedores, confiança em IA, linguagens e ferramentas.",
-    agentUse: "Validar tração comunitária e percepção de risco.",
-  },
-  {
-    id: "SRC-07",
-    name: "CNCF Landscape",
-    initials: "CF",
-    url: "https://landscape.cncf.io/",
-    strength: "Alta",
-    cadence: "Contínua",
-    signal: "Cloud native, observabilidade, segurança, runtime, plataforma e maturidade de projetos.",
-    agentUse: "Monitorar tecnologias de plataforma e projetos graduados/incubados.",
-  },
-  {
-    id: "SRC-08",
-    name: "OpenSSF",
-    initials: "OS",
-    url: "https://openssf.org/",
-    strength: "Alta",
-    cadence: "Contínua",
-    signal: "Supply chain, Scorecard, SLSA, Sigstore, segurança open source.",
-    agentUse: "Atualizar práticas de proveniência, assinatura e avaliação de dependências.",
-  },
-  {
-    id: "SRC-09",
-    name: "NIST AI RMF e SSDF",
-    initials: "NI",
-    url: "https://www.nist.gov/itl/ai-risk-management-framework",
-    strength: "Alta",
-    cadence: "Conforme publicação",
-    signal: "Gestão de risco de IA, avaliação, governança e desenvolvimento seguro.",
-    agentUse: "Calibrar critérios de risco, governança e controles mínimos.",
-  },
-  {
-    id: "SRC-10",
-    name: "Martin Fowler",
-    initials: "MF",
-    url: "https://martinfowler.com/",
-    strength: "Média",
-    cadence: "Contínua",
-    signal: "Arquitetura, engenharia com agentes, práticas e linguagem conceitual.",
-    agentUse: "Identificar técnicas emergentes com explicação conceitual sólida.",
-  },
-  {
-    id: "SRC-11",
-    name: "InfoQ Trends Reports",
-    initials: "IQ",
-    url: "https://www.infoq.com/infoq-trends-report/",
-    strength: "Complementar",
-    cadence: "Periódica",
-    signal: "Tendências para arquitetura, dados, IA, cultura e métodos.",
-    agentUse: "Comparar leitura de mercado com fontes primárias.",
-  },
-  {
-    id: "SRC-12",
-    name: "SIG State of Software",
-    initials: "SG",
-    url: "https://www.softwareimprovementgroup.com/",
-    strength: "Média",
-    cadence: "Anual",
-    signal: "Qualidade estrutural, débito técnico, riscos de IA e sustentabilidade.",
-    agentUse: "Refinar blips de qualidade, débito cognitivo e governança de código.",
-  },
-];
-
-const state = loadState();
-let selectedId = state.blips[0]?.id ?? null;
+let canonicalState;
+let state;
+let selectedId = null;
 
 const elements = {
   sourceList: document.getElementById("sourceList"),
@@ -600,6 +50,7 @@ const elements = {
   selectedBlipLabel: document.getElementById("selectedBlipLabel"),
   totalBlips: document.getElementById("totalBlips"),
   pilotCount: document.getElementById("pilotCount"),
+  radarRevision: document.getElementById("radarRevision"),
   markdownOutput: document.getElementById("markdownOutput"),
   toast: document.getElementById("toast"),
   ringFilter: document.getElementById("ringFilter"),
@@ -608,29 +59,22 @@ const elements = {
   analyzePdfButton: document.getElementById("analyzePdfButton"),
 };
 
-renderAll();
-bindEvents();
-
-function loadState() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed.blips) && Array.isArray(parsed.sources)) {
-        return parsed;
-      }
-    } catch {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }
-  return {
-    blips: structuredClone(DEFAULT_BLIPS),
-    sources: structuredClone(DEFAULT_SOURCES),
-  };
+try {
+  canonicalState = await loadState();
+  state = structuredClone(canonicalState);
+  elements.radarRevision.title = state.revision;
+  elements.radarRevision.textContent = state.revision.split("-")[0];
+  renderAll();
+  bindEvents();
+} catch (error) {
+  elements.toast.textContent = "Não foi possível carregar o radar. " + error.message;
+  elements.toast.classList.add("show");
 }
 
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+async function loadState() {
+  const response = await fetch("./data/radar.json");
+  if (!response.ok) throw new Error("HTTP " + response.status);
+  return normalizeRadar(await response.json());
 }
 
 function bindEvents() {
@@ -661,7 +105,6 @@ function bindEvents() {
     const blip = selectedBlip();
     if (!blip) return;
     blip[event.target.name] = event.target.value;
-    saveState();
     renderAll({ keepForm: true });
   });
 }
@@ -698,14 +141,14 @@ function renderSources() {
     const row = document.createElement("div");
     row.className = "source-row";
     row.innerHTML = `
-      <span class="source-logo">${source.initials}</span>
+      <span class="source-logo">${escapeHtml(source.initials)}</span>
       <div>
         <strong>${escapeHtml(source.name)}</strong>
-        <a href="${source.url}" target="_blank" rel="noreferrer">${cleanUrl(source.url)}</a>
+        <a href="${escapeHtml(source.url)}" target="_blank" rel="noreferrer">${escapeHtml(cleanUrl(source.url))}</a>
       </div>
       <div class="source-meta">
         <span class="strength-${source.strength.toLowerCase()}">${source.strength}</span>
-        <span>${source.cadence}</span>
+        <span>${escapeHtml(source.cadence)}</span>
       </div>
     `;
     elements.sourceList.appendChild(row);
@@ -717,8 +160,8 @@ function renderSources() {
     detail.className = "source-detail";
     detail.innerHTML = `
       <h3>${escapeHtml(source.name)}</h3>
-      <p><a href="${source.url}" target="_blank" rel="noreferrer">${cleanUrl(source.url)}</a></p>
-      <p><strong>Força:</strong> ${source.strength} | <strong>Cadência:</strong> ${source.cadence}</p>
+      <p><a href="${escapeHtml(source.url)}" target="_blank" rel="noreferrer">${escapeHtml(cleanUrl(source.url))}</a></p>
+      <p><strong>Força:</strong> ${source.strength} | <strong>Cadência:</strong> ${escapeHtml(source.cadence)}</p>
       <ul>
         <li>${escapeHtml(source.signal)}</li>
         <li>${escapeHtml(source.agentUse)}</li>
@@ -789,7 +232,7 @@ function renderMatrix() {
       const row = document.createElement("tr");
       row.classList.toggle("selected", blip.id === selectedId);
       row.innerHTML = `
-        <td><strong>${blip.id}</strong> ${escapeHtml(blip.name)}</td>
+        <td><strong>${escapeHtml(blip.id)}</strong> ${escapeHtml(blip.name)}</td>
         <td>${blip.quadrant}</td>
         <td><span class="tag ring-${blip.ring.toLowerCase()}">${blip.ring}</span></td>
         <td>${blip.horizon}</td>
@@ -809,7 +252,7 @@ function renderPilots() {
     .forEach((blip) => {
       const chip = document.createElement("button");
       chip.className = "pilot-chip";
-      chip.innerHTML = `<span>${blip.id}</span>${escapeHtml(blip.name)}`;
+      chip.innerHTML = `<span>${escapeHtml(blip.id)}</span>${escapeHtml(blip.name)}`;
       chip.addEventListener("click", () => selectBlip(blip.id));
       elements.pilotStrip.appendChild(chip);
     });
@@ -842,7 +285,7 @@ function renderDetailCard(blip) {
       <span>${escapeHtml(blip.maturity)}</span>
       <span>Risco ${escapeHtml(blip.risk)}</span>
     </div>
-    <a class="detail-link" href="${url}" target="_blank" rel="noreferrer">
+    <a class="detail-link" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
       Ver detalhes
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg>
     </a>
@@ -877,7 +320,6 @@ function addBlip() {
     constraints: "Descrever riscos, dependências, lacunas e contraindicações.",
   });
   selectedId = id;
-  saveState();
   renderAll();
   showToast("Blip adicionado.");
 }
@@ -889,7 +331,6 @@ function deleteSelectedBlip() {
   if (!confirmed) return;
   state.blips = state.blips.filter((item) => item.id !== selectedId);
   selectedId = state.blips[0]?.id ?? null;
-  saveState();
   renderAll();
   showToast("Blip excluído.");
 }
@@ -916,7 +357,6 @@ function addSource() {
     signal: "Fonte adicionada manualmente para avaliação.",
     agentUse: "Coletar sinais e aguardar classificação editorial.",
   });
-  saveState();
   renderAll();
   showToast("Fonte adicionada.");
 }
@@ -936,9 +376,8 @@ async function importProposalFile(event) {
     const confirmed = window.confirm(`Aplicar ${proposals.length} proposta(s) ao radar local?`);
     if (!confirmed) return;
     const result = applyProposals(proposals);
-    saveState();
     renderAll();
-    showToast(`${result.added} adicionadas, ${result.updated} atualizadas, ${result.removed} removidas.`);
+    showToast(`${result.added} adicionadas, ${result.updated} atualizadas.`);
   } catch (error) {
     showToast("Não foi possível importar o JSON de propostas.");
     console.error(error);
@@ -986,9 +425,8 @@ async function analyzePdfFile(event) {
     }
 
     const result = applyProposals(proposals);
-    saveState();
     renderAll();
-    showToast(`${result.added} adicionadas, ${result.updated} atualizadas, ${result.removed} removidas.`);
+    showToast(`${result.added} adicionadas, ${result.updated} atualizadas.`);
   } catch (error) {
     console.error(error);
     showToast(error.message || "Não foi possível analisar o PDF.");
@@ -999,7 +437,10 @@ async function analyzePdfFile(event) {
 }
 
 function applyProposals(proposals) {
-  const result = { added: 0, updated: 0, removed: 0 };
+  if (proposals.some(({ action }) => ["remove", "delete"].includes(String(action).toLowerCase()))) {
+    throw new Error("Propostas de remoção não são aceitas.");
+  }
+  const result = { added: 0, updated: 0 };
   proposals.forEach((proposal) => {
     const action = String(proposal.action ?? "").toLowerCase();
     if (action === "add" && proposal.blip) {
@@ -1022,11 +463,6 @@ function applyProposals(proposals) {
       return;
     }
 
-    if ((action === "remove" || action === "delete") && proposal.id) {
-      const before = state.blips.length;
-      state.blips = state.blips.filter((item) => item.id !== proposal.id);
-      if (state.blips.length !== before) result.removed += 1;
-    }
   });
   return result;
 }
@@ -1069,11 +505,8 @@ function nextBlipId() {
 function resetData() {
   const confirmed = window.confirm("Restaurar os dados iniciais do radar?");
   if (!confirmed) return;
-  localStorage.removeItem(STORAGE_KEY);
-  state.blips = structuredClone(DEFAULT_BLIPS);
-  state.sources = structuredClone(DEFAULT_SOURCES);
-  selectedId = state.blips[0].id;
-  saveState();
+  state = structuredClone(canonicalState);
+  selectedId = state.blips[0]?.id ?? null;
   renderAll();
   showToast("Dados restaurados.");
 }
@@ -1142,11 +575,12 @@ function downloadMarkdown() {
 }
 
 function downloadHtmlSnapshot() {
-  const html = generateHtmlSnapshot();
+  const payload = snapshotPayload();
+  const html = buildRadarHtmlSnapshot(payload);
   const blob = new Blob([html], { type: "text/html;charset=utf-8" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = monthlySnapshotFilename();
+  link.download = monthlySnapshotFilename(payload.generatedAt);
   link.click();
   URL.revokeObjectURL(link.href);
   showToast("HTML gerado para download.");
@@ -1185,78 +619,13 @@ function snapshotPayload() {
   return {
     title: "Radar Tecnologico e TRM - Engenharia de Software",
     generatedAt: new Date().toISOString(),
-    blips: state.blips,
+    blips: state.blips.map((blip) => ({ ...blip, detailsUrl: getDetailsUrl(blip) })),
     sources: state.sources,
   };
 }
 
-function monthlySnapshotFilename() {
-  return `${new Date().toISOString().slice(0, 10)}-radar-tecnologico-engenharia-software.html`;
-}
-
-function generateHtmlSnapshot() {
-  const rows = state.blips
-    .map(
-      (blip) =>
-        `<tr><td>${escapeHtml(blip.name)}</td><td>${escapeHtml(blip.quadrant)}</td><td>${escapeHtml(blip.ring)}</td><td>${escapeHtml(blip.horizon)}</td><td>${escapeHtml(blip.maturity)}</td><td>${escapeHtml(blip.risk)}</td><td>${escapeHtml(blip.effort)}</td></tr>`,
-    )
-    .join("");
-  const details = ["Curto", "Médio", "Longo"]
-    .map((horizon) => {
-      const cards = state.blips
-        .filter((blip) => blip.horizon === horizon)
-        .map(
-          (blip) => `<article class="card">
-            <h3>${escapeHtml(blip.id)} - ${escapeHtml(blip.name)}</h3>
-            <p><strong>${escapeHtml(blip.quadrant)} | ${escapeHtml(blip.ring)} | ${escapeHtml(blip.maturity)}</strong></p>
-            <p>${escapeHtml(blip.strategic)}</p>
-            <p><strong>Gargalos:</strong> ${escapeHtml(blip.constraints)}</p>
-            <p><a href="${escapeHtml(getDetailsUrl(blip))}">Mais detalhes</a></p>
-          </article>`,
-        )
-        .join("");
-      return `<section><h2>${horizon} Prazo</h2><div class="cards">${cards}</div></section>`;
-    })
-    .join("");
-  const sources = state.sources
-    .map(
-      (source) =>
-        `<tr><td>${escapeHtml(source.name)}</td><td>${escapeHtml(source.strength)}</td><td>${escapeHtml(source.cadence)}</td><td>${escapeHtml(source.signal)}</td><td><a href="${escapeHtml(source.url)}">${escapeHtml(source.url)}</a></td></tr>`,
-    )
-    .join("");
-
-  return `<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Radar Tecnologico e TRM - Engenharia de Software</title>
-  <style>
-    body{margin:0;background:#f6f9fa;color:#17212b;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    header{padding:28px 36px;background:#071724;color:white} header h1{margin:0;font-size:28px} header p{color:#b8cbd4}
-    main{max-width:1180px;margin:auto;padding:28px}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#d7e0e5;border:1px solid #d7e0e5;border-radius:8px;overflow:hidden}
-    .summary div,.panel,.card,table{background:white}.summary div{padding:18px}.summary span{display:block;color:#5f6f7b;font-size:12px;font-weight:700;text-transform:uppercase}.summary strong{font-size:24px}
-    section{margin-top:28px}.panel,.card{border:1px solid #d7e0e5;border-radius:8px;padding:16px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
-    table{width:100%;border-collapse:collapse;border:1px solid #d7e0e5}th,td{border-bottom:1px solid #d7e0e5;padding:10px 12px;text-align:left;vertical-align:top;font-size:13px}th{background:#eef3f5;color:#465967}
-    a{color:#006b6f}@media print{body{background:white}.card,table,.panel{break-inside:avoid}}@media(max-width:800px){main{padding:18px}.summary{grid-template-columns:1fr}}
-  </style>
-</head>
-<body>
-  <header><h1>Radar Tecnologico e TRM - Engenharia de Software</h1><p>Snapshot mensal gerado em ${new Date().toLocaleString("pt-BR")}.</p></header>
-  <main>
-    <section class="summary">
-      <div><span>Blips</span><strong>${state.blips.length}</strong></div>
-      <div><span>Pilotos P&D</span><strong>${state.blips.filter((blip) => blip.status.includes("Piloto")).length}</strong></div>
-      <div><span>Atualização</span><strong>Mensal</strong></div>
-      <div><span>Versão</span><strong>${new Date().toISOString().slice(0, 7)}</strong></div>
-    </section>
-    <section><h2>Sumário Executivo</h2><div class="panel"><p>Radar Tecnológico e Technology Roadmap para apoiar decisões de P&D, pilotos controlados e atualização mensal contínua em Engenharia de Software.</p></div></section>
-    <section><h2>Matriz Radar + TRM</h2><table><thead><tr><th>Tecnologia/Técnica</th><th>Quadrante</th><th>Anel</th><th>Horizonte</th><th>Maturidade</th><th>Risco</th><th>Esforço</th></tr></thead><tbody>${rows}</tbody></table></section>
-    ${details}
-    <section><h2>Fontes Monitoradas</h2><table><thead><tr><th>Fonte</th><th>Força</th><th>Cadência</th><th>Sinal</th><th>URL</th></tr></thead><tbody>${sources}</tbody></table></section>
-  </main>
-</body>
-</html>`;
+function monthlySnapshotFilename(generatedAt = new Date().toISOString()) {
+  return `${generatedAt.slice(0, 10)}-radar-tecnologico-engenharia-software.html`;
 }
 
 function generateMarkdown() {
