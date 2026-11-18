@@ -161,10 +161,28 @@ test("rejects JSON above one MiB for both fixed-length and streamed requests", a
     headers: { ...authorized, "Content-Type": "application/json" },
     body: streamed,
   });
-  for (const response of [await put(base, oversized), streamingResponse]) {
-    assert.equal(response.status, 400);
-    assert.deepEqual(await response.json(), { ok: false, error: "invalid_payload" });
-  }
+  const fixedLength = request(base + "/api/v1/radar", {
+    method: "PUT",
+    headers: {
+      ...authorized,
+      "Content-Type": "application/json",
+      "Content-Length": Buffer.byteLength(oversized),
+    },
+  });
+  t.after(() => fixedLength.destroy());
+  fixedLength.flushHeaders();
+  const [earlyResponse] = await once(fixedLength, "response");
+  fixedLength.end();
+  assert.equal(earlyResponse.statusCode, 400);
+  const earlyChunks = [];
+  for await (const chunk of earlyResponse) earlyChunks.push(chunk);
+  assert.deepEqual(JSON.parse(Buffer.concat(earlyChunks).toString("utf8")), {
+    ok: false,
+    error: "invalid_payload",
+  });
+
+  assert.equal(streamingResponse.status, 400);
+  assert.deepEqual(await streamingResponse.json(), { ok: false, error: "invalid_payload" });
 });
 
 test("returns the saved radar and commit through the HTTP route", async (t) => {
