@@ -83,7 +83,7 @@ test("accepts preflight from the exact GitHub Pages and local origins", async (t
     assert.equal(response.headers.get("vary"), "Origin");
     assert.equal(response.headers.get("access-control-allow-origin"), origin);
     assert.equal(response.headers.get("access-control-allow-methods"), "GET, POST, PUT, OPTIONS");
-    assert.equal(response.headers.get("access-control-allow-headers"), "Authorization, Content-Type");
+    assert.equal(response.headers.get("access-control-allow-headers"), "Authorization, Content-Type, X-File-Name");
     assert.equal(await response.text(), "");
   }
 });
@@ -260,3 +260,87 @@ function fakeContents() {
     content: Buffer.from(JSON.stringify(radar)).toString("base64"),
   });
 }
+
+const analysisPath = "/api/v1/analysis-jobs";
+function upload(base, body, headers = {}, options = {}) {
+  return fetch(base + analysisPath, {
+    method: "POST", body, headers: { ...authorized, "Content-Type": "application/pdf", Origin: localOrigin, ...headers }, ...options,
+  });
+}
+
+test("authenticates both job routes and allows the filename in preflight", async (t) => {
+  const base = await start(t);
+  for (const res of [
+    await upload(base, "text", { Authorization: "" }),
+    await fetch(base + analysisPath + "/missing"),
+  ]) {
+    assert.equal(res.status, 401);
+    assert.deepEqual(await res.json(), { ok: false, error: "unauthorized" });
+  }
+  const cors = await fetch(base + analysisPath, {
+    method: "OPTIONS", headers: { Origin: localOrigin, "Access-Control-Request-Headers": "authorization,content-type,x-file-name" },
+  });
+  assert.equal(cors.status, 204);
+  assert.equal(cors.headers.get("access-control-allow-headers"), "Authorization, Content-Type, X-File-Name");
+});
+
+test("rejects invalid MIME, signature, Content-Length and streamed size before creating jobs", async (t) => {
+  let created = 0;
+  const base = await start(t, { jobs: { create() { created++; } } });
+  const tooBig = Buffer.alloc(10 * 1024 * 1024 + 1);
+  const pending = request(base + analysisPath, {
+    method: "POST", headers: { ...authorized, "Content-Type": "application/pdf", "Content-Length": tooBig.length },
+  });
+  t.after(() => pending.destroy());
+  pending.flushHeaders();
+  const [early] = await once(pending, "response");
+  pending.end();
+  assert.equal(early.statusCode, 413);
+  early.resume();
+  const streamed = new ReadableStream({ start(controller) {
+    controller.enqueue(tooBig.subarray(0, 100)); controller.enqueue(tooBig.subarray(100)); controller.close();
+  } });
+  for (const [res, status, error] of [
+    [await upload(base, "%PDF-fixture", { "Content-Type": "text/plain" }), 415, "unsupported_media_type"],
+    [await upload(base, "fake", { "X-File-Name": "file.pdf" }), 400, "invalid_pdf"],
+    [await upload(base, streamed, {}, { duplex: "half" }), 413, "pdf_too_large"],
+  ]) {
+    assert.equal(res.status, status);
+    assert.deepEqual(await res.json(), { ok: false, error });
+    assert.equal(res.headers.get("access-control-allow-origin"), localOrigin);
+  }
+  assert.equal(created, 0);
+});
+
+test("returns queued 202, running progress, busy, success and unknown job over HTTP", async (t) => {
+  let complete;
+  const base = await start(t, {
+    createId: () => "test-job", now: () => new Date("2026-11-18T12:00:00Z"),
+    runner: ({ bytes, fileName, onProgress }) => {
+      assert.equal(bytes.toString(), "%PDF-fixture");
+      assert.equal(fileName, "source.pdf");
+      onProgress({ stage: "ocr", processedPages: 1, totalPages: 2 });
+      return new Promise((resolve) => { complete = resolve; });
+    },
+  });
+  const res = await upload(base, "%PDF-fixture", { "X-File-Name": "source.pdf" });
+  assert.equal(res.status, 202);
+  assert.deepEqual(await res.json(), { ok: true, job: {
+    id: "test-job", status: "queued", createdAt: "2026-11-18T12:00:00.000Z", updatedAt: "2026-11-18T12:00:00.000Z",
+    progress: { stage: "queued", processedPages: 0, totalPages: 0 },
+  } });
+  const get = (id) => fetch(base + analysisPath + "/" + id, { headers: authorized });
+  const running = (await (await get("test-job")).json()).job;
+  assert.equal(running.status, "running");
+  assert.deepEqual(running.progress, { stage: "ocr", processedPages: 1, totalPages: 2 });
+  const busy = await upload(base, "%PDF-new");
+  assert.equal(busy.status, 429);
+  assert.deepEqual(await busy.json(), { ok: false, error: "analysis_busy" });
+  complete({ proposals: [], totalPages: 2, ocrPages: 1 });
+  const done = (await (await get("test-job")).json()).job;
+  assert.equal(done.status, "succeeded");
+  assert.deepEqual(done.result, { proposals: [], totalPages: 2, ocrPages: 1 });
+  const unknown = await get("unknown");
+  assert.equal(unknown.status, 404);
+  assert.deepEqual(await unknown.json(), { ok: false, error: "not_found" });
+});

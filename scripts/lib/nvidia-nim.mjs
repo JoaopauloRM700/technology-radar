@@ -52,6 +52,16 @@ const proposalSchema = strictObject({
 });
 const validateProposalResponse = new Ajv({ ownProperties: true }).compile(proposalSchema);
 
+export function validateProposals(payload) {
+  if (!validateProposalResponse(payload)) throw new NvidiaNimError("invalid-schema");
+  try {
+    for (const { blip } of payload.proposals) normalizeBlipFields(blip, "blip");
+  } catch {
+    throw new NvidiaNimError("invalid-schema");
+  }
+  return payload;
+}
+
 const errorMessages = {
   "missing-key": "NVIDIA_API_KEY ausente. Configure a chave para usar NVIDIA NIM.",
   timeout: "NVIDIA NIM excedeu o tempo limite.",
@@ -73,7 +83,7 @@ export class NvidiaNimError extends Error {
 export function createNvidiaNimClient({
   env = process.env,
   fetch = globalThis.fetch,
-  endpoint = endpointUrl,
+  endpoint = env.NVIDIA_NIM_URL?.trim() || endpointUrl,
   timeoutMs = 60_000,
   clock = { setTimeout, clearTimeout },
 } = {}) {
@@ -132,17 +142,12 @@ export function createNvidiaNimClient({
       throw new NvidiaNimError("malformed-response");
     }
 
-    if (!validateProposalResponse(payload)) throw new NvidiaNimError("invalid-schema");
-    try {
-      for (const { blip } of payload.proposals) normalizeBlipFields(blip, "blip");
-    } catch {
-      throw new NvidiaNimError("invalid-schema");
-    }
-    return payload;
+    return validateProposals(payload);
   }
 
-  async function generateProposals(brief) {
+  async function generateProposals(brief, jobSignal) {
     const controller = new AbortController();
+    const signal = jobSignal ? AbortSignal.any([jobSignal, controller.signal]) : controller.signal;
     let timer;
     const deadline = new Promise((_, reject) => {
       timer = clock.setTimeout(() => {
@@ -152,7 +157,7 @@ export function createNvidiaNimClient({
     });
 
     try {
-      return await Promise.race([deadline, request(brief, controller.signal)]);
+      return await Promise.race([deadline, request(brief, signal)]);
     } finally {
       clock.clearTimeout(timer);
     }

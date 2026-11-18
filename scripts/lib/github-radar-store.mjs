@@ -82,14 +82,14 @@ export function createGithubRadarStore({
     throw new GitHubRadarError(response.status);
   }
 
-  async function readRadar() {
-    const file = await request(readUrl, { method: "GET" }, { retryLargeContents: true });
+  async function readRadar(signal) {
+    const file = await request(readUrl, { method: "GET", signal }, { retryLargeContents: true });
     const sha = file?.sha;
     if (typeof sha !== "string" || !sha) throw new GitHubRadarError();
 
     // Large files have a SHA but no inline content in the Contents API's object response.
     const blob = file.encoding === "none" && file.content === ""
-      ? await request(repoUrl + "/git/blobs/" + encodeURIComponent(sha), { method: "GET" })
+      ? await request(repoUrl + "/git/blobs/" + encodeURIComponent(sha), { method: "GET", signal })
       : file;
     if (blob?.encoding !== "base64" || typeof blob.content !== "string") throw new GitHubRadarError();
 

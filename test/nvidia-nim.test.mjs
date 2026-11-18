@@ -3,6 +3,15 @@ import test from "node:test";
 import { createNvidiaNimClient, NvidiaNimError } from "../scripts/lib/nvidia-nim.mjs";
 
 const apiKey = "fixture-key-never-log-123";
+test("propaga o cancelamento do job à requisição de chat", async () => {
+  const job = new AbortController();
+  const nim = client(async (_url, { signal }) => {
+    job.abort();
+    signal.throwIfAborted();
+    return completion('{"proposals":[]}');
+  });
+  await assert.rejects(nim.generateProposals("brief", job.signal), errorCode("transport"));
+});
 const brief = "Trecho de um PDF usado no teste.";
 const proposal = {
   action: "add",

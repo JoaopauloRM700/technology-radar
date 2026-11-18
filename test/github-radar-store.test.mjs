@@ -11,6 +11,14 @@ const currentRadar = {
 };
 const fixtureToken = "fake-github-token";
 
+test("passes the job abort signal through contents, retry, and blob reads", async () => {
+  const { signal } = new AbortController();
+  const { store, calls } = await setup([tooLargeResponse(), largeContentsResponse("sha", 1100000), contentsResponse()]);
+  await store.readRadar(signal);
+  assert.equal(calls.length, 3);
+  for (const call of calls) assert.equal(call.signal, signal);
+});
+
 function contentsResponse(radar = currentRadar, sha = "current-blob-sha") {
   const content = Buffer.from(JSON.stringify(radar), "utf8").toString("base64");
   return Response.json({
