@@ -8,6 +8,7 @@
     "radar:full": "node scripts/run-radar-full.mjs",
     "radar:full:nim": "node scripts/run-radar-full.mjs --ai nim",
     "radar:app": "node scripts/local-server.mjs",
+    "radar:api": "node scripts/api-server.mjs",
     "radar:discover": "node scripts/discover-sources.mjs",
     "radar:update": "node scripts/update-radar.mjs --scan",
     "radar:update:offline": "node scripts/update-radar.mjs --offline",

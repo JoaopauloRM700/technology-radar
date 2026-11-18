@@ -1,272 +1,126 @@
 # Technology Radar e TRM - Engenharia de Software
 
-Protótipo local de um Radar Tecnológico e Technology Roadmap (TRM) para Engenharia de Software, com foco em P&D, desenvolvimento, qualidade, segurança, DevOps, plataforma e governança de IA.
+Radar Tecnológico e Technology Roadmap (TRM) para Engenharia de Software, publicado no GitHub Pages com estado canônico versionado em `data/radar.json`, modo administrador protegido por token em memória e análise temporária de PDFs públicos (textuais e escaneados) via NVIDIA NIM + Poppler em uma API Docker no Render.
 
-O projeto combina o modelo do Thoughtworks Technology Radar com atributos de roadmap tecnológico: horizonte temporal, maturidade, risco e esforço de implantação.
+## Arquitetura
 
-## Como Abrir
+- **Frontend público (GitHub Pages):** serve `index.html`, `styles.css`, `app.js`, `app-core.mjs` e `data/radar.json`. Visitantes visualizam o radar, a matriz TRM, as fontes e podem exportar Markdown e snapshot HTML offline (`Blob`), sem acesso a edição, IA ou publicação.
+- **Estado canônico (`data/radar.json`):** única fonte oficial de verdade (`schemaVersion`, `revision`, `updatedAt`, `changeNote`, `blips`, `sources`). `localStorage` não é utilizado.
+- **API administrativa Docker (`scripts/api-server.mjs`, Render):** autentica o proprietário com `ADMIN_TOKEN` (SHA-256 + `timingSafeEqual`), persiste novas versões em `data/radar.json` pela GitHub Contents API com controle otimista de conflito (`baseRevision` -> HTTP `409`) e executa jobs temporários de análise de PDF com Poppler + NVIDIA NIM.
+- **Privacidade e efemeridade:** PDFs enviados, imagens JPEG de OCR, textos extraídos, prompts e respostas brutas da IA existem apenas temporariamente durante o job e são removidos em `finally`. Somente documentos públicos podem ser enviados à NVIDIA.
 
-Abra o arquivo abaixo no navegador:
+## Variáveis de Ambiente (Somente Backend)
 
-```text
-D:\Documents\Technology-Radar\index.html
+Copie `.env.example` para `.env` localmente (nunca versione `.env` nem coloque segredos no frontend):
+
+| Variável | Obrigatória | Descrição |
+|---|---|---|
+| `ADMIN_TOKEN` | Sim | Token secreto do administrador com **no mínimo 32 caracteres**. Guardado apenas no backend e mantido somente em memória no navegador durante a sessão. |
+| `GITHUB_TOKEN` | Sim | Fine-grained Personal Access Token do GitHub restrito a este repositório com permissão mínima **`Contents: write`**. |
+| `GITHUB_OWNER` | Não | Dono do repositório no GitHub (padrão: `JoaopauloRM700`). |
+| `GITHUB_REPO` | Não | Nome do repositório no GitHub (padrão: `technology-radar`). |
+| `GITHUB_BRANCH` | Não | Branch canônica (padrão: `main`). |
+| `NVIDIA_API_KEY` | Sim (para IA) | Chave secreta da API NVIDIA NIM (gerada no portal build.nvidia.com). |
+| `NVIDIA_NIM_MODEL` | Não | Modelo de propostas (padrão: `nvidia/nemotron-3.5-super-vl-120b-a12b`). |
+| `NVIDIA_NIM_URL` | Não | Endpoint Chat Completions (padrão: `https://integrate.api.nvidia.com/v1/chat/completions`). |
+| `NVIDIA_PARSE_URL` | Não | Endpoint Nemotron Parse OCR (padrão: `https://ai.api.nvidia.com/v1/retrieval/nvidia/nemotron-3.5-parse/parse`). |
+| `ALLOWED_ORIGINS` | Não | Origens CORS permitidas separadas por vírgula (padrão: `https://joapaulorm700.github.io,http://localhost:4173`). |
+| `PORT` | Não | Porta HTTP da API (padrão: `8787`). |
+
+## Execução Local
+
+No PowerShell do Windows, prefira `npm.cmd` para evitar bloqueios de política de execução.
+
+### 1. Subir a API em Docker (porta `8787`)
+
+```bash
+docker compose up --build
 ```
 
-O app funciona como uma página HTML local, sem backend. As edições feitas na interface ficam salvas no `localStorage` do navegador.
+A API responderá em `http://localhost:8787/healthz`. Para rodar a API diretamente sem Docker (exige Poppler no `PATH` para análise de PDF):
 
-Para usar análise de PDF pela interface, abra pelo servidor local:
+```bash
+npm.cmd run radar:api
+```
+
+### 2. Subir o frontend estático local (porta `4173`)
 
 ```bash
 npm.cmd run radar:app
 ```
 
-Depois acesse:
+Acesse `http://localhost:4173`. O servidor estático local (`scripts/local-server.mjs`) opera por **allowlist estrita** e serve apenas `index.html`, `styles.css`, `app.js`, `app-core.mjs` e `data/radar.json` — nunca `.env`, `.git`, `data/uploads/` ou artefatos internos.
 
-```text
-http://localhost:4173
+Em `localhost`/`127.0.0.1`, o frontend aponta automaticamente para `http://localhost:8787` se a meta tag `radar-api-base` estiver vazia.
+
+## Deploy no Render e GitHub Pages
+
+### API no Render (Blueprint gratuito)
+
+1. Conecte o repositório do GitHub no [Render](https://render.com/) usando o Blueprint `render.yaml` (o Render constrói diretamente a partir do `Dockerfile` com Node 22 `bookworm-slim`, `poppler-utils` e usuário não-root `node`).
+2. Preencha os segredos marcados com `sync: false` no painel do Render:
+   - `NVIDIA_API_KEY`
+   - `ADMIN_TOKEN` (mínimo 32 caracteres)
+   - `GITHUB_TOKEN` (fine-grained PAT com `Contents: write` neste repositório)
+3. Verifique o health check em `https://<seu-servico>.onrender.com/healthz`.
+
+### Configurar a URL pública da API no GitHub Pages
+
+1. Edite a meta tag em `index.html`:
+
+```html
+<meta name="radar-api-base" content="https://<seu-servico>.onrender.com" />
 ```
 
-Esse modo habilita o botão **Analisar PDF**, porque o backend local consegue ler `.env`, salvar o upload, analisar o PDF e chamar o NVIDIA NIM.
+2. Faça commit na branch `main` do GitHub.
+3. No GitHub, ative **Settings -> Pages -> Deploy from a branch (`main` / `/root`)**.
 
-## Funcionalidades
+### Cold start e limites do plano gratuito do Render
 
-- Visualização de radar com quadrantes e anéis.
-- Edição de blips pelo painel lateral.
-- Adição e exclusão de tecnologias.
-- Mudança de quadrante, anel, horizonte, maturidade, risco e esforço.
-- Ficha resumida ao clicar em um ponto do radar.
-- Link de detalhes por tecnologia.
-- Matriz Radar + TRM.
-- Biblioteca de fontes monitoradas.
-- Exportação em Markdown.
-- Importação de propostas geradas por IA.
-- Análise assistida de PDFs para gerar sinais e propostas de novos blips.
-- Upload de PDF pela interface quando o app roda via `npm.cmd run radar:app`.
-- Exportação de snapshot HTML mensal para compartilhar com gestão.
+- Serviços web gratuitos do Render entram em hibernação após **15 minutos de inatividade** e têm **filesystem efêmero** (reinícios apagam arquivos temporários e jobs em memória). Consulte os [limites oficiais do Render Free](https://render.com/docs/free).
+- O frontend desperta a API automaticamente chamando `GET /healthz` por até **90 segundos** antes de autenticar, salvar ou enviar PDFs.
+- Se o Render reiniciar durante uma análise, o polling (`GET /api/v1/analysis-jobs/:id`) recebe `404` e exibe uma mensagem orientando o reenvio do PDF. O estado permanente em `data/radar.json` no GitHub permanece intacto.
+- Após **Salvar versão**, o commit `chore(radar): <descrição>` é gravado imediatamente no GitHub `main`, mas o GitHub Pages pode levar alguns minutos para publicar o novo `data/radar.json`.
 
-## Quadrantes
+## Limites e Governança da Análise de PDF
 
-- Técnicas
-- Plataformas
-- Ferramentas
-- Linguagens e Frameworks
+- Somente **PDFs públicos**, sem criptografia, com assinatura `%PDF-`, até **10 MiB** e **75 páginas**.
+- Extração híbrida: `pdftotext -layout` para páginas textuais; páginas com menos de 80 caracteres úteis são renderizadas a 300 DPI (`pdftoppm`) e enviadas ao `nvidia/nemotron-3.5-parse` (concorrência máxima 2, timeout de 60 s por chamada, retry de 2 s e 5 s apenas para HTTP `429`/`503`).
+- Limites da POC: **1 job simultâneo**, timeout total de **10 minutos**, TTL de **30 minutos** em memória e **10 análises por dia UTC**.
+- Máximo de **5 propostas** (`add`, `update`, `move`). Exclusões sugeridas pela IA nunca são aceitas. Todas as propostas abrem **desmarcadas** no diálogo de revisão com confiança, evidência por página e diff antes/depois, sendo aplicadas somente ao rascunho até você clicar em **Salvar versão**.
 
-## Anéis
+## Sincronização Manual GitHub -> GitLab
 
-- Adopt: tecnologia madura, pronta para uso padrão.
-- Trial: promissora, recomendada para piloto controlado.
-- Assess: requer avaliação de viabilidade.
-- Caution: exige cautela ou deve ser evitada no momento.
-
-## Comandos
-
-No PowerShell, use `npm.cmd` para evitar bloqueios de política de execução:
-
-Para executar o pipeline local completo:
+O repositório do **GitHub (`main`) é a fonte de verdade**, pois a API grava commits diretamente nele. Antes de iniciar qualquer alteração local, sincronize o `main` do GitHub para o GitLab (`origin`):
 
 ```bash
-npm.cmd run radar:full
+git fetch github
+git checkout main
+git merge --ff-only github/main
+git push origin main
 ```
 
-O comando `radar:full` descobre fontes, baixa e analisa os PDFs novos e consolida os arquivos `data/pdf/*-proposals.json` preenchidos.
+## Fluxo CLI (Descoberta e Propostas Locais)
 
-- `data/radar-update-proposals.json` contém o JSON para importar no app.
-- `docs/radar-full-run-summary-current.md` contém o resumo do pipeline, com arquivos preenchidos e arquivos ainda vazios.
+Comandos disponíveis para execução offline/local em lote:
 
-Execute o pipeline completo com geração automática de propostas via NVIDIA NIM.
-
-```bash
-npm.cmd run radar:full:nim
-```
-
-Antes, preencha o arquivo `.env`:
-
-```env
-NVIDIA_API_KEY=SUA_CHAVE_AQUI
-NVIDIA_NIM_MODEL=nvidia/nemotron-3.5-super-vl-120b-a12b
-```
-
-`NVIDIA_NIM_MODEL` é opcional. O modo NIM preenche arquivos `data/pdf/*-proposals.json` vazios e consolida as propostas em `data/radar-update-proposals.json`. Use `--ai-overwrite` para reprocessar lotes já preenchidos. A opção preserva os lotes históricos.
-
-```bash
-npm.cmd run radar:full:nim -- --ai-overwrite
-```
-
-Para limitar o número de briefs processados pela IA em um teste:
-
-```bash
-npm.cmd run radar:full:nim -- --ai-limit 2
-```
-
-```bash
-npm.cmd run radar:update
-```
-
-Esse comando coleta sinais nas fontes de `data/monitored-sources.json` e gera:
-
-- `data/radar-signals.json`: sinais extraídos das fontes.
-- `docs/radar-ai-update-brief.md`: briefing pronto para enviar a uma IA.
-- `data/radar-update-proposals.json`: arquivo onde a resposta JSON da IA deve ser salva.
-
-Para testar o fluxo sem Internet:
-
-```bash
-npm.cmd run radar:update:offline
-```
-
-Para descobrir PDFs e relatórios nas fontes monitoradas usando Playwright quando disponível:
-
-```bash
-npm.cmd run radar:discover
-```
-
-O comando lê `data/monitored-sources.json`, abre as fontes marcadas com `"strategy": "playwright"` em um navegador headless, detecta links de PDF ou relatórios, baixa arquivos novos em `data/downloads/`, evita duplicatas por cache/hash e chama automaticamente o analisador de PDF.
-
-Em ambientes sandbox, como o Codex, a navegação real do Playwright pode pedir permissão de rede. Sem essa permissão, o comando registra a falha no relatório e não baixa arquivos.
-
-Opções úteis:
-
-```bash
-npm.cmd run radar:discover -- --source Thoughtworks
-npm.cmd run radar:discover -- --max-sources 3
-npm.cmd run radar:discover -- --max-pdfs-per-source 1
-npm.cmd run radar:discover -- --no-analyze
-npm.cmd run radar:discover -- --fetch-only
-```
-
-Saídas geradas:
-
-- `data/discovery/radar-discovery.json`: relatório estruturado da varredura.
-- `data/discovery/download-cache.json`: cache de PDFs baixados e hashes.
-- `docs/radar-discovery-brief.md`: briefing de auditoria da descoberta.
-- `data/downloads/`: PDFs baixados por fonte.
-- `data/pdf/`: textos, sinais, briefs e propostas por PDF analisado.
-
-Campos úteis em `data/monitored-sources.json`:
-
-- `strategy`: `playwright` para páginas dinâmicas ou `fetch` para HTML simples.
-- `discoverPdfs`: habilita ou desabilita busca de PDFs naquela fonte.
-- `maxPdfDownloads`: limite padrão de downloads por fonte.
-- `preferredPdfPatterns`: padrões que aumentam a prioridade de PDFs relevantes.
-- `excludedPdfPatterns`: padrões que reduzem a prioridade de PDFs fora de escopo.
-
-Para analisar um PDF local:
-
-```bash
-npm.cmd run radar:pdf -- "D:\Downloads\tr_technology_radar_vol_34_en_1.pdf"
-```
-
-Esse comando gera:
-
-- `data/pdf/<nome-do-pdf>.txt`: texto extraído do PDF.
-- `data/pdf/<nome-do-pdf>-signals.json`: sinais, trechos e termos candidatos.
-- `docs/<nome-do-pdf>-brief.md`: briefing pronto para enviar a uma IA.
-- `data/pdf/<nome-do-pdf>-proposals.json`: arquivo de propostas para importar no app.
-
-## Fluxo de Atualização com IA
-
-1. Rode `npm.cmd run radar:update`.
-2. Abra `docs/radar-ai-update-brief.md`.
-3. Cole o briefing em uma ferramenta de IA.
-4. Peça para a IA retornar somente JSON válido no formato solicitado.
-5. Salve a resposta em `data/radar-update-proposals.json`.
-6. Abra `index.html`.
-7. Clique em **Importar Propostas**.
-8. Revise e confirme a aplicação das mudanças.
-
-A IA não altera o radar automaticamente. Ela propõe mudanças, e a decisão final continua humana.
-
-## Fluxo de Análise de PDF
-
-1. Coloque o PDF em uma pasta local acessível.
-2. Rode `npm.cmd run radar:pdf -- "CAMINHO\DO\ARQUIVO.pdf"`.
-3. Revise `docs/<nome-do-pdf>-brief.md`.
-4. Cole o briefing em uma IA e peça retorno somente em JSON.
-5. Salve o JSON em `data/pdf/<nome-do-pdf>-proposals.json`.
-6. Abra `index.html`.
-7. Clique em **Importar Propostas** e escolha o JSON do PDF.
-8. Revise cada blip no editor lateral antes de consolidar.
-
-Observação: PDFs com texto embutido funcionam bem. PDFs escaneados ou baseados em imagem podem exigir uma etapa futura de OCR, como Docling, Azure Document Intelligence, Google Document AI, Amazon Textract ou outro parser dedicado.
-
-## Fluxo de Upload de PDF na Interface
-
-1. Preencha `.env` com `NVIDIA_API_KEY`.
-2. Rode `npm.cmd run radar:app`.
-3. Abra `http://localhost:4173`.
-4. Clique em **Analisar PDF**.
-5. Escolha um PDF.
-6. O servidor local salva o upload em `data/uploads/`, gera texto, sinais e briefing em `data/pdf/` e `docs/`, chama o NVIDIA NIM e cria um `*-proposals.json`.
-7. O app pergunta se você quer aplicar as propostas ao radar local.
-8. Revise os blips no editor lateral antes de exportar o Markdown.
-
-Se abrir `index.html` diretamente por `file://`, o botão avisa para usar `npm.cmd run radar:app`.
-
-## Fluxo de Envio Mensal para Gestão
-
-1. Rode `npm.cmd run radar:app`.
-2. Abra `http://localhost:4173`.
-3. Atualize o radar, importe propostas e revise os blips.
-4. Vá para a aba **Exportação**.
-5. Clique em **Salvar HTML**.
-6. O sistema salva um snapshot em `exports/YYYY-MM-DD-radar-tecnologico-engenharia-software.html` e também baixa uma cópia pelo navegador.
-
-Esse HTML é autônomo: pode ser enviado por e-mail, Teams, Drive ou SharePoint e não depende do servidor local nem do `localStorage`.
+- `npm.cmd test`: executa toda a suíte `node:test`.
+- `npm.cmd run radar:app`: sobe o servidor estático local seguro na porta `4173`.
+- `npm.cmd run radar:api`: sobe a API administrativa localmente na porta `8787`.
+- `npm.cmd run radar:full`: descobre fontes, baixa/analisa PDFs novos e consolida propostas.
+- `npm.cmd run radar:full:nim`: executa o pipeline completo gerando propostas com NVIDIA NIM (preserva artefatos históricos gerados com Gemini).
+- `npm.cmd run radar:discover`: varredura de fontes em `data/monitored-sources.json`.
+- `npm.cmd run radar:pdf -- "<caminho.pdf>"`: extração local de sinais e brief de um PDF.
+- `npm.cmd run radar:update` / `radar:update:offline`: coleta de sinais das fontes monitoradas.
 
 ## Arquivos Principais
 
-- `index.html`: interface do radar.
-- `styles.css`: estilos visuais.
-- `app.js`: dados iniciais, edição, exportação, importação e renderização do radar.
-- `package.json`: comandos locais.
-- `scripts/discover-sources.mjs`: coletor Playwright/fetch para encontrar, baixar e analisar PDFs nas fontes.
-- `scripts/run-radar-full.mjs`: orquestrador de descoberta, análise e consolidação em um único JSON importável.
-- `scripts/local-server.mjs`: servidor local para abrir o app e processar uploads de PDF.
-- `scripts/nim-proposals.mjs` gera propostas com NVIDIA NIM a partir dos briefs.
-- `scripts/html-export.mjs`: gerador de snapshot HTML autônomo para envio mensal.
-- `exports/`: snapshots HTML mensais compartilháveis.
-- `scripts/update-radar.mjs`: coletor de sinais das fontes monitoradas.
-- `scripts/analyze-pdf.mjs`: extrator local de sinais a partir de PDFs.
-- `data/monitored-sources.json`: lista de fontes usadas pelo agente de atualização.
-- `data/discovery/`: relatórios e cache de descoberta automatizada.
-- `data/downloads/`: PDFs baixados das fontes monitoradas.
-- `data/radar-update-proposals.example.json`: exemplo de JSON aceito pela importação.
-- `data/pdf/`: saídas de análises de PDFs e propostas específicas por arquivo.
-- `docs/radar-trm-engenharia-software.md`: relatório executivo em Markdown.
-- `docs/radar-ai-update-brief.md`: briefing gerado para análise por IA.
-
-## Fontes Monitoradas
-
-As fontes iniciais incluem:
-
-- Thoughtworks Technology Radar
-- DORA Research
-- OWASP GenAI Security
-- GitHub Blog e Changelog
-- GitLab DevSecOps Reports
-- Stack Overflow Developer Survey
-- CNCF Landscape
-- OpenSSF
-- NIST AI RMF
-- Martin Fowler
-- InfoQ Trends
-- SIG State of Software
-
-## Governança Recomendada
-
-- Atualizar mensalmente.
-- Registrar fonte, data, evidência e justificativa para cada mudança.
-- Evitar promoção para Adopt sem evidência forte.
-- Tratar sinais de comunidades como alertas, não como decisão automática.
-- Exigir revisão OWASP/NIST para blips ligados a agentes, LLMs, MCP e automação autônoma.
-- Manter pilotos com hipótese, métricas, critério de sucesso e plano de saída.
-
-## Próximas Evoluções
-
-- Integração direta com API de IA para gerar propostas sem copiar o briefing manualmente.
-- Upload de PDF diretamente pela interface, com backend local ou parser/OCR embarcado.
-- Persistência em arquivo ou banco local, em vez de somente `localStorage`.
-- Histórico mensal de versões do radar.
-- Exportação direta para Google Docs/Drive.
-- Painel de aprovação de propostas com diff antes/depois.
-- Radar adicional para Robótica.
+- `data/radar.json`: estado canônico versionado do radar.
+- `index.html`, `styles.css`, `app.js`, `app-core.mjs`: frontend estático, modo admin, diálogo de revisão e exportação HTML client-side.
+- `scripts/local-server.mjs`: servidor estático local com allowlist para desenvolvimento (`4173`).
+- `scripts/api-server.mjs`: servidor HTTP da API administrativa e jobs de análise (`8787`).
+- `scripts/lib/github-radar-store.mjs`: leitura/gravação versionada no GitHub com detecção de conflito `409`.
+- `scripts/lib/nvidia-nim.mjs`: cliente NVIDIA NIM com JSON Schema estrito.
+- `scripts/lib/pdf-pipeline.mjs`: validação, Poppler e OCR seletivo com Nemotron Parse.
+- `scripts/lib/analysis-jobs.mjs`: fila/estado em memória, limites diários, timeout e limpeza.
+- `Dockerfile`, `.dockerignore`, `compose.yaml`, `render.yaml`: empacotamento e deploy no Render.
