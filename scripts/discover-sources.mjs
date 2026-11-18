@@ -79,7 +79,7 @@ try {
     if (!options.noAnalyze) {
       for (const download of result.downloads) {
         if (!download.path || !download.isPdf) continue;
-        download.analysis = await analyzePdfOnce(download.path, analysisCache);
+        download.analysis = await analyzePdfOnce(download, analysisCache);
       }
     }
 
@@ -524,19 +524,20 @@ async function requestBytes(url, context) {
   };
 }
 
-async function analyzePdfOnce(relativePdfPath, memo) {
-  const absolutePdfPath = path.join(root, relativePdfPath);
+async function analyzePdfOnce(download, memo) {
+  const absolutePdfPath = path.join(root, download.path);
   if (memo.has(absolutePdfPath)) return memo.get(absolutePdfPath);
 
-  const result = await runAnalyzer(absolutePdfPath);
+  const result = await runAnalyzer(absolutePdfPath, !download.downloaded);
   memo.set(absolutePdfPath, result);
   return result;
 }
 
-function runAnalyzer(pdfPath) {
+function runAnalyzer(pdfPath, reuseExisting) {
   return new Promise((resolve) => {
     const analyzerPath = path.join(root, "scripts", "analyze-pdf.mjs");
-    const child = spawn(process.execPath, [analyzerPath, pdfPath], {
+    const flags = reuseExisting ? ["--reuse-existing"] : [];
+    const child = spawn(process.execPath, [analyzerPath, ...flags, pdfPath], {
       cwd: root,
       stdio: ["ignore", "pipe", "pipe"],
     });

@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 async function fakeWorkspace(t) {
   const root = await mkdtemp(path.join(process.cwd(), ".test-nim-"));
@@ -89,6 +89,12 @@ function runCli(root, env, ...args) {
   });
 }
 
+async function preload(root, source) {
+  const file = path.join(root, "fixture-preload.mjs");
+  await writeFile(file, source);
+  return pathToFileURL(file).href;
+}
+
 test("CLI aceita NIM e preserva o resumo histórico Gemini", async (t) => {
   const root = await fakeWorkspace(t);
   const oldPath = path.join(root, "docs", "radar-full-run-summary.md");
@@ -139,6 +145,105 @@ test("gerador CLI aceita o caminho separado de --proposal e exige a chave antes 
   });
   assert.equal(result.status, 2, result.stderr);
   assert.match(result.stdout, /NVIDIA_API_KEY/);
+});
+
+test("gerador CLI rejeita o destino histórico antes de ler ou chamar NVIDIA NIM", async (t) => {
+  const root = await fakeWorkspace(t);
+  const script = fileURLToPath(new URL("../scripts/nim-proposals.mjs", import.meta.url));
+  const hook = await preload(root, `
+    import fs from "node:fs/promises";
+    import { appendFileSync } from "node:fs";
+    import { syncBuiltinESMExports } from "node:module";
+    import path from "node:path";
+
+    const readFile = fs.readFile;
+    fs.readFile = (file, ...options) => {
+      if (typeof file === "string" && path.resolve(file) === path.resolve(process.argv[3])) {
+        appendFileSync("events.txt", "read\\n");
+      }
+      return readFile(file, ...options);
+    };
+    syncBuiltinESMExports();
+
+    globalThis.fetch = async () => {
+      appendFileSync("events.txt", "fetch\\n");
+      return Response.json({ choices: [{ message: { content: '{"proposals":[]}' } }] });
+    };
+  `);
+  for (const destination of ["docs/radar-full-run-summary.md", "docs/archive-proposals.json", "data/pdf/sample-signals.json"]) {
+    const existing = Buffer.from("Conteúdo histórico Gemini.\r\n");
+    await writeFile(path.join(root, destination), existing);
+    const result = spawnSync(process.execPath, ["--import", hook, script, "--proposal", destination], {
+      cwd: root,
+      encoding: "utf8",
+      env: { ...process.env, NVIDIA_API_KEY: apiKey },
+    });
+    assert.deepEqual(await readFile(path.join(root, destination)), existing);
+    assert.equal(result.status, 2, result.stderr);
+    assert.match(result.stdout, /destino-propostas-invalido/);
+  }
+  await assert.rejects(readFile(path.join(root, "events.txt")), { code: "ENOENT" });
+});
+
+test("pipeline reusa as saídas de um PDF em cache e completa saídas ausentes", async (t) => {
+  const root = await fakeWorkspace(t);
+  await mkdir(path.join(root, "scripts"));
+  for (const script of ["discover-sources.mjs", "analyze-pdf.mjs"]) {
+    await copyFile(new URL(`../scripts/${script}`, import.meta.url), path.join(root, "scripts", script));
+  }
+  await writeFile(path.join(root, "data", "monitored-sources.json"), JSON.stringify([
+    { name: "Fonte de teste", url: "https://example.org/", strategy: "fetch" },
+  ]));
+  const hook = await preload(root, `
+    globalThis.fetch = async (url) => {
+      if (url === "https://example.org/") return new Response('<a href="/sample.pdf">PDF</a>');
+      if (url === "https://example.org/sample.pdf") {
+        const pdf = "%PDF-1.4\\n<<>>\\nstream\\nBT /F1 12 Tf (Tecnologia piloto) Tj ET\\nendstream\\n%%EOF\\n";
+        return new Response(pdf, { headers: { "Content-Type": "application/pdf" } });
+      }
+      throw new Error("URL inesperada");
+    };
+  `);
+  const historicalSummaryPath = "docs/radar-full-run-summary.md";
+  const historicalSummary = Buffer.from("Resumo histórico Gemini.\r\n");
+  await writeFile(path.join(root, historicalSummaryPath), historicalSummary);
+
+  const runPipeline = async () => {
+    const result = runCli(root, { NODE_OPTIONS: `--import=${hook}` }, "--fetch-only");
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(await readFile(path.join(root, "data/discovery/radar-discovery.json"), "utf8"));
+    const { downloads: [download] } = report.sources[0];
+    assert.equal(download.analysis.ok, true, download.analysis.stderr);
+    return download;
+  };
+  const first = await runPipeline();
+  assert.equal(first.downloaded, true);
+  assert.match(await readFile(path.join(root, first.analysis.textPath), "utf8"), /Tecnologia piloto/);
+  assert.equal(JSON.parse(await readFile(path.join(root, proposalPath), "utf8")).proposals.length, 0);
+
+  const preserved = new Map([
+    ["data/pdf/sample.txt", Buffer.from("Texto histórico Gemini.\r\n")],
+    ["data/pdf/sample-signals.json", Buffer.from('{"version":"histórico Gemini"}\r\n')],
+    [briefPath, Buffer.from("# Brief histórico Gemini\r\n")],
+    [proposalPath, Buffer.from('{"generatedBy":"gemini","proposals":[]}\r\n')],
+  ]);
+  for (const [file, content] of preserved) await writeFile(path.join(root, file), content);
+  preserved.set(historicalSummaryPath, historicalSummary);
+
+  const second = await runPipeline();
+  assert.equal(second.reason, "cached-url");
+  for (const [file, content] of preserved) {
+    assert.deepEqual(await readFile(path.join(root, file)), content, file);
+  }
+
+  await rm(path.join(root, briefPath));
+  preserved.delete(briefPath);
+  const third = await runPipeline();
+  assert.equal(third.reason, "cached-url");
+  assert.match(await readFile(path.join(root, briefPath), "utf8"), /Brief para IA/);
+  for (const [file, content] of preserved) {
+    assert.deepEqual(await readFile(path.join(root, file)), content, file);
+  }
 });
 
 test("consolidação distingue alvos NIM e mantém compatibilidade com alvos antigos", async (t) => {

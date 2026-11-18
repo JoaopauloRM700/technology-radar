@@ -1,9 +1,12 @@
+import { existsSync } from "node:fs";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import zlib from "node:zlib";
 
 const root = process.cwd();
-const inputPath = process.argv.slice(2).join(" ").trim();
+const args = process.argv.slice(2);
+const reuseExisting = args[0] === "--reuse-existing";
+const inputPath = args.slice(reuseExisting ? 1 : 0).join(" ").trim();
 
 if (!inputPath) {
   console.error('Uso: npm.cmd run radar:pdf -- "D:\\Downloads\\arquivo.pdf"');
@@ -17,6 +20,11 @@ const textPath = path.join(outputDir, `${safeName(path.basename(resolvedPdf, ".p
 const signalsPath = path.join(outputDir, `${safeName(path.basename(resolvedPdf, ".pdf"))}-signals.json`);
 const briefPath = path.join(briefDir, `${safeName(path.basename(resolvedPdf, ".pdf"))}-brief.md`);
 const proposalsPath = path.join(outputDir, `${safeName(path.basename(resolvedPdf, ".pdf"))}-proposals.json`);
+
+if (reuseExisting && [textPath, signalsPath, briefPath, proposalsPath].every(existsSync)) {
+  console.log("Análise de PDF reutilizada.");
+  process.exit(0);
+}
 
 await mkdir(outputDir, { recursive: true });
 await mkdir(briefDir, { recursive: true });
@@ -33,17 +41,10 @@ const payload = {
   signals,
 };
 
-await writeFile(textPath, `${normalizedText}\n`, "utf8");
-await writeFile(signalsPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
-await writeFile(briefPath, buildBrief(payload), "utf8");
-
-if (!(await exists(proposalsPath))) {
-  await writeFile(
-    proposalsPath,
-    `${JSON.stringify({ generatedAt: new Date().toISOString(), proposals: [] }, null, 2)}\n`,
-    "utf8"
-  );
-}
+await writeOutput(textPath, `${normalizedText}\n`);
+await writeOutput(signalsPath, `${JSON.stringify(payload, null, 2)}\n`);
+await writeOutput(briefPath, buildBrief(payload));
+await writeOutput(proposalsPath, `${JSON.stringify({ generatedAt: new Date().toISOString(), proposals: [] }, null, 2)}\n`, true);
 
 console.log("Análise de PDF concluída.");
 console.log(`Texto extraído: ${relative(textPath)}`);
@@ -423,11 +424,10 @@ function relative(filePath) {
   return path.relative(root, filePath).replace(/\\/g, "/");
 }
 
-async function exists(filePath) {
+async function writeOutput(filePath, content, preserve = reuseExisting) {
   try {
-    await readFile(filePath, "utf8");
-    return true;
-  } catch {
-    return false;
+    await writeFile(filePath, content, { encoding: "utf8", flag: preserve ? "wx" : "w" });
+  } catch (error) {
+    if (!preserve || error.code !== "EEXIST") throw error;
   }
 }

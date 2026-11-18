@@ -8,10 +8,14 @@ import { createNvidiaNimClient, NvidiaNimError } from "./lib/nvidia-nim.mjs";
 export async function generateProposalFile(proposalPath, options = {}) {
   const root = options.root ?? process.cwd();
   const absoluteProposalPath = path.resolve(root, proposalPath);
+  const relativeProposalPath = relative(root, absoluteProposalPath);
+  if (!/^data\/pdf\/[a-zA-Z0-9._-]+-proposals\.json$/.test(relativeProposalPath)) {
+    return { ok: false, reason: "destino-propostas-invalido", proposalPath: relativeProposalPath, proposals: 0 };
+  }
   const briefPath = options.briefPath
     ? path.resolve(root, options.briefPath)
     : briefPathForProposalPath(absoluteProposalPath, root);
-  const paths = { proposalPath: relative(root, absoluteProposalPath), briefPath: relative(root, briefPath) };
+  const paths = { proposalPath: relativeProposalPath, briefPath: relative(root, briefPath) };
 
   const existing = await readExisting(absoluteProposalPath);
   const existingCount = Array.isArray(existing?.proposals) ? existing.proposals.length : 0;
