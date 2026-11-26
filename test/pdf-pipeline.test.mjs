@@ -126,7 +126,7 @@ function pipelineFixture(pages, overrides = {}) {
     }
     assert.equal(command, "pdftoppm");
     const page = args[1];
-    assert.deepEqual(args, ["-f", page, "-l", page, "-jpeg", "-r", "300", "-singlefile", pdf, path.join(directory, "page-" + page)]);
+    assert.deepEqual(args, ["-f", page, "-l", page, "-jpeg", "-scale-to", "2048", "-singlefile", pdf, path.join(directory, "page-" + page)]);
     rendered.push(Number(page));
   }
   const analyze = createPdfPipeline({
@@ -182,6 +182,25 @@ test("validates PDF bytes again before creating temporary files", async () => {
   const fixture = pipelineFixture([""]);
   await assert.rejects(fixture.run({ bytes: Buffer.from("bad") }), { code: "invalid_pdf" });
   assert.equal(fixture.directory(), undefined);
+});
+
+test("rejects proposals whose target or evidence is outside the analyzed context", async () => {
+  const fixture = pipelineFixture(["texto ".repeat(80)], {
+    nim: { async generateProposals() {
+      return { proposals: [{
+        action: "update", targetId: "ES-02", reason: "Evidência", confidence: 0.8,
+        evidence: [{ page: 2, note: "Página inexistente" }],
+        blip: {
+          name: "Radar atual", quadrant: "Ferramentas", ring: "Trial", horizon: "Médio",
+          maturity: "Emergente", risk: "Baixo", effort: "Médio", status: "Monitorar",
+          source: "Relatório", theme: "Qualidade", strategic: "Avaliar",
+          constraints: "Validar", detailsUrl: "",
+        },
+      }] };
+    } },
+  });
+  await assert.rejects(fixture.run(), { code: "pdf_processing_failed" });
+  assert.deepEqual(fixture.removed, [fixture.directory()]);
 });
 
 test("waits for both aborted OCR workers before removing the job directory", async () => {

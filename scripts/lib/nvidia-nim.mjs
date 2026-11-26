@@ -43,7 +43,7 @@ const proposalSchema = strictObject({
         strictObject({ action: { enum: ["add"] }, targetId: { type: "null" }, ...proposalFields }),
         strictObject({
           action: { enum: proposalActions.filter((action) => action !== "add") },
-          targetId: { type: ["string", "null"] },
+          targetId: nonBlankText,
           ...proposalFields,
         }),
       ],
@@ -52,10 +52,14 @@ const proposalSchema = strictObject({
 });
 const validateProposalResponse = new Ajv({ ownProperties: true }).compile(proposalSchema);
 
-export function validateProposals(payload) {
+export function validateProposals(payload, { totalPages = Infinity, targetIds } = {}) {
   if (!validateProposalResponse(payload)) throw new NvidiaNimError("invalid-schema");
   try {
-    for (const { blip } of payload.proposals) normalizeBlipFields(blip, "blip");
+    for (const proposal of payload.proposals) {
+      normalizeBlipFields(proposal.blip, "blip");
+      if (proposal.evidence.some(({ page }) => page > totalPages) ||
+          (targetIds && proposal.action !== "add" && !targetIds.has(proposal.targetId))) throw new TypeError();
+    }
   } catch {
     throw new NvidiaNimError("invalid-schema");
   }

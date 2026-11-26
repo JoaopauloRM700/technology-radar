@@ -28,7 +28,7 @@ Publicar o radar como site estatico no GitHub Pages, mantendo leitura publica e 
 - `PUT /api/v1/radar`
 - `POST /api/v1/analysis-jobs`
 - `GET /api/v1/analysis-jobs/:id`
-- CORS aceita exatamente `https://joapaulorm700.github.io` e `http://localhost:4173`; preflight responde 204 e inclui `Vary: Origin`.
+- CORS aceita exatamente `https://joaopaulorm700.github.io` e `http://localhost:4173`; preflight responde 204 e inclui `Vary: Origin`.
 - Validar payloads, enums, tamanhos de campos e URLs HTTP/HTTPS.
 
 ## NVIDIA NIM e propostas
@@ -43,7 +43,7 @@ Publicar o radar como site estatico no GitHub Pages, mantendo leitura publica e 
 
 - Aceitar apenas PDF publico com no maximo 10 MiB e 75 paginas; verificar `%PDF-` e rejeitar criptografado.
 - Usar Poppler `pdfinfo` e `pdftotext -layout`.
-- Paginas com menos de 80 caracteres nao espaciais sao renderizadas em JPEG a 300 DPI e enviadas ao Nemotron Parse.
+- Paginas com menos de 80 caracteres nao espaciais sao renderizadas em JPEG com a maior dimensao limitada a 2048 px e enviadas ao Nemotron Parse.
 - OCR tem concorrencia 2, timeout 60 s por chamada e novas tentativas somente para 429/503 (2 s e 5 s).
 - Job total tem timeout de 10 minutos, um job ativo, TTL de 30 minutos e limite de 10 analises por dia.
 - Jobs ficam em memoria. Arquivos temporarios sao unicos por job e removidos em `finally`; PDF, imagem, texto, prompt e resposta bruta nunca sao persistidos nem logados.

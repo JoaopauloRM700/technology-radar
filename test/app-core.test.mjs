@@ -2,13 +2,21 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const loadCanonical = async () => JSON.parse(await readFile(new URL("../data/radar.json", import.meta.url), "utf8"));
+const loadCanonical = async () => JSON.parse(await readFile(new URL("./fixtures/radar.json", import.meta.url), "utf8"));
+
+test("the shipped production radar still satisfies the canonical schema", async () => {
+  const production = JSON.parse(await readFile(new URL("../data/radar.json", import.meta.url), "utf8"));
+  const { normalizeRadar } = await import("../app-core.mjs");
+  const normalized = normalizeRadar(production);
+  assert.equal(normalized.schemaVersion, 1);
+  assert.equal(normalized.revision, production.revision);
+});
 
 test("loads the canonical radar and normalizes a detached copy", async () => {
   const radar = await loadCanonical();
   const { normalizeRadar } = await import("../app-core.mjs");
-  assert.equal(radar.blips.length, 25);
-  assert.equal(radar.sources.length, 12);
+  assert.equal(radar.blips.length, 3);
+  assert.equal(radar.sources.length, 1);
   radar.blips[0].name = " Coding Agents ";
 
   const normalized = normalizeRadar(radar);
@@ -238,11 +246,15 @@ test("radar labels distinguish ES sequence numbers from other IDs", async () => 
   assert.equal(blipLabel("12345678-abcd-4abc-8123-123456789abc", 6), "#7");
 });
 
-test("resolveApiBaseUrl uses configured URL, falls back to localhost:8787 locally, and rejects non-http URLs", async () => {
-  const { resolveApiBaseUrl } = await import("../app-core.mjs");
+test("resolveApiBaseUrl uses a safe configured base, falls back locally, and rejects ambiguous URLs", async () => {
+  const { isHttpUrl, resolveApiBaseUrl } = await import("../app-core.mjs");
+
+  assert.equal(isHttpUrl("https://example.com/report"), true);
+  assert.equal(isHttpUrl("https://[bad"), false);
+  assert.equal(isHttpUrl("javascript:alert(1)"), false);
 
   assert.equal(
-    resolveApiBaseUrl({ configuredBase: "https://radar-api.onrender.com/", location: { hostname: "joapaulorm700.github.io" } }),
+    resolveApiBaseUrl({ configuredBase: "https://radar-api.onrender.com/", location: { hostname: "joaopaulorm700.github.io" } }),
     "https://radar-api.onrender.com",
   );
   assert.equal(
@@ -254,13 +266,25 @@ test("resolveApiBaseUrl uses configured URL, falls back to localhost:8787 locall
     "http://localhost:8787",
   );
   assert.equal(
-    resolveApiBaseUrl({ configuredBase: "", location: { hostname: "joapaulorm700.github.io" } }),
+    resolveApiBaseUrl({ configuredBase: "", location: { hostname: "joaopaulorm700.github.io" } }),
     "",
   );
   assert.equal(
-    resolveApiBaseUrl({ configuredBase: "javascript:alert(1)", location: { hostname: "joapaulorm700.github.io" } }),
+    resolveApiBaseUrl({ configuredBase: "javascript:alert(1)", location: { hostname: "joaopaulorm700.github.io" } }),
     "",
   );
+  assert.equal(
+    resolveApiBaseUrl({ configuredBase: "http://localhost:9876/", location: { hostname: "localhost" } }),
+    "http://localhost:9876",
+  );
+  for (const configuredBase of [
+    "https://radar-api.onrender.com?target=/healthz",
+    "https://radar-api.onrender.com/#fragment",
+    "https://radar-api.onrender.com?",
+    "https://radar-api.onrender.com#",
+  ]) {
+    assert.equal(resolveApiBaseUrl({ configuredBase, location: { hostname: "joaopaulorm700.github.io" } }), "");
+  }
 });
 
 test("hasDraftChanges detects modifications to blips or sources without false positives", async () => {
@@ -365,6 +389,44 @@ test("wakeBackend retries /healthz until ready or 90s timeout", async () => {
     }),
     /90/,
   );
+});
+
+test("wakeBackend aborts a health request that never settles at the global deadline", { timeout: 1000 }, async () => {
+  const { wakeBackend } = await import("../app-core.mjs");
+  let requestSignal;
+  await assert.rejects(
+    wakeBackend({
+      apiBase: "https://api.example.test",
+      timeoutMs: 20,
+      intervalMs: 1,
+      fetch: async (_url, init) => {
+        requestSignal = init.signal;
+        return new Promise(() => {});
+      },
+    }),
+    { code: "backend_unavailable" },
+  );
+  assert.equal(requestSignal.aborted, true);
+});
+
+test("wakeBackend rejects an already-aborted caller before starting a request", async () => {
+  const { wakeBackend } = await import("../app-core.mjs");
+  const controller = new AbortController();
+  const reason = new Error("cancelled before wake");
+  controller.abort(reason);
+  let calls = 0;
+  await assert.rejects(
+    wakeBackend({
+      apiBase: "https://api.example.test",
+      signal: controller.signal,
+      fetch: async () => {
+        calls++;
+        return new Promise(() => {});
+      },
+    }),
+    reason,
+  );
+  assert.equal(calls, 0);
 });
 
 test("pollAnalysisJob polls every 2s, reports progress, resolves on success and reports 404 restart", async () => {

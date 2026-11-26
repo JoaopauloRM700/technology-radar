@@ -31,9 +31,10 @@ export class GitHubRadarError extends Error {
 export class InvalidRadarPayloadError extends Error {}
 
 export class RevisionConflictError extends Error {
-  constructor(currentRevision) {
+  constructor(currentRadar) {
     super("Radar revision has changed.");
-    this.currentRevision = currentRevision;
+    this.currentRadar = structuredClone(currentRadar);
+    this.currentRevision = currentRadar.revision;
   }
 }
 
@@ -115,7 +116,7 @@ export function createGithubRadarStore({
     }
 
     const current = await readRadar();
-    if (baseRevision !== current.radar.revision) throw new RevisionConflictError(current.radar.revision);
+    if (baseRevision !== current.radar.revision) throw new RevisionConflictError(current.radar);
 
     let result;
     try {
@@ -132,7 +133,7 @@ export function createGithubRadarStore({
     } catch (error) {
       if (error instanceof GitHubRadarError && error.status === 409) {
         const latest = await readRadar();
-        if (baseRevision !== latest.radar.revision) throw new RevisionConflictError(latest.radar.revision);
+        if (baseRevision !== latest.radar.revision) throw new RevisionConflictError(latest.radar);
       }
       throw error;
     }

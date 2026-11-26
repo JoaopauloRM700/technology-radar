@@ -92,11 +92,33 @@ test("fails and aborts at ten minutes, ignoring late progress and result", async
   assert.equal(snapshot.status, "failed");
   assert.equal(snapshot.error.code, "analysis_timeout");
   assert.equal(typeof snapshot.error.message, "string");
+  assert.throws(() => jobs.create(input), { code: "analysis_busy", status: 429 });
   context.onProgress({ stage: "ocr", processedPages: 1, totalPages: 2 });
   complete(output);
   await tick();
   assert.deepEqual(jobs.get("job-1"), snapshot);
   assert.equal(jobs.create(input).id, "job-2");
+});
+
+test("rejects proposal evidence beyond the reported PDF page count", async () => {
+  const invalid = {
+    ...output,
+    totalPages: 1,
+    proposals: [{
+      action: "add", targetId: null, reason: "Evidência", confidence: 0.8,
+      evidence: [{ page: 2, note: "Página inexistente" }],
+      blip: {
+        name: "Ferramenta", quadrant: "Ferramentas", ring: "Trial", horizon: "Médio",
+        maturity: "Emergente", risk: "Baixo", effort: "Médio", status: "Monitorar",
+        source: "Relatório", theme: "Qualidade", strategic: "Avaliar",
+        constraints: "Validar", detailsUrl: "",
+      },
+    }],
+  };
+  const { jobs } = fixture(async () => invalid);
+  jobs.create(input);
+  await tick();
+  assert.equal(jobs.get("job-1").status, "failed");
 });
 
 for (const [label, runner] of [

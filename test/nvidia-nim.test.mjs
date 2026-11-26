@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createNvidiaNimClient, NvidiaNimError } from "../scripts/lib/nvidia-nim.mjs";
+import { createNvidiaNimClient, NvidiaNimError, validateProposals } from "../scripts/lib/nvidia-nim.mjs";
 
 const apiKey = "fixture-key-never-log-123";
 test("propaga o cancelamento do job à requisição de chat", async () => {
@@ -130,7 +130,7 @@ test("envia o contrato de chat estrito e devolve as propostas válidas", async (
             items: {
               anyOf: [
                 strictObject({ action: { enum: ["add"] }, targetId: { type: "null" }, ...fields }),
-                strictObject({ action: { enum: ["update", "move"] }, targetId: { type: ["string", "null"] }, ...fields }),
+                strictObject({ action: { enum: ["update", "move"] }, targetId: nonBlankText, ...fields }),
               ],
             },
           },
@@ -172,10 +172,31 @@ test("aceita até cinco propostas, com alvo update reservado para validação po
   assert.deepEqual(await nim.generateProposals(brief), { proposals });
 });
 
+test("valida alvos e páginas contra o contexto do radar e do PDF", () => {
+  const update = { ...proposal, action: "update", targetId: "ES-01" };
+  assert.deepEqual(validateProposals({ proposals: [update] }, {
+    totalPages: 3,
+    targetIds: new Set(["ES-01"]),
+  }), { proposals: [update] });
+  assert.throws(() => validateProposals({ proposals: [{ ...update, targetId: "ES-02" }] }, {
+    totalPages: 3,
+    targetIds: new Set(["ES-01"]),
+  }), errorCode("invalid-schema"));
+  assert.throws(() => validateProposals({ proposals: [{
+    ...update,
+    evidence: [{ page: 4, note: "Página inexistente" }],
+  }] }, {
+    totalPages: 3,
+    targetIds: new Set(["ES-01"]),
+  }), errorCode("invalid-schema"));
+});
+
 for (const [label, payload] of [
   ["seis propostas", { proposals: Array(6).fill(proposal) }],
   ["metadados extras na resposta", { proposals: [], generatedAt: new Date(0).toISOString() }],
   ["alvo ausente", { proposals: [{ ...proposal, targetId: undefined }] }],
+  ["alvo nulo para update", { proposals: [{ ...proposal, action: "update", targetId: null }] }],
+  ["alvo vazio para move", { proposals: [{ ...proposal, action: "move", targetId: " " }] }],
   ["alvo informado para add", { proposals: [{ ...proposal, targetId: "ES-01" }] }],
   ["ação desconhecida", { proposals: [{ ...proposal, action: "delete" }] }],
   ["confiança fora do intervalo", { proposals: [{ ...proposal, confidence: 1.01 }] }],

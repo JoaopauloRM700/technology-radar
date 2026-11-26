@@ -2,11 +2,12 @@ import assert from "node:assert/strict";
 import { once } from "node:events";
 import { request } from "node:http";
 import { test } from "node:test";
+import { AnalysisLimitError } from "../scripts/lib/analysis-jobs.mjs";
 
 const adminToken = "a".repeat(32);
 const authorized = { Authorization: "Bearer " + adminToken };
 const localOrigin = "http://localhost:4173";
-const pagesOrigin = "https://joapaulorm700.github.io";
+const pagesOrigin = "https://joaopaulorm700.github.io";
 const draft = {
   baseRevision: "614f8cf2-f7f8-4b81-b060-989f7bc35529",
   changeNote: "Revisão de fontes",
@@ -241,6 +242,14 @@ test("returns the current revision on save conflicts", async (t) => {
     ok: false,
     error: "revision_conflict",
     currentRevision: "614f8cf2-f7f8-4b81-b060-989f7bc35529",
+    currentRadar: {
+      schemaVersion: 1,
+      revision: "614f8cf2-f7f8-4b81-b060-989f7bc35529",
+      updatedAt: "2026-11-18T15:00:00.000Z",
+      changeNote: "Versão inicial",
+      blips: [],
+      sources: [],
+    },
   });
 });
 
@@ -304,7 +313,7 @@ test("authenticates both job routes and allows the filename in preflight", async
 
 test("rejects invalid MIME, signature, Content-Length and streamed size before creating jobs", async (t) => {
   let created = 0;
-  const base = await start(t, { jobs: { create() { created++; } } });
+  const base = await start(t, { jobs: { assertAvailable() {}, create() { created++; } } });
   const tooBig = Buffer.alloc(10 * 1024 * 1024 + 1);
   const pending = request(base + analysisPath, {
     method: "POST", headers: { ...authorized, "Content-Type": "application/pdf", "Content-Length": tooBig.length },
@@ -328,6 +337,55 @@ test("rejects invalid MIME, signature, Content-Length and streamed size before c
     assert.equal(res.headers.get("access-control-allow-origin"), localOrigin);
   }
   assert.equal(created, 0);
+});
+
+for (const code of ["analysis_busy", "daily_limit"]) {
+  test(`rejects ${code} before reading an unfinished PDF body`, { timeout: 3000 }, async (t) => {
+    const base = await start(t, { jobs: {
+      assertAvailable() { throw new AnalysisLimitError(code); },
+      create() { assert.fail("job must not be created"); },
+    } });
+    const pending = request(base + analysisPath, {
+      method: "POST",
+      headers: { ...authorized, "Content-Type": "application/pdf" },
+    });
+    t.after(() => pending.destroy());
+    pending.flushHeaders();
+    const [response] = await once(pending, "response");
+    pending.end();
+    assert.equal(response.statusCode, 429);
+    const chunks = [];
+    for await (const chunk of response) chunks.push(chunk);
+    assert.deepEqual(JSON.parse(Buffer.concat(chunks).toString("utf8")), { ok: false, error: code });
+  });
+}
+
+test("allows only one request body to be buffered at a time", { timeout: 3000 }, async (t) => {
+  let created = 0;
+  const base = await start(t, { jobs: {
+    assertAvailable() {},
+    create() { created++; return { id: "buffered-job" }; },
+  } });
+  const headers = { ...authorized, "Content-Type": "application/pdf" };
+  const first = request(base + analysisPath, { method: "POST", headers });
+  const second = request(base + analysisPath, { method: "POST", headers });
+  t.after(() => { first.destroy(); second.destroy(); });
+  first.flushHeaders();
+  await new Promise((resolve) => setImmediate(resolve));
+  second.flushHeaders();
+  const [response] = await once(second, "response");
+  second.end();
+  assert.equal(response.statusCode, 429);
+  const chunks = [];
+  for await (const chunk of response) chunks.push(chunk);
+  assert.deepEqual(JSON.parse(Buffer.concat(chunks).toString("utf8")), { ok: false, error: "analysis_busy" });
+  const accepted = once(first, "response");
+  first.end("%PDF-fixture");
+  const [firstResponse] = await accepted;
+  firstResponse.resume();
+  await once(firstResponse, "end");
+  assert.equal(firstResponse.statusCode, 202);
+  assert.equal(created, 1);
 });
 
 test("returns queued 202, running progress, busy, success and unknown job over HTTP", async (t) => {

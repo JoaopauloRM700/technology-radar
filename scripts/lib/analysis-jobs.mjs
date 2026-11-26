@@ -47,12 +47,13 @@ export function createAnalysisJobs({ runner, now = () => new Date(), sleep = del
     }
     job.status = "running";
     onProgress({ stage: "preparing", processedPages: 0, totalPages: 0 });
+    let work;
     try {
-      const work = Promise.resolve().then(() => runner({ ...input, signal, onProgress }));
+      work = Promise.resolve().then(() => runner({ ...input, signal, onProgress }));
       const { proposals, totalPages, ocrPages } = await Promise.race([deadline, work]);
-      validateProposals({ proposals });
       if (!Number.isInteger(totalPages) || totalPages < 1 || totalPages > 75 ||
           !Number.isInteger(ocrPages) || ocrPages < 0 || ocrPages > totalPages) throw new Error();
+      validateProposals({ proposals }, { totalPages });
       job.result = { proposals, totalPages, ocrPages };
       job.status = "succeeded";
       job.progress = { stage: "succeeded", processedPages: totalPages, totalPages };
@@ -63,11 +64,12 @@ export function createAnalysisJobs({ runner, now = () => new Date(), sleep = del
     } finally {
       controller.abort();
       job.updatedAt = now().toISOString();
-      active = undefined;
+      if (work) await Promise.allSettled([work]);
+      if (active === job) active = undefined;
     }
   }
 
-  function create(input) {
+  function assertAvailable() {
     prune();
     if (active) throw new AnalysisLimitError("analysis_busy");
     const timestamp = now().toISOString();
@@ -77,6 +79,11 @@ export function createAnalysisJobs({ runner, now = () => new Date(), sleep = del
       dailyCount = 0;
     }
     if (dailyCount >= 10) throw new AnalysisLimitError("daily_limit");
+  }
+
+  function create(input) {
+    assertAvailable();
+    const timestamp = now().toISOString();
     const job = {
       id: createId(), status: "queued", createdAt: timestamp, updatedAt: timestamp,
       progress: { stage: "queued", processedPages: 0, totalPages: 0 },
@@ -88,5 +95,5 @@ export function createAnalysisJobs({ runner, now = () => new Date(), sleep = del
     return structuredClone(job);
   }
 
-  return { create, get(id) { prune(); return structuredClone(jobs.get(id)); } };
+  return { assertAvailable, create, get(id) { prune(); return structuredClone(jobs.get(id)); } };
 }

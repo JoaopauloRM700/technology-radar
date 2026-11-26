@@ -12,7 +12,7 @@ import {
   validateRadarSavePayload,
 } from "./lib/github-radar-store.mjs";
 
-const defaultAllowedOrigins = ["https://joapaulorm700.github.io", "http://localhost:4173"];
+const defaultAllowedOrigins = ["https://joaopaulorm700.github.io", "http://localhost:4173"];
 const maxJsonBytes = 1024 * 1024;
 
 function parseAllowedOrigins(env) {
@@ -72,6 +72,7 @@ export function createApiServer({ env = process.env, store, fetch, now, createId
     const { radar } = await radarStore.readRadar(input.signal);
     return analyze({ ...input, radar });
   }) });
+  let uploading = false;
 
   return createServer(async (request, response) => {
     const { method, headers: { origin, authorization } } = request;
@@ -110,10 +111,17 @@ export function createApiServer({ env = process.env, store, fetch, now, createId
       if (upload) {
         const type = request.headers["content-type"]?.split(";")[0].trim().toLowerCase();
         if (type !== "application/pdf") throw new PdfError("unsupported_media_type", 415);
-        const bytes = await readBody(request, maxPdfBytes, new PdfError("pdf_too_large", 413));
-        validatePdf(bytes);
-        const job = analysisJobs.create({ bytes, fileName: request.headers["x-file-name"] });
-        return sendJson(response, 202, { ok: true, job });
+        if (uploading) throw new AnalysisLimitError("analysis_busy");
+        analysisJobs.assertAvailable();
+        uploading = true;
+        try {
+          const bytes = await readBody(request, maxPdfBytes, new PdfError("pdf_too_large", 413));
+          validatePdf(bytes);
+          const job = analysisJobs.create({ bytes, fileName: request.headers["x-file-name"] });
+          return sendJson(response, 202, { ok: true, job });
+        } finally {
+          uploading = false;
+        }
       }
       if (jobId) {
         const job = analysisJobs.get(jobId);
@@ -138,6 +146,7 @@ export function createApiServer({ env = process.env, store, fetch, now, createId
           ok: false,
           error: "revision_conflict",
           currentRevision: error.currentRevision,
+          currentRadar: error.currentRadar,
         });
       }
       if (error instanceof GitHubRadarError) {

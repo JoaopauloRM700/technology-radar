@@ -25,9 +25,16 @@ function requiredText(value, field) {
   return value.trim();
 }
 
+export function isHttpUrl(value) {
+  if (typeof value !== "string" || !/^https?:\/\//i.test(value) || !URL.canParse(value)) {
+    return false;
+  }
+  return Boolean(new URL(value).hostname);
+}
+
 function httpUrl(value, field) {
   const url = requiredText(value, field);
-  if (!/^https?:\/\//i.test(url) || !URL.canParse(url)) {
+  if (!isHttpUrl(url)) {
     throw new TypeError(field + " deve ser uma URL HTTP ou HTTPS.");
   }
   return url;
@@ -238,9 +245,10 @@ export function blipLabel(id, index) {
 }
 
 export function resolveApiBaseUrl({ configuredBase = "", location } = {}) {
-  const trimmed = String(configuredBase || "").trim().replace(/\/+$/, "");
+  const raw = String(configuredBase || "").trim();
+  const trimmed = raw.replace(/\/+$/, "");
   if (trimmed) {
-    return /^https?:\/\//i.test(trimmed) && URL.canParse(trimmed) ? trimmed : "";
+    return !/[?#]/.test(raw) && isHttpUrl(trimmed) ? trimmed : "";
   }
   const hostname = location?.hostname;
   if (hostname === "localhost" || hostname === "127.0.0.1") {
@@ -350,21 +358,42 @@ export async function wakeBackend({
   onRetry = () => {},
 }) {
   const start = now();
-  for (let attempt = 0; ; attempt++) {
-    try {
-      const response = await fetch(apiBase + "/healthz", { method: "GET", signal, cache: "no-store" });
-      if (response.ok) return true;
-    } catch (error) {
-      if (signal?.aborted) throw error;
+  const deadline = new AbortController();
+  const deadlineError = new Error(
+    "O servidor de análise não respondeu em " + Math.ceil(timeoutMs / 1000) + " segundos.",
+  );
+  deadlineError.code = "backend_unavailable";
+  const timer = globalThis.setTimeout(() => deadline.abort(deadlineError), timeoutMs);
+  const requestSignal = signal ? AbortSignal.any([signal, deadline.signal]) : deadline.signal;
+
+  try {
+    for (let attempt = 0; ; attempt++) {
+      let removeAbortListener = () => {};
+      try {
+        requestSignal.throwIfAborted();
+        const aborted = new Promise((_, reject) => {
+          const onAbort = () => reject(requestSignal.reason || new Error("Operação cancelada."));
+          requestSignal.addEventListener("abort", onAbort, { once: true });
+          removeAbortListener = () => requestSignal.removeEventListener("abort", onAbort);
+        });
+        const response = await Promise.race([
+          fetch(apiBase + "/healthz", { method: "GET", signal: requestSignal, cache: "no-store" }),
+          aborted,
+        ]);
+        if (response.ok) return true;
+      } catch (error) {
+        if (signal?.aborted) throw error;
+        if (deadline.signal.aborted) throw deadlineError;
+      } finally {
+        removeAbortListener();
+      }
+      const elapsed = now() - start;
+      if (elapsed >= timeoutMs) throw deadlineError;
+      onRetry({ attempt: attempt + 1, elapsedMs: elapsed, timeoutMs });
+      await sleep(Math.min(intervalMs, timeoutMs - elapsed), requestSignal);
     }
-    const elapsed = now() - start;
-    if (elapsed >= timeoutMs) {
-      const err = new Error("O servidor de análise não respondeu em 90 segundos.");
-      err.code = "backend_unavailable";
-      throw err;
-    }
-    onRetry({ attempt: attempt + 1, elapsedMs: elapsed, timeoutMs });
-    await sleep(Math.min(intervalMs, timeoutMs - elapsed), signal);
+  } finally {
+    globalThis.clearTimeout(timer);
   }
 }
 

@@ -24,12 +24,18 @@ Copie `.env.example` para `.env` localmente (nunca versione `.env` nem coloque s
 | `NVIDIA_NIM_MODEL` | Não | Modelo de propostas (padrão: `nvidia/nemotron-3.5-super-vl-120b-a12b`). |
 | `NVIDIA_NIM_URL` | Não | Endpoint Chat Completions (padrão: `https://integrate.api.nvidia.com/v1/chat/completions`). |
 | `NVIDIA_PARSE_URL` | Não | Endpoint Nemotron Parse OCR (padrão: `https://ai.api.nvidia.com/v1/retrieval/nvidia/nemotron-3.5-parse/parse`). |
-| `ALLOWED_ORIGINS` | Não | Origens CORS permitidas separadas por vírgula (padrão: `https://joapaulorm700.github.io,http://localhost:4173`). |
+| `ALLOWED_ORIGINS` | Não | Origens CORS permitidas separadas por vírgula (padrão: `https://joaopaulorm700.github.io,http://localhost:4173`). |
 | `PORT` | Não | Porta HTTP da API (padrão: `8787`). |
 
 ## Execução Local
 
 No PowerShell do Windows, prefira `npm.cmd` para evitar bloqueios de política de execução.
+
+Instale as dependências uma vez antes de subir os serviços:
+
+```bash
+npm.cmd ci
+```
 
 ### 1. Subir a API em Docker (porta `8787`)
 
@@ -42,6 +48,8 @@ A API responderá em `http://localhost:8787/healthz`. Para rodar a API diretamen
 ```bash
 npm.cmd run radar:api
 ```
+
+Esse comando carrega `.env` automaticamente quando o arquivo existe. Se `PORT` usar uma porta diferente de `8787`, ajuste também a meta tag `radar-api-base` do frontend para a URL completa da API. No Docker Compose, `PORT` altera somente a porta publicada no host; o container continua ouvindo em `8787`.
 
 ### 2. Subir o frontend estático local (porta `4173`)
 
@@ -78,15 +86,18 @@ Em `localhost`/`127.0.0.1`, o frontend aponta automaticamente para `http://local
 ### Cold start e limites do plano gratuito do Render
 
 - Serviços web gratuitos do Render entram em hibernação após **15 minutos de inatividade** e têm **filesystem efêmero** (reinícios apagam arquivos temporários e jobs em memória). Consulte os [limites oficiais do Render Free](https://render.com/docs/free).
+- O Render ignora commits que alteram somente `data/radar.json`, evitando um redeploy da API a cada versão publicada pelo administrador.
 - O frontend desperta a API automaticamente chamando `GET /healthz` por até **90 segundos** antes de autenticar, salvar ou enviar PDFs.
 - Se o Render reiniciar durante uma análise, o polling (`GET /api/v1/analysis-jobs/:id`) recebe `404` e exibe uma mensagem orientando o reenvio do PDF. O estado permanente em `data/radar.json` no GitHub permanece intacto.
 - Após **Salvar versão**, o commit `chore(radar): <descrição>` é gravado imediatamente no GitHub `main`, mas o GitHub Pages pode levar alguns minutos para publicar o novo `data/radar.json`.
+- Se a resposta da publicação exceder 60 segundos, o diálogo é liberado com status incerto e o rascunho permanece na aba; confira o histórico do GitHub antes de tentar novamente.
 
 ## Limites e Governança da Análise de PDF
 
 - Somente **PDFs públicos**, sem criptografia, com assinatura `%PDF-`, até **10 MiB** e **75 páginas**.
-- Extração híbrida: `pdftotext -layout` para páginas textuais; páginas com menos de 80 caracteres úteis são renderizadas a 300 DPI (`pdftoppm`) e enviadas ao `nvidia/nemotron-3.5-parse` (concorrência máxima 2, timeout de 60 s por chamada, retry de 2 s e 5 s apenas para HTTP `429`/`503`).
+- Extração híbrida: `pdftotext -layout` para páginas textuais; páginas com menos de 80 caracteres úteis são renderizadas em JPEG com a maior dimensão limitada a 2048 px (`pdftoppm`) e enviadas ao `nvidia/nemotron-3.5-parse` (concorrência máxima 2, timeout de 60 s por chamada, retry de 2 s e 5 s apenas para HTTP `429`/`503`).
 - Limites da POC: **1 job simultâneo**, timeout total de **10 minutos**, TTL de **30 minutos** em memória e **10 análises por dia UTC**.
+- A cota diária é mantida apenas na memória do processo e reinicia quando o serviço do Render reinicia; o radar publicado continua permanente no GitHub.
 - Máximo de **5 propostas** (`add`, `update`, `move`). Exclusões sugeridas pela IA nunca são aceitas. Todas as propostas abrem **desmarcadas** no diálogo de revisão com confiança, evidência por página e diff antes/depois, sendo aplicadas somente ao rascunho até você clicar em **Salvar versão**.
 
 ## Sincronização Manual GitHub -> GitLab

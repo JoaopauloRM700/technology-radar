@@ -4,6 +4,9 @@ services:
     runtime: docker
     plan: free
     healthCheckPath: /healthz
+    buildFilter:
+      ignoredPaths:
+        - data/radar.json
     envVars:
       - key: PORT
         value: "8787"
@@ -14,7 +17,7 @@ services:
       - key: GITHUB_BRANCH
         value: main
       - key: ALLOWED_ORIGINS
-        value: https://joapaulorm700.github.io,http://localhost:4173
+        value: https://joaopaulorm700.github.io,http://localhost:4173
       - key: NVIDIA_NIM_MODEL
         value: nvidia/nemotron-3.5-super-vl-120b-a12b
       - key: NVIDIA_NIM_URL

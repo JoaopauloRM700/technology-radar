@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { promisify } from "node:util";
+import { validateProposals } from "./nvidia-nim.mjs";
 
 export const maxPdfBytes = 10 * 1024 * 1024;
 const signature = Buffer.from("%PDF-");
@@ -140,7 +141,7 @@ export function createPdfPipeline({ fs = files, execute = runPoppler, parse, nim
       await processOcrPages(scans, async (index, workerSignal) => {
         const page = String(index + 1);
         const prefix = path.join(directory, "page-" + page);
-        await execute("pdftoppm", ["-f", page, "-l", page, "-jpeg", "-r", "300", "-singlefile", pdf, prefix], workerSignal);
+        await execute("pdftoppm", ["-f", page, "-l", page, "-jpeg", "-scale-to", "2048", "-singlefile", pdf, prefix], workerSignal);
         const image = await fs.readFile(prefix + ".jpg", { signal: workerSignal });
         await fs.rm(prefix + ".jpg");
         const content = await parse(image, workerSignal);
@@ -159,7 +160,9 @@ export function createPdfPipeline({ fs = files, execute = runPoppler, parse, nim
         "Documento: " + JSON.stringify(path.win32.basename(fileName || "document.pdf")),
         ...pages.map((content, i) => "Página " + (i + 1) + "\n" + content),
       ].join("\n\n");
-      const { proposals } = await nim.generateProposals(brief, signal);
+      const output = await nim.generateProposals(brief, signal);
+      validateProposals(output, { totalPages, targetIds: new Set(summary.map(({ id }) => id)) });
+      const { proposals } = output;
       return { proposals, totalPages, ocrPages: scans.length };
     } catch (error) {
       if (signal?.aborted) throw new PdfError("analysis_aborted");

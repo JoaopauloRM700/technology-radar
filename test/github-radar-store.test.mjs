@@ -217,7 +217,8 @@ test("rejects a stale base revision before any PUT", async () => {
 
   await assert.rejects(store.saveRadar({ ...savePayload, baseRevision: "stale-revision" }), (error) =>
     error instanceof RevisionConflictError &&
-    error.currentRevision === "614f8cf2-f7f8-4b81-b060-989f7bc35529");
+    error.currentRevision === "614f8cf2-f7f8-4b81-b060-989f7bc35529" &&
+    JSON.stringify(error.currentRadar) === JSON.stringify(currentRadar));
   assert.deepEqual(calls.map(({ method }) => method), ["GET"]);
 });
 
@@ -231,7 +232,8 @@ test("reports the new revision if another save wins between GET and PUT", async 
 
   await assert.rejects(store.saveRadar(savePayload), (error) =>
     error instanceof RevisionConflictError &&
-    error.currentRevision === "e82de28e-d0f1-460a-8d89-be86be5e6521");
+    error.currentRevision === "e82de28e-d0f1-460a-8d89-be86be5e6521" &&
+    error.currentRadar.revision === "e82de28e-d0f1-460a-8d89-be86be5e6521");
   assert.deepEqual(calls.map(({ method }) => method), ["GET", "PUT", "GET"]);
 });
 

@@ -3,6 +3,7 @@ import {
   blipLabel,
   buildRadarHtmlSnapshot,
   hasDraftChanges,
+  isHttpUrl,
   MAX_PROPOSALS,
   nextBlipId,
   normalizeRadar,
@@ -42,6 +43,10 @@ const DEFAULT_DETAIL_URLS = {
 };
 
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
+const configuredSaveTimeout = Number(globalThis.RADAR_SAVE_TIMEOUT_MS);
+const SAVE_TIMEOUT_MS = Number.isFinite(configuredSaveTimeout) && configuredSaveTimeout > 0
+  ? configuredSaveTimeout
+  : 60_000;
 const FIELD_LABELS = {
   name: "Nome",
   quadrant: "Quadrante",
@@ -85,6 +90,10 @@ let adminMode = false;
 let adminToken = "";
 let pendingReviewItems = [];
 let activePdfAbort = null;
+let activeAdminLoginAbort = null;
+let suspendedDraft = null;
+let pendingConflictRadar = null;
+let savePending = false;
 let toastTimer = null;
 
 const elements = {
@@ -128,6 +137,7 @@ const elements = {
   saveSuccessBox: document.getElementById("saveSuccessBox"),
   saveSuccessMessage: document.getElementById("saveSuccessMessage"),
   saveConfirmButton: document.getElementById("saveConfirmButton"),
+  saveCloseButton: document.getElementById("saveCloseButton"),
   downloadDraftButton: document.getElementById("downloadDraftButton"),
   reloadCanonicalButton: document.getElementById("reloadCanonicalButton"),
   pdfDialog: document.getElementById("pdfDialog"),
@@ -172,6 +182,27 @@ async function loadState() {
   return normalizeRadar(await response.json());
 }
 
+async function runWithDeadline(operation, timeoutMs) {
+  const controller = new AbortController();
+  const error = new Error("Não foi possível confirmar a publicação dentro do prazo.");
+  error.code = "publish_timeout";
+  let timer;
+  const deadline = new Promise((_, reject) => {
+    timer = globalThis.setTimeout(() => {
+      reject(error);
+      controller.abort(error);
+    }, timeoutMs);
+  });
+  try {
+    return await Promise.race([
+      Promise.resolve().then(() => operation(controller.signal)),
+      deadline,
+    ]);
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
+}
+
 function bindEvents() {
   document.querySelectorAll(".nav-button").forEach((button) => {
     button.addEventListener("click", () => switchView(button.dataset.view));
@@ -179,18 +210,28 @@ function bindEvents() {
 
   document.querySelectorAll("[data-close-dialog]").forEach((button) => {
     button.addEventListener("click", () => {
-      document.getElementById(button.dataset.closeDialog)?.close();
+      const dialog = document.getElementById(button.dataset.closeDialog);
+      if (dialog === elements.saveDialog && savePending) return;
+      if (dialog === elements.adminDialog) cancelAdminLogin();
+      dialog?.close();
     });
   });
 
   elements.adminModeButton.addEventListener("click", handleAdminModeButton);
   elements.adminLoginForm.addEventListener("submit", handleAdminLogin);
+  elements.adminDialog.addEventListener("cancel", cancelAdminLogin);
+  elements.adminDialog.addEventListener("close", () => {
+    if (activeAdminLoginAbort) cancelAdminLogin();
+  });
 
   document.getElementById("addBlipButton").addEventListener("click", addBlip);
   document.getElementById("deleteBlipButton").addEventListener("click", deleteSelectedBlip);
   elements.resetDataButton.addEventListener("click", discardDraft);
   elements.saveVersionButton.addEventListener("click", openSaveDialog);
   elements.saveVersionForm.addEventListener("submit", handleSaveVersion);
+  elements.saveDialog.addEventListener("cancel", (event) => {
+    if (savePending) event.preventDefault();
+  });
   elements.downloadDraftButton.addEventListener("click", downloadDraftJson);
   elements.reloadCanonicalButton.addEventListener("click", reloadCanonicalVersion);
 
@@ -232,8 +273,24 @@ function bindEvents() {
 function setAdminSession(active, token = "") {
   adminMode = active;
   adminToken = active ? token : "";
+  if (active && suspendedDraft) {
+    state = suspendedDraft;
+    suspendedDraft = null;
+  }
   syncAdminUi();
   renderAll();
+}
+
+function suspendAdminSession() {
+  if (hasDraftChanges(canonicalState, state)) suspendedDraft = structuredClone(state);
+  state = structuredClone(canonicalState);
+  setAdminSession(false, "");
+}
+
+function cancelAdminLogin() {
+  activeAdminLoginAbort?.abort();
+  activeAdminLoginAbort = null;
+  elements.adminSubmitButton.disabled = false;
 }
 
 function syncAdminUi() {
@@ -267,6 +324,7 @@ function handleAdminModeButton() {
       if (!confirmed) return;
       state = structuredClone(canonicalState);
     }
+    suspendedDraft = null;
     setAdminSession(false, "");
     showToast("Modo somente leitura restaurado.");
     return;
@@ -302,11 +360,15 @@ async function handleAdminLogin(event) {
     return;
   }
 
+  cancelAdminLogin();
+  const abortController = new AbortController();
+  activeAdminLoginAbort = abortController;
   elements.adminSubmitButton.disabled = true;
   setStatus(elements.adminDialogStatus, "Conectando à API administrativa...");
   try {
     await wakeBackend({
       apiBase,
+      signal: abortController.signal,
       onRetry: ({ elapsedMs }) => {
         const seconds = Math.max(1, Math.round(elapsedMs / 1000));
         setStatus(
@@ -319,7 +381,9 @@ async function handleAdminLogin(event) {
       method: "POST",
       headers: { Authorization: "Bearer " + token },
       cache: "no-store",
+      signal: abortController.signal,
     });
+    if (activeAdminLoginAbort !== abortController || !elements.adminDialog.open) return;
     if (response.status === 401) {
       setStatus(elements.adminDialogStatus, "Token administrativo inválido.", true);
       return;
@@ -329,41 +393,53 @@ async function handleAdminLogin(event) {
       return;
     }
     elements.adminTokenInput.value = "";
+    activeAdminLoginAbort = null;
+    elements.adminSubmitButton.disabled = false;
     elements.adminDialog.close();
     setAdminSession(true, token);
     showToast("Modo administrador ativado.");
   } catch (error) {
+    if (abortController.signal.aborted) return;
     setStatus(
       elements.adminDialogStatus,
       error?.message || "Falha de comunicação com o servidor administrativo.",
       true,
     );
   } finally {
-    elements.adminSubmitButton.disabled = false;
+    if (activeAdminLoginAbort === abortController) {
+      activeAdminLoginAbort = null;
+      elements.adminSubmitButton.disabled = false;
+    }
   }
 }
 
 function openSaveDialog() {
-  if (!adminMode) return;
+  if (!adminMode || savePending) return;
+  pendingConflictRadar = null;
   elements.changeNoteInput.value = "";
   setStatus(elements.saveDialogStatus, "");
   elements.saveConflictBox.classList.add("hidden");
   elements.saveSuccessBox.classList.add("hidden");
   elements.saveConfirmButton.disabled = false;
+  elements.reloadCanonicalButton.disabled = true;
   elements.saveDialog.showModal();
   elements.changeNoteInput.focus();
 }
 
 async function handleSaveVersion(event) {
   event.preventDefault();
-  if (!adminMode) return;
+  if (!adminMode || savePending) return;
   const changeNote = elements.changeNoteInput.value.trim();
   if (!changeNote) {
     setStatus(elements.saveDialogStatus, "Informe uma descrição para a versão.", true);
     return;
   }
+  const submittedRadar = structuredClone({ blips: state.blips, sources: state.sources });
+  const submittedRevision = canonicalState.revision;
 
+  savePending = true;
   elements.saveConfirmButton.disabled = true;
+  elements.saveCloseButton.disabled = true;
   elements.saveConflictBox.classList.add("hidden");
   elements.saveSuccessBox.classList.add("hidden");
   setStatus(elements.saveDialogStatus, "Validando conexão com o servidor...");
@@ -377,33 +453,51 @@ async function handleSaveVersion(event) {
       },
     });
     setStatus(elements.saveDialogStatus, "Criando commit versionado no GitHub...");
-    const response = await fetch(apiBase + "/api/v1/radar", {
-      method: "PUT",
-      headers: {
-        Authorization: "Bearer " + adminToken,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        baseRevision: canonicalState.revision,
-        changeNote,
-        radar: { blips: state.blips, sources: state.sources },
-      }),
-    });
-    const payload = await response.json().catch(() => null);
+    const { response, payload } = await runWithDeadline(async (signal) => {
+      const response = await fetch(apiBase + "/api/v1/radar", {
+        method: "PUT",
+        headers: {
+          Authorization: "Bearer " + adminToken,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          baseRevision: submittedRevision,
+          changeNote,
+          radar: submittedRadar,
+        }),
+        signal,
+      });
+      if (response.status === 401) {
+        response.body?.cancel().catch(() => {});
+        return { response, payload: null };
+      }
+      const payload = await response.json().catch((error) => {
+        if (signal.aborted) throw signal.reason || error;
+        return null;
+      });
+      return { response, payload };
+    }, SAVE_TIMEOUT_MS);
 
     if (response.status === 409) {
+      try {
+        pendingConflictRadar = normalizeRadar(payload?.currentRadar);
+      } catch {
+        pendingConflictRadar = null;
+      }
       const currentRev = payload?.currentRevision
         ? ` (${String(payload.currentRevision).slice(0, 8)})`
         : "";
-      elements.saveConflictMessage.textContent =
-        `Outra versão já foi publicada no GitHub${currentRev}. Seu rascunho foi preservado nesta aba. Baixe-o como JSON antes de recarregar a versão oficial.`;
+      elements.saveConflictMessage.textContent = pendingConflictRadar
+        ? `Outra versão já foi publicada no GitHub${currentRev}. Seu rascunho foi preservado nesta aba. Baixe-o como JSON ou recarregue a versão oficial retornada pelo GitHub.`
+        : `Outra versão já foi publicada no GitHub${currentRev}. Seu rascunho foi preservado nesta aba, mas a versão oficial não pôde ser validada. Baixe-o como JSON antes de tentar novamente.`;
+      elements.reloadCanonicalButton.disabled = !pendingConflictRadar;
       elements.saveConflictBox.classList.remove("hidden");
       setStatus(elements.saveDialogStatus, "");
       return;
     }
 
     if (response.status === 401) {
-      setAdminSession(false, "");
+      suspendAdminSession();
       setStatus(
         elements.saveDialogStatus,
         "Sessão administrativa expirada. Seu rascunho continua em memória; entre novamente para salvar.",
@@ -420,19 +514,26 @@ async function handleSaveVersion(event) {
       return;
     }
 
+    const currentDraft = structuredClone({ blips: state.blips, sources: state.sources });
+    const changedDuringPublish = JSON.stringify(currentDraft) !== JSON.stringify(submittedRadar);
     canonicalState = normalizeRadar(payload.radar);
-    state = structuredClone(canonicalState);
+    state = changedDuringPublish
+      ? { ...structuredClone(canonicalState), ...currentDraft }
+      : structuredClone(canonicalState);
     renderAll();
 
     const shortSha = String(payload.commit?.sha || "").slice(0, 7);
     const safeCommitUrl =
-      typeof payload.commit?.url === "string" && /^https?:\/\//i.test(payload.commit.url)
+      isHttpUrl(payload.commit?.url)
         ? payload.commit.url
         : "";
     const commitLinkHtml = safeCommitUrl
       ? `<a href="${escapeHtml(safeCommitUrl)}" target="_blank" rel="noreferrer">commit ${escapeHtml(shortSha || "criado")}</a>`
       : `commit ${escapeHtml(shortSha || "criado")}`;
-    const noteHtml = `Versão salva (${commitLinkHtml}). O GitHub Pages pode levar alguns minutos para atualizar a página pública.`;
+    const draftNote = changedDuringPublish
+      ? " Alterações feitas durante a publicação continuam no rascunho."
+      : "";
+    const noteHtml = `Versão salva (${commitLinkHtml}). O GitHub Pages pode levar alguns minutos para atualizar a página pública.${draftNote}`;
     elements.saveSuccessMessage.innerHTML = noteHtml;
     elements.saveSuccessBox.classList.remove("hidden");
     elements.publishBanner.innerHTML = `<span>${noteHtml}</span>`;
@@ -442,11 +543,15 @@ async function handleSaveVersion(event) {
   } catch (error) {
     setStatus(
       elements.saveDialogStatus,
-      error?.message || "Erro ao comunicar com o servidor de publicação.",
+      error?.code === "publish_timeout"
+        ? "Não foi possível confirmar a publicação dentro do prazo. O rascunho foi preservado; confira o histórico do GitHub antes de tentar novamente."
+        : error?.message || "Erro ao comunicar com o servidor de publicação.",
       true,
     );
   } finally {
+    savePending = false;
     elements.saveConfirmButton.disabled = false;
+    elements.saveCloseButton.disabled = false;
   }
 }
 
@@ -464,10 +569,12 @@ function downloadDraftJson() {
   showToast("Rascunho baixado em JSON.");
 }
 
-async function reloadCanonicalVersion() {
+function reloadCanonicalVersion() {
+  if (!pendingConflictRadar || savePending) return;
   try {
-    canonicalState = await loadState();
+    canonicalState = structuredClone(pendingConflictRadar);
     state = structuredClone(canonicalState);
+    pendingConflictRadar = null;
     selectedId = state.blips[0]?.id ?? null;
     elements.saveDialog.close();
     renderAll();
@@ -548,7 +655,7 @@ async function handlePdfAnalyzeSubmit(event) {
     const uploadPayload = await uploadResponse.json().catch(() => null);
 
     if (uploadResponse.status === 401) {
-      setAdminSession(false, "");
+      suspendAdminSession();
       throw new Error("Sessão administrativa expirada. Entre novamente no modo administrador.");
     }
     if (uploadResponse.status === 429) {
@@ -591,7 +698,7 @@ async function handlePdfAnalyzeSubmit(event) {
       setStatus(elements.pdfDialogStatus, "Análise cancelada.");
       return;
     }
-    if (error?.code === "unauthorized") setAdminSession(false, "");
+    if (error?.code === "unauthorized") suspendAdminSession();
     setStatus(elements.pdfDialogStatus, error?.message || "Não foi possível concluir a análise do PDF.", true);
   } finally {
     activePdfAbort = null;
@@ -649,7 +756,7 @@ function openReviewDialog(rawProposals, summaryText) {
       ? `${proposal.targetId ? proposal.targetId + " — " : ""}${proposal.blip.name}`
       : `Proposta #${item.index + 1} (${actionLabel})`;
 
-    const evidenceHtml = Array.isArray(proposal.evidence) && proposal.evidence.length
+    const evidenceHtml = item.valid && Array.isArray(proposal.evidence) && proposal.evidence.length
       ? `<ul class="proposal-evidence">${proposal.evidence
           .map((ev) => `<li><strong>Pág. ${escapeHtml(ev.page)}:</strong> ${escapeHtml(ev.note)}</li>`)
           .join("")}</ul>`
@@ -991,7 +1098,7 @@ function addSource() {
   const name = window.prompt("Nome da fonte monitorada")?.trim();
   if (!name) return;
   const url = window.prompt("URL HTTP/HTTPS da fonte")?.trim();
-  if (!url || !/^https?:\/\//i.test(url)) {
+  if (!isHttpUrl(url)) {
     showToast("Informe uma URL HTTP ou HTTPS válida.");
     return;
   }
