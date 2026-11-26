@@ -35,7 +35,7 @@ await mkdir(path.dirname(briefPath), { recursive: true });
 const sources = JSON.parse(await readFile(sourcePath, "utf8"));
 const cache = await readJson(cachePath, { downloads: [] });
 const selectedSources = sources
-  .filter((source) => source.discoverPdfs !== false)
+  .filter((source) => source.discoverPdfs !== false || source.strategy === "publications")
   .filter((source) => {
     if (!options.sourceFilter) return true;
     const needle = options.sourceFilter.toLowerCase();
@@ -59,10 +59,28 @@ const report = {
 };
 
 const analysisCache = new Map();
+const publicationKeys = new Set();
 
 try {
   for (const source of selectedSources) {
-    const result = source.strategy === "fetch" ? await discoverWithFetch(source) : await engine.discover(source);
+    const result = source.strategy === "publications"
+      ? await discoverPublications(source, engine.context)
+      : source.strategy === "fetch"
+        ? await discoverWithFetch(source)
+        : await engine.discover(source);
+    if (source.strategy === "publications") {
+      deduplicatePublications(result, publicationKeys);
+      result.pdfCandidates = rankPdfCandidates(
+        result.publications.map((publication) => ({
+          href: publication.pdfUrl,
+          text: `PDF paper ${publication.title}`,
+          title: publication.title,
+          download: "",
+        })),
+        source.url,
+        source
+      );
+    }
     result.strategyRequested = source.strategy ?? "playwright";
     const sourceDownloadLimit = options.maxPdfsPerSourceExplicit
       ? options.maxPdfsPerSource
@@ -94,10 +112,12 @@ await writeFile(briefPath, buildDiscoveryBrief(report), "utf8");
 
 const downloads = report.sources.flatMap((source) => source.downloads ?? []);
 const analyzed = downloads.filter((download) => download.analysis?.ok).length;
+const publications = report.sources.flatMap((source) => source.publications ?? []);
 
 console.log("Descoberta de fontes concluida.");
 console.log(`Motor: ${report.engine} (${report.engineNote})`);
 console.log(`Fontes verificadas: ${report.sources.length}`);
+console.log(`Publicacoes encontradas: ${publications.length}`);
 console.log(`Candidatos PDF: ${report.sources.reduce((total, source) => total + source.pdfCandidates.length, 0)}`);
 console.log(`PDFs baixados ou em cache: ${downloads.filter((download) => download.path).length}`);
 console.log(`PDFs analisados: ${analyzed}`);
@@ -290,6 +310,136 @@ async function discoverWithFetch(source) {
   }
 }
 
+async function discoverPublications(source, context) {
+  const checkedAt = new Date().toISOString();
+  try {
+    const index = await loadPublicationPage(source.url, context);
+    if (!index.ok) {
+      return {
+        ...source,
+        strategyUsed: context ? "publications-playwright" : "publications-fetch",
+        ok: false,
+        status: index.status,
+        checkedAt,
+        finalUrl: index.finalUrl,
+        title: index.title,
+        error: `HTTP ${index.status ?? "desconhecido"}`,
+        publications: [],
+        publicationErrors: [],
+        duplicatePublications: 0,
+        pdfCandidates: [],
+        downloads: [],
+      };
+    }
+
+    const indexUrl = new URL(index.finalUrl);
+    const patterns = source.publicationLinkPatterns ?? [];
+    const maxPublications = Math.min(5, Math.max(1, Number(source.maxPublications) || 5));
+    const detailUrls = [];
+    const seenUrls = new Set();
+
+    for (const link of index.links) {
+      const url = normalizeUrl(link.href, index.finalUrl);
+      if (!url || seenUrls.has(url)) continue;
+      const parsed = new URL(url);
+      if (parsed.origin !== indexUrl.origin || url === index.finalUrl) continue;
+      const haystack = `${url} ${link.text} ${link.title}`.toLowerCase();
+      if (!patterns.some((pattern) => matchesPattern(haystack, pattern))) continue;
+      seenUrls.add(url);
+      detailUrls.push(url);
+      if (detailUrls.length >= maxPublications) break;
+    }
+
+    const publications = [];
+    const publicationErrors = [];
+    for (const url of detailUrls) {
+      try {
+        const detail = await loadPublicationPage(url, context);
+        if (!detail.ok) {
+          publicationErrors.push({ url, status: detail.status, error: `HTTP ${detail.status}` });
+          continue;
+        }
+        const publication = extractPublication(detail);
+        if (publication) publications.push(publication);
+        else publicationErrors.push({ url, status: detail.status, error: "publication_metadata_missing" });
+      } catch (error) {
+        publicationErrors.push({ url, status: null, error: error.message });
+      }
+    }
+
+    return {
+      ...source,
+      strategyUsed: context ? "publications-playwright" : "publications-fetch",
+      ok: true,
+      status: index.status,
+      checkedAt,
+      finalUrl: index.finalUrl,
+      title: index.title,
+      publications,
+      publicationErrors,
+      duplicatePublications: 0,
+      pdfCandidates: [],
+      downloads: [],
+    };
+  } catch (error) {
+    return {
+      ...source,
+      strategyUsed: context ? "publications-playwright" : "publications-fetch",
+      ok: false,
+      checkedAt,
+      error: error.message,
+      publications: [],
+      publicationErrors: [],
+      duplicatePublications: 0,
+      pdfCandidates: [],
+      downloads: [],
+    };
+  }
+}
+
+async function loadPublicationPage(url, context) {
+  return context
+    ? loadPublicationPageWithPlaywright(url, context)
+    : loadPublicationPageWithFetch(url);
+}
+
+async function loadPublicationPageWithPlaywright(url, context) {
+  const page = await context.newPage();
+  try {
+    const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
+    const html = await page.content();
+    return {
+      ok: response?.ok() ?? true,
+      status: response?.status() ?? null,
+      finalUrl: page.url(),
+      title: await page.title(),
+      html,
+      links: parseLinks(html, page.url()),
+    };
+  } finally {
+    await page.close().catch(() => {});
+  }
+}
+
+async function loadPublicationPageWithFetch(url) {
+  const response = await fetch(url, {
+    headers: {
+      "user-agent": "TechnologyRadarDiscovery/0.1 (+local P&D radar; human-reviewed proposals)",
+      accept: "text/html,application/xhtml+xml,application/xml;q=0.9,text/plain;q=0.8",
+    },
+  });
+  const html = await response.text();
+  return {
+    ok: response.ok,
+    status: response.status,
+    finalUrl: response.url || url,
+    title: extractTitle(html),
+    html,
+    links: parseLinks(html, response.url || url),
+  };
+}
+
 function parseLinks(html, baseUrl) {
   const links = [];
   const anchorRegex = /<a\b([^>]*?)href\s*=\s*(["']?)([^"'\s>]+)\2([^>]*)>([\s\S]*?)<\/a>/gi;
@@ -391,6 +541,223 @@ function matchesPattern(value, pattern) {
     }
   }
   return value.includes(normalizedPattern);
+}
+
+function extractPublication(page) {
+  const article = extractScholarlyJsonLd(page.html);
+  const title = firstValue(
+    metaValues(page.html, "citation_title"),
+    article?.headline,
+    article?.name,
+    metaValues(page.html, "og:title"),
+    extractHeading(page.html),
+    page.title
+  );
+  if (!title) return null;
+
+  const authors = uniqueStrings(
+    metaValues(page.html, "citation_author").length
+      ? metaValues(page.html, "citation_author")
+      : jsonLdAuthors(article?.author)
+  );
+  const publishedAt = firstValue(
+    metaValues(page.html, "citation_publication_date"),
+    metaValues(page.html, "article:published_time"),
+    article?.datePublished
+  );
+  const areas = uniqueStrings([
+    ...jsonLdKeywords(article?.keywords),
+    ...metaValues(page.html, "keywords").flatMap(splitKeywords),
+  ]);
+  const abstract = firstValue(
+    metaValues(page.html, "citation_abstract"),
+    article?.abstract,
+    article?.description,
+    metaValues(page.html, "description"),
+    metaValues(page.html, "og:description")
+  );
+  const venue = firstValue(
+    metaValues(page.html, "citation_conference_title"),
+    metaValues(page.html, "citation_journal_title"),
+    article?.isPartOf?.name
+  );
+  const doiLink = page.links.find((link) => /doi\.org\//i.test(link.href))?.href;
+  const doi = normalizeDoi(firstValue(metaValues(page.html, "citation_doi"), doiLink));
+  const arxiv = findArxiv(page.links);
+  const citationPdf = normalizeUrl(
+    firstValue(metaValues(page.html, "citation_pdf_url"), article?.contentUrl),
+    page.finalUrl
+  );
+  const directPdf = page.links.find((link) => /\.pdf($|[?#])/i.test(link.href))?.href;
+  const pdfUrl = isHttpPdf(citationPdf)
+    ? citationPdf
+    : isHttpPdf(directPdf)
+      ? directPdf
+      : arxiv?.pdfUrl ?? "";
+  const paperUrl = arxiv?.url || pdfUrl || doiLink || page.finalUrl;
+
+  return {
+    title,
+    authors,
+    publishedAt,
+    year: publicationYear(publishedAt),
+    areas,
+    abstract,
+    venue,
+    doi,
+    arxivId: arxiv?.id ?? "",
+    detailUrl: page.finalUrl,
+    paperUrl,
+    pdfUrl,
+    evidenceLevel: evidenceLevel({ title, venue, arxivId: arxiv?.id }),
+  };
+}
+
+function extractScholarlyJsonLd(html) {
+  const scripts = html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi);
+  for (const [, attrs, body] of scripts) {
+    if (attrValue(attrs, "type").toLowerCase() !== "application/ld+json") continue;
+    try {
+      const candidates = [];
+      collectJsonLd(JSON.parse(body), candidates);
+      const article = candidates.find((item) => {
+        const types = Array.isArray(item?.["@type"]) ? item["@type"] : [item?.["@type"]];
+        return types.some((type) => /^(scholarlyarticle|article|techarticle|report)$/i.test(type));
+      });
+      if (article) return article;
+    } catch {
+      // Ignore invalid structured data and continue with citation metadata.
+    }
+  }
+  return null;
+}
+
+function collectJsonLd(value, output) {
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectJsonLd(item, output));
+    return;
+  }
+  if (!value || typeof value !== "object") return;
+  output.push(value);
+  if (value["@graph"]) collectJsonLd(value["@graph"], output);
+}
+
+function metaValues(html, expectedName) {
+  const values = [];
+  const tags = html.matchAll(/<meta\b([^>]*)>/gi);
+  for (const [, attrs] of tags) {
+    const name = firstValue(
+      attrValue(attrs, "name"),
+      attrValue(attrs, "property"),
+      attrValue(attrs, "itemprop")
+    ).toLowerCase();
+    if (name !== expectedName.toLowerCase()) continue;
+    const content = stripHtml(attrValue(attrs, "content"));
+    if (content) values.push(content);
+  }
+  return values;
+}
+
+function jsonLdAuthors(value) {
+  const authors = Array.isArray(value) ? value : value ? [value] : [];
+  return authors.map((author) => typeof author === "string" ? author : author?.name).filter(Boolean);
+}
+
+function jsonLdKeywords(value) {
+  if (Array.isArray(value)) return value.flatMap(jsonLdKeywords);
+  return splitKeywords(value);
+}
+
+function splitKeywords(value) {
+  return String(value ?? "")
+    .split(/[,;|]/)
+    .map(normalize)
+    .filter(Boolean);
+}
+
+function findArxiv(links) {
+  for (const link of links) {
+    try {
+      const url = new URL(link.href);
+      if (url.hostname !== "arxiv.org" && url.hostname !== "www.arxiv.org") continue;
+      const id = url.pathname.replace(/^\/(?:abs|pdf)\//, "").replace(/\.pdf$/i, "");
+      if (!id || id === url.pathname) continue;
+      return {
+        id,
+        url: `https://arxiv.org/abs/${id}`,
+        pdfUrl: `https://arxiv.org/pdf/${id}.pdf`,
+      };
+    } catch {
+      // Ignore malformed external links.
+    }
+  }
+  return null;
+}
+
+function normalizeDoi(value) {
+  const match = String(value ?? "").match(/10\.\d{4,9}\/[^\s"'<>]+/i);
+  return (match?.[0] ?? "").replace(/[),.;]+$/, "").toLowerCase();
+}
+
+function publicationYear(value) {
+  const year = Number(String(value ?? "").match(/(?:19|20)\d{2}/)?.[0]);
+  return Number.isInteger(year) ? year : null;
+}
+
+function evidenceLevel({ title, venue, arxivId }) {
+  if (/\b(technical report|tech report|white ?paper|system card)\b/i.test(`${title} ${venue}`)) {
+    return "technical-report";
+  }
+  if (venue && !/arxiv/i.test(venue)) return "peer-reviewed";
+  if (arxivId) return "preprint";
+  return "corporate-research";
+}
+
+function deduplicatePublications(result, seen) {
+  const publications = [];
+  let duplicates = 0;
+  for (const publication of result.publications) {
+    const keys = publicationIdentityKeys(publication);
+    if (keys.some((key) => seen.has(key))) {
+      duplicates += 1;
+      continue;
+    }
+    keys.forEach((key) => seen.add(key));
+    publications.push(publication);
+  }
+  result.publications = publications;
+  result.duplicatePublications += duplicates;
+}
+
+function publicationIdentityKeys(publication) {
+  const keys = [];
+  if (publication.doi) keys.push(`doi:${publication.doi}`);
+  if (publication.arxivId) keys.push(`arxiv:${publication.arxivId.toLowerCase()}`);
+  if (!keys.length && publication.title && publication.year) {
+    keys.push(`title:${normalize(publication.title).toLowerCase()}|${publication.year}`);
+  }
+  if (!keys.length) keys.push(`url:${publication.detailUrl}`);
+  return keys;
+}
+
+function firstValue(...values) {
+  for (const value of values.flat()) {
+    const normalized = normalize(value ?? "");
+    if (normalized) return normalized;
+  }
+  return "";
+}
+
+function uniqueStrings(values) {
+  return [...new Set(values.map((value) => normalize(value)).filter(Boolean))];
+}
+
+function extractHeading(html) {
+  return stripHtml(html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1] ?? "");
+}
+
+function isHttpPdf(value) {
+  return /^https?:\/\//i.test(value ?? "") && /\.pdf($|[?#])/i.test(value);
 }
 
 async function downloadCandidates(candidates, source, context) {
@@ -534,6 +901,22 @@ async function analyzePdfOnce(relativePdfPath, memo) {
 
 function buildDiscoveryBrief(payload) {
   const sourceSections = payload.sources.map((source) => {
+    const publications = source.publications?.length
+      ? source.publications
+          .slice(0, 10)
+          .map((publication) => {
+            const year = publication.year ? ` (${publication.year})` : "";
+            const authors = publication.authors.length ? ` — ${publication.authors.join(", ")}` : "";
+            const venue = publication.venue ? `\n  Venue: ${publication.venue}` : "";
+            const link = publication.paperUrl ? `\n  Paper: ${publication.paperUrl}` : "";
+            return `- [${publication.evidenceLevel}] ${publication.title}${year}${authors}${venue}${link}`;
+          })
+          .join("\n")
+      : "- Nenhuma publicacao encontrada.";
+
+    const publicationErrors = source.publicationErrors?.length
+      ? `\n\nFalhas isoladas: ${source.publicationErrors.length}.`
+      : "";
     const candidates = source.pdfCandidates.length
       ? source.pdfCandidates
           .slice(0, 10)
@@ -560,6 +943,13 @@ function buildDiscoveryBrief(payload) {
 - Estrategia usada: ${source.strategyUsed}
 - Status: ${source.ok === false ? `falha (${source.error ?? source.status})` : "ok"}
 - Titulo: ${source.title ?? "n/a"}
+
+${source.strategyRequested === "publications" || source.publications ? `### Publicacoes
+
+${publications}${publicationErrors}
+
+Duplicatas ignoradas: ${source.duplicatePublications ?? 0}.
+` : ""}
 
 ### Candidatos
 
