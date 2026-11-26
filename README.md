@@ -124,6 +124,10 @@ Comandos disponíveis para execução offline/local em lote:
 - `npm.cmd run radar:pdf -- "<caminho.pdf>"`: extração local de sinais e brief de um PDF.
 - `npm.cmd run radar:update` / `radar:update:offline`: coleta de sinais das fontes monitoradas.
 
+Fontes com `strategy: "publications"` abrem até cinco páginas recentes do índice oficial, extraem metadados acadêmicos e encaminham PDFs públicos ao pipeline existente. A classificação (`peer-reviewed`, `preprint`, `technical-report` ou `corporate-research`) e a deduplicação por DOI/arXiv/título ajudam a revisão, mas nunca publicam blips automaticamente.
+
+O catálogo exibido no site fica em `data/radar.json`; a configuração de coleta fica em `data/monitored-sources.json`. Ao adicionar ou remover uma fonte, mantenha nome e URL sincronizados nos dois arquivos.
+
 ## Arquivos Principais
 
 - `data/radar.json`: estado canônico versionado do radar.

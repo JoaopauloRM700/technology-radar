@@ -105,5 +105,93 @@
     "discoverPdfs": true,
     "maxPdfDownloads": 1,
     "themes": ["software quality", "technical debt", "AI-generated code"]
+  },
+  {
+    "name": "Microsoft Research Publications",
+    "url": "https://www.microsoft.com/en-us/research/publications/",
+    "strength": "Alta",
+    "strategy": "publications",
+    "discoverPdfs": true,
+    "maxPublications": 5,
+    "maxPdfDownloads": 1,
+    "publicationLinkPatterns": ["/en-us/research/publication/"],
+    "themes": ["coding agents", "software engineering", "AI evaluation", "security"]
+  },
+  {
+    "name": "Google Research Publications",
+    "url": "https://research.google/pubs/",
+    "strength": "Alta",
+    "strategy": "publications",
+    "discoverPdfs": true,
+    "maxPublications": 5,
+    "maxPdfDownloads": 1,
+    "publicationLinkPatterns": ["/pubs/"],
+    "themes": ["software engineering", "distributed systems", "responsible AI", "machine learning"]
+  },
+  {
+    "name": "Google DeepMind Publications",
+    "url": "https://deepmind.google/research/publications/",
+    "strength": "Alta",
+    "strategy": "publications",
+    "discoverPdfs": true,
+    "maxPublications": 5,
+    "maxPdfDownloads": 1,
+    "publicationLinkPatterns": ["/research/publications/"],
+    "themes": ["AI agents", "foundation models", "AI safety", "robotics"]
+  },
+  {
+    "name": "IBM Research Publications",
+    "url": "https://research.ibm.com/publications",
+    "strength": "Alta",
+    "strategy": "publications",
+    "discoverPdfs": true,
+    "maxPublications": 5,
+    "maxPdfDownloads": 1,
+    "publicationLinkPatterns": ["/publications/"],
+    "themes": ["enterprise AI", "governance", "security", "quantum computing"]
+  },
+  {
+    "name": "Amazon Science Publications",
+    "url": "https://www.amazon.science/publications",
+    "strength": "Alta",
+    "strategy": "publications",
+    "discoverPdfs": true,
+    "maxPublications": 5,
+    "maxPdfDownloads": 1,
+    "publicationLinkPatterns": ["/publications/"],
+    "themes": ["distributed systems", "information retrieval", "production ML", "robotics"]
+  },
+  {
+    "name": "Meta AI Publications",
+    "url": "https://ai.meta.com/results/?content_types%5B0%5D=publication",
+    "strength": "Alta",
+    "strategy": "publications",
+    "discoverPdfs": true,
+    "maxPublications": 5,
+    "maxPdfDownloads": 1,
+    "publicationLinkPatterns": ["/research/publications/", "/publications/"],
+    "themes": ["open models", "multimodal AI", "benchmarks", "responsible AI"]
+  },
+  {
+    "name": "NVIDIA Research Publications",
+    "url": "https://research.nvidia.com/publications",
+    "strength": "Alta",
+    "strategy": "publications",
+    "discoverPdfs": true,
+    "maxPublications": 5,
+    "maxPdfDownloads": 1,
+    "publicationLinkPatterns": ["/publication/"],
+    "themes": ["AI inference", "accelerated computing", "model efficiency", "physical AI"]
+  },
+  {
+    "name": "Salesforce AI Research Publications",
+    "url": "https://www.salesforceairesearch.com/publications",
+    "strength": "Alta",
+    "strategy": "publications",
+    "discoverPdfs": true,
+    "maxPublications": 5,
+    "maxPdfDownloads": 1,
+    "publicationLinkPatterns": ["/publications/"],
+    "themes": ["enterprise agents", "RAG", "AI evaluation", "software engineering"]
   }
 ]

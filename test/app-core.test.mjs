@@ -12,6 +12,38 @@ test("the shipped production radar still satisfies the canonical schema", async 
   assert.equal(normalized.revision, production.revision);
 });
 
+test("corporate research sources stay synchronized and safely bounded", async () => {
+  const production = JSON.parse(await readFile(new URL("../data/radar.json", import.meta.url), "utf8"));
+  const monitored = JSON.parse(
+    await readFile(new URL("../data/monitored-sources.json", import.meta.url), "utf8")
+  );
+  const expected = new Map([
+    ["Microsoft Research Publications", "https://www.microsoft.com/en-us/research/publications/"],
+    ["Google Research Publications", "https://research.google/pubs/"],
+    ["Google DeepMind Publications", "https://deepmind.google/research/publications/"],
+    ["IBM Research Publications", "https://research.ibm.com/publications"],
+    ["Amazon Science Publications", "https://www.amazon.science/publications"],
+    ["Meta AI Publications", "https://ai.meta.com/results/?content_types%5B0%5D=publication"],
+    ["NVIDIA Research Publications", "https://research.nvidia.com/publications"],
+    ["Salesforce AI Research Publications", "https://www.salesforceairesearch.com/publications"],
+  ]);
+
+  assert.equal(new Set(production.sources.map((source) => source.url)).size, production.sources.length);
+  assert.equal(new Set(monitored.map((source) => source.url)).size, monitored.length);
+
+  for (const [name, url] of expected) {
+    const publicSource = production.sources.find((source) => source.name === name);
+    const monitoredSource = monitored.find((source) => source.name === name);
+    assert.equal(publicSource?.url, url, `${name} ausente do radar publico`);
+    assert.equal(monitoredSource?.url, url, `${name} ausente do monitoramento`);
+    assert.equal(monitoredSource.strategy, "publications");
+    assert.equal(monitoredSource.maxPublications, 5);
+    assert.equal(monitoredSource.maxPdfDownloads, 1);
+    assert.ok(monitoredSource.publicationLinkPatterns.length > 0);
+    assert.ok(monitoredSource.themes.length > 0);
+  }
+});
+
 test("loads the canonical radar and normalizes a detached copy", async () => {
   const radar = await loadCanonical();
   const { normalizeRadar } = await import("../app-core.mjs");

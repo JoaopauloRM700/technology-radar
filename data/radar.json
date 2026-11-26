@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "revision": "614f8cf2-f7f8-4b81-b060-989f7bc35529",
-  "updatedAt": "2026-11-18T15:13:02.341Z",
-  "changeNote": "Migração dos dados iniciais do radar.",
+  "revision": "3463e09e-2f03-4469-b335-c2f9abdd4a05",
+  "updatedAt": "2026-11-26T00:00:00.000Z",
+  "changeNote": "Adiciona fontes corporativas oficiais de pesquisa e publicações.",
   "blips": [
     {
       "id": "ES-01",
@@ -500,6 +500,86 @@
       "cadence": "Anual",
       "signal": "Qualidade estrutural, débito técnico, riscos de IA e sustentabilidade.",
       "agentUse": "Refinar blips de qualidade, débito cognitivo e governança de código."
+    },
+    {
+      "id": "SRC-13",
+      "name": "Microsoft Research Publications",
+      "initials": "MS",
+      "url": "https://www.microsoft.com/en-us/research/publications/",
+      "strength": "Alta",
+      "cadence": "Contínua",
+      "signal": "Papers sobre IA, engenharia de software, sistemas, segurança, linguagens e HCI.",
+      "agentUse": "Identificar resultados técnicos em agentes, qualidade, sistemas e segurança antes da adoção ampla."
+    },
+    {
+      "id": "SRC-14",
+      "name": "Google Research Publications",
+      "initials": "GR",
+      "url": "https://research.google/pubs/",
+      "strength": "Alta",
+      "cadence": "Contínua",
+      "signal": "Papers sobre machine learning, sistemas distribuídos, engenharia de software e IA responsável.",
+      "agentUse": "Detectar avanços reproduzíveis em modelos, sistemas e práticas de engenharia."
+    },
+    {
+      "id": "SRC-15",
+      "name": "Google DeepMind Publications",
+      "initials": "DM",
+      "url": "https://deepmind.google/research/publications/",
+      "strength": "Alta",
+      "cadence": "Contínua",
+      "signal": "Pesquisa em modelos fundacionais, agentes, segurança de IA, ciência e robótica.",
+      "agentUse": "Monitorar capacidades, avaliações e riscos de sistemas de IA de fronteira."
+    },
+    {
+      "id": "SRC-16",
+      "name": "IBM Research Publications",
+      "initials": "IB",
+      "url": "https://research.ibm.com/publications",
+      "strength": "Alta",
+      "cadence": "Contínua",
+      "signal": "Pesquisa em IA empresarial, segurança, governança, sistemas, hardware e computação quântica.",
+      "agentUse": "Corroborar sinais de tecnologia empresarial com resultados técnicos e venues acadêmicos."
+    },
+    {
+      "id": "SRC-17",
+      "name": "Amazon Science Publications",
+      "initials": "AS",
+      "url": "https://www.amazon.science/publications",
+      "strength": "Alta",
+      "cadence": "Contínua",
+      "signal": "Pesquisa em cloud, sistemas distribuídos, recuperação de informação, ML em produção e robótica.",
+      "agentUse": "Identificar técnicas testadas em escala para plataformas, dados e operações."
+    },
+    {
+      "id": "SRC-18",
+      "name": "Meta AI Publications",
+      "initials": "MA",
+      "url": "https://ai.meta.com/results/?content_types%5B0%5D=publication",
+      "strength": "Alta",
+      "cadence": "Contínua",
+      "signal": "Pesquisa em modelos abertos, NLP, visão, multimodalidade, benchmarks e IA responsável.",
+      "agentUse": "Acompanhar modelos, datasets, avaliações e ferramentas abertas relevantes ao ecossistema."
+    },
+    {
+      "id": "SRC-19",
+      "name": "NVIDIA Research Publications",
+      "initials": "NV",
+      "url": "https://research.nvidia.com/publications",
+      "strength": "Alta",
+      "cadence": "Contínua",
+      "signal": "Pesquisa em IA generativa, inferência, computação acelerada, gráficos, robótica e Physical AI.",
+      "agentUse": "Monitorar eficiência, infraestrutura e novas capacidades dependentes de hardware acelerado."
+    },
+    {
+      "id": "SRC-20",
+      "name": "Salesforce AI Research Publications",
+      "initials": "SF",
+      "url": "https://www.salesforceairesearch.com/publications",
+      "strength": "Alta",
+      "cadence": "Contínua",
+      "signal": "Pesquisa em agentes empresariais, RAG, avaliação, confiabilidade e engenharia de software.",
+      "agentUse": "Identificar padrões e avaliações aplicáveis a agentes e IA em ambientes empresariais."
     }
   ]
 }
