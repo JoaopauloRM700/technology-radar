@@ -1,4 +1,18 @@
-const STORAGE_KEY = "tech-radar-software-v02";
+import {
+  applySelectedProposals,
+  blipLabel,
+  buildRadarHtmlSnapshot,
+  hasDraftChanges,
+  isHttpUrl,
+  MAX_PROPOSALS,
+  nextBlipId,
+  normalizeRadar,
+  pollAnalysisJob,
+  prepareProposalsForReview,
+  resolveApiBaseUrl,
+  sanitizeHeaderFilename,
+  wakeBackend,
+} from "./app-core.mjs";
 
 const DEFAULT_DETAIL_URLS = {
   "ES-01": "https://github.blog/ai-and-ml/github-copilot/whats-new-with-github-copilot-coding-agent/",
@@ -28,6 +42,40 @@ const DEFAULT_DETAIL_URLS = {
   "ES-25": "https://www.thoughtworks.com/radar",
 };
 
+const MAX_PDF_BYTES = 10 * 1024 * 1024;
+const configuredSaveTimeout = Number(globalThis.RADAR_SAVE_TIMEOUT_MS);
+const SAVE_TIMEOUT_MS = Number.isFinite(configuredSaveTimeout) && configuredSaveTimeout > 0
+  ? configuredSaveTimeout
+  : 60_000;
+const FIELD_LABELS = {
+  name: "Nome",
+  quadrant: "Quadrante",
+  ring: "Anel",
+  horizon: "Horizonte",
+  maturity: "Maturidade",
+  risk: "Risco",
+  effort: "Esforço",
+  status: "Status",
+  source: "Fonte",
+  theme: "Tema",
+  detailsUrl: "Link",
+  strategic: "Justificativa",
+  constraints: "Gargalos",
+};
+const ACTION_LABELS = {
+  add: "Adicionar",
+  update: "Atualizar",
+  move: "Mover",
+};
+const STAGE_LABELS = {
+  queued: "Na fila para análise...",
+  preparing: "Preparando ambiente seguro...",
+  extracting: "Extraindo texto do PDF...",
+  ocr: "Executando OCR em páginas escaneadas...",
+  proposals: "Gerando propostas com NVIDIA NIM...",
+  succeeded: "Análise concluída.",
+};
+
 const quadrantColors = {
   "Técnicas": "#007f92",
   "Plataformas": "#c47a00",
@@ -35,559 +83,18 @@ const quadrantColors = {
   "Linguagens e Frameworks": "#b83549",
 };
 
-const DEFAULT_BLIPS = [
-  {
-    id: "ES-01",
-    name: "Coding Agents",
-    quadrant: "Ferramentas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Médio",
-    status: "Piloto recomendado",
-    source: "Thoughtworks, GitHub",
-    theme: "Engenharia com IA",
-    strategic:
-      "Acelerar protótipos, refatorações e geração de testes em ciclos de P&D, mantendo revisão humana e rastreabilidade.",
-    constraints:
-      "Pode introduzir alucinação, código pouco compreendido, vulnerabilidades e decisões arquiteturais não intencionais.",
-  },
-  {
-    id: "ES-02",
-    name: "Harnesses para agentes de código",
-    quadrant: "Técnicas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Alto",
-    status: "Piloto recomendado",
-    source: "Thoughtworks, Martin Fowler",
-    theme: "Engenharia com IA",
-    strategic:
-      "Criar controles de feedforward e feedback para aumentar confiança em agentes e reduzir supervisão manual repetitiva.",
-    constraints:
-      "Exige arquitetura de qualidade, testes confiáveis, regras estruturais e maturidade de engenharia para funcionar bem.",
-  },
-  {
-    id: "ES-03",
-    name: "Engenharia de Contexto",
-    quadrant: "Técnicas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Médio",
-    status: "Piloto recomendado",
-    source: "Thoughtworks, Anthropic",
-    theme: "Engenharia com IA",
-    strategic:
-      "Padronizar como contexto, restrições, exemplos e decisões são fornecidos a agentes para melhorar consistência de entrega.",
-    constraints:
-      "Contexto excessivo cria instruction bloat, ruído e decisões baseadas em informações desatualizadas.",
-  },
-  {
-    id: "ES-04",
-    name: "Frameworks de agentes (LangGraph/Semantic Kernel)",
-    quadrant: "Linguagens e Frameworks",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Médio",
-    status: "Monitorar",
-    source: "Thoughtworks, LangGraph, Microsoft",
-    theme: "Linguagens e Frameworks",
-    strategic:
-      "Estruturar agentes, fluxos, memória, ferramentas e supervisão em aplicações de P&D com menor esforço de orquestração.",
-    constraints:
-      "Ecossistema ainda muda rápido; risco de lock-in conceitual, sobreengenharia e lacunas de observabilidade.",
-  },
-  {
-    id: "ES-05",
-    name: "Spec-driven development",
-    quadrant: "Técnicas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Médio",
-    status: "Monitorar",
-    source: "Thoughtworks",
-    theme: "Engenharia com IA",
-    strategic:
-      "Converter hipóteses de P&D em especificações verificáveis antes da implementação assistida por IA.",
-    constraints:
-      "Sem disciplina de produto e arquitetura, especificações viram documentação frágil e não testável.",
-  },
-  {
-    id: "ES-06",
-    name: "Feedback sensors + quality gates determinísticos",
-    quadrant: "Técnicas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Médio",
-    status: "Piloto recomendado",
-    source: "Thoughtworks",
-    theme: "Qualidade e Testes",
-    strategic:
-      "Conectar compiladores, testes, linters, análise estática e regras arquiteturais ao loop de autocorreção dos agentes.",
-    constraints:
-      "Gates fracos dão falsa confiança; gates ruidosos criam lentidão e rejeição pelos times.",
-  },
-  {
-    id: "ES-07",
-    name: "Teste de mutação",
-    quadrant: "Técnicas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Baixo",
-    effort: "Médio",
-    status: "Monitorar",
-    source: "Thoughtworks",
-    theme: "Qualidade e Testes",
-    strategic:
-      "Medir força real dos testes e revelar suites que passam sem proteger comportamento crítico.",
-    constraints:
-      "Pode aumentar custo de pipeline; exige seleção cuidadosa de módulos e metas de cobertura.",
-  },
-  {
-    id: "ES-08",
-    name: "Fuzz testing e property-based testing",
-    quadrant: "Técnicas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Médio",
-    effort: "Médio",
-    status: "Monitorar",
-    source: "Thoughtworks, OWASP",
-    theme: "Qualidade e Testes",
-    strategic:
-      "Encontrar falhas em APIs, parsers, regras complexas e integrações com entrada imprevisível.",
-    constraints:
-      "A curva de modelagem é maior que testes exemplo-a-exemplo e pode produzir falsos positivos.",
-  },
-  {
-    id: "ES-09",
-    name: "Playwright para testes E2E e agentes",
-    quadrant: "Linguagens e Frameworks",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Baixo",
-    effort: "Médio",
-    status: "Piloto recomendado",
-    source: "Playwright, DORA",
-    theme: "Qualidade e Testes",
-    strategic:
-      "Automatizar fluxos reais de usuário e dar aos agentes um sensor determinístico de regressão visual e funcional.",
-    constraints:
-      "Testes E2E frágeis e ambientes instáveis podem gerar ruído; exige dados e seletores bem governados.",
-  },
-  {
-    id: "ES-10",
-    name: "Engineering Intelligence: DORA + QE Analytics",
-    quadrant: "Técnicas",
-    ring: "Adopt",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Baixo",
-    effort: "Médio",
-    status: "Padronizar",
-    source: "DORA, Perforce",
-    theme: "Medição e Fluxo",
-    strategic:
-      "Medir fluxo, estabilidade, qualidade e impacto da IA com indicadores que orientam decisão executiva.",
-    constraints:
-      "Métricas mal desenhadas viram vaidade ou pressão comportamental sem melhoria sistêmica.",
-  },
-  {
-    id: "ES-11",
-    name: "Gestão de débito cognitivo em código gerado por IA",
-    quadrant: "Técnicas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Médio",
-    status: "Monitorar",
-    source: "Thoughtworks, SIG",
-    theme: "Sustentabilidade Técnica",
-    strategic:
-      "Evitar que velocidade de geração resulte em sistemas que o time não consegue explicar, evoluir ou depurar.",
-    constraints:
-      "Difícil medir entendimento; requer revisões, ADRs, documentação viva e ownership explícito.",
-  },
-  {
-    id: "ES-12",
-    name: "Revisão humana por classe de risco",
-    quadrant: "Técnicas",
-    ring: "Adopt",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Baixo",
-    effort: "Baixo",
-    status: "Padronizar",
-    source: "OWASP, GitHub",
-    theme: "Governança",
-    strategic:
-      "Definir quando PRs, prompts, mudanças de infraestrutura e ações de agentes exigem aprovação humana.",
-    constraints:
-      "Processo burocrático demais reduz adoção; processo vago demais não reduz risco.",
-  },
-  {
-    id: "ES-13",
-    name: "Zero Trust no SDLC agentic",
-    quadrant: "Técnicas",
-    ring: "Adopt",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Médio",
-    effort: "Alto",
-    status: "Padronizar",
-    source: "Thoughtworks, OWASP",
-    theme: "Segurança e Governança",
-    strategic:
-      "Tratar agentes, plugins, pipelines e ferramentas como identidades não confiáveis por padrão.",
-    constraints:
-      "Integração com IAM, segredos, repositórios e ambientes de execução pode ser trabalhosa.",
-  },
-  {
-    id: "ES-14",
-    name: "Least privilege e Agentic IAM",
-    quadrant: "Plataformas",
-    ring: "Trial",
-    horizon: "Médio",
-    maturity: "Emergente",
-    risk: "Alto",
-    effort: "Alto",
-    status: "Monitorar",
-    source: "OWASP, GitHub",
-    theme: "Segurança e Governança",
-    strategic:
-      "Reduzir raio de impacto de agentes com permissões temporárias, escopo mínimo e trilha de auditoria.",
-    constraints:
-      "Ferramentas e provedores ainda estão amadurecendo modelos de identidade para agentes.",
-  },
-  {
-    id: "ES-15",
-    name: "Sandboxes de execução para agentes",
-    quadrant: "Plataformas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Alto",
-    status: "Monitorar",
-    source: "Thoughtworks, GitHub",
-    theme: "Segurança e Governança",
-    strategic:
-      "Permitir experimentação com menor risco isolando filesystem, rede, credenciais e comandos de agentes.",
-    constraints:
-      "Isolamento incompleto, custo computacional e exceções de rede podem limitar utilidade.",
-  },
-  {
-    id: "ES-16",
-    name: "AI Gateways",
-    quadrant: "Plataformas",
-    ring: "Assess",
-    horizon: "Médio",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Alto",
-    status: "Monitorar",
-    source: "DORA, NIST",
-    theme: "Plataforma de IA",
-    strategic:
-      "Centralizar política, logs, roteamento de modelos, custo, proteção de dados e observabilidade de uso de IA.",
-    constraints:
-      "Pode criar lock-in, latência e sensação falsa de governança se não houver controles reais.",
-  },
-  {
-    id: "ES-17",
-    name: "Governança de MCP e ferramentas conectadas",
-    quadrant: "Plataformas",
-    ring: "Assess",
-    horizon: "Médio",
-    maturity: "Experimental",
-    risk: "Alto",
-    effort: "Alto",
-    status: "Monitorar",
-    source: "OWASP MCP, Thoughtworks",
-    theme: "Plataforma de IA",
-    strategic:
-      "Controlar tool sprawl, contexto, escopos e confiabilidade de servidores conectados a agentes.",
-    constraints:
-      "Padrões, ameaças e ecossistema ainda mudam rapidamente; precisa de catálogo e avaliação contínua.",
-  },
-  {
-    id: "ES-18",
-    name: "Red teaming para LLMs e agentes",
-    quadrant: "Técnicas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Emergente",
-    risk: "Médio",
-    effort: "Médio",
-    status: "Piloto recomendado",
-    source: "OWASP, NIST",
-    theme: "Segurança e Governança",
-    strategic:
-      "Encontrar prompt injection, tool misuse, vazamento de dados, overreliance e ações indevidas antes de produção.",
-    constraints:
-      "Exige conhecimento adversarial, documentação de ameaças e integração com processos de aceite.",
-  },
-  {
-    id: "ES-19",
-    name: "SBOM, SLSA e proveniência de supply chain",
-    quadrant: "Ferramentas",
-    ring: "Adopt",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Baixo",
-    effort: "Médio",
-    status: "Padronizar",
-    source: "OpenSSF, OWASP",
-    theme: "Supply Chain",
-    strategic:
-      "Rastrear dependências, artefatos, builds e assinaturas para reduzir risco de componentes comprometidos.",
-    constraints:
-      "Cobertura parcial e baixa ação sobre achados reduzem valor executivo.",
-  },
-  {
-    id: "ES-20",
-    name: "Policy as Code",
-    quadrant: "Ferramentas",
-    ring: "Adopt",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Baixo",
-    effort: "Médio",
-    status: "Padronizar",
-    source: "OpenSSF, CNCF",
-    theme: "Governança",
-    strategic:
-      "Automatizar compliance, segurança e padrões arquiteturais em pipelines e plataformas.",
-    constraints:
-      "Políticas ruidosas ou não versionadas travam entrega e criam bypass informal.",
-  },
-  {
-    id: "ES-21",
-    name: "Platform Engineering + Golden Paths",
-    quadrant: "Plataformas",
-    ring: "Trial",
-    horizon: "Médio",
-    maturity: "Madura",
-    risk: "Médio",
-    effort: "Alto",
-    status: "Monitorar",
-    source: "CNCF, GitLab",
-    theme: "DevOps e Plataforma",
-    strategic:
-      "Oferecer caminhos padronizados para criação, entrega, observabilidade e segurança de serviços.",
-    constraints:
-      "Pode virar plataforma pesada sem adoção real se não resolver dores práticas dos times.",
-  },
-  {
-    id: "ES-22",
-    name: "Observability as Code + OpenTelemetry",
-    quadrant: "Ferramentas",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Baixo",
-    effort: "Médio",
-    status: "Monitorar",
-    source: "CNCF, DORA",
-    theme: "DevOps e Plataforma",
-    strategic:
-      "Padronizar telemetria, SLOs e rastreabilidade como parte do ciclo de vida da aplicação.",
-    constraints:
-      "Excesso de sinais, custo de armazenamento e baixa higiene de cardinalidade atrapalham adoção.",
-  },
-  {
-    id: "ES-23",
-    name: "TypeScript como linguagem padrão de frontend e ferramentas",
-    quadrant: "Linguagens e Frameworks",
-    ring: "Adopt",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Baixo",
-    effort: "Baixo",
-    status: "Monitorar",
-    source: "TypeScript, GitHub Octoverse",
-    theme: "Linguagens e Frameworks",
-    strategic:
-      "Reduzir defeitos em interfaces, CLIs e ferramentas internas com tipagem estática e ecossistema amplo.",
-    constraints:
-      "Pode aumentar atrito em scripts simples; exige padrões de build, lint e versionamento coerentes.",
-  },
-  {
-    id: "ES-24",
-    name: "Bibliotecas de validação (Pydantic/Zod)",
-    quadrant: "Linguagens e Frameworks",
-    ring: "Trial",
-    horizon: "Curto",
-    maturity: "Madura",
-    risk: "Baixo",
-    effort: "Médio",
-    status: "Monitorar",
-    source: "Pydantic, Zod, OWASP",
-    theme: "Qualidade e Contratos",
-    strategic:
-      "Fortalecer contratos de entrada/saída em APIs, pipelines e respostas estruturadas de IA.",
-    constraints:
-      "Validação de schema não substitui validação semântica, autorização nem testes de comportamento.",
-  },
-  {
-    id: "ES-25",
-    name: "Frameworks LLM sem manutenção ou proveniência",
-    quadrant: "Linguagens e Frameworks",
-    ring: "Caution",
-    horizon: "Longo",
-    maturity: "Experimental",
-    risk: "Alto",
-    effort: "Alto",
-    status: "Segurar",
-    source: "Thoughtworks, OWASP, OpenSSF",
-    theme: "Riscos de Adoção",
-    strategic:
-      "Evitar dependência de wrappers, SDKs e frameworks de IA criados rapidamente sem comunidade, manutenção ou postura de segurança.",
-    constraints:
-      "Alto risco de abandono, vulnerabilidades, mudanças incompatíveis e semântica instável em componentes críticos.",
-  },
-];
-
-const DEFAULT_SOURCES = [
-  {
-    id: "SRC-01",
-    name: "Thoughtworks Technology Radar",
-    initials: "TW",
-    url: "https://www.thoughtworks.com/radar",
-    strength: "Alta",
-    cadence: "Semestral + insights",
-    signal: "Blips, anéis, temas macro e práticas emergentes de engenharia.",
-    agentUse: "Comparar mudanças por volume e sugerir alterações de anel.",
-  },
-  {
-    id: "SRC-02",
-    name: "DORA / Google Cloud Research",
-    initials: "DR",
-    url: "https://dora.dev/research/",
-    strength: "Alta",
-    cadence: "Anual + guias",
-    signal: "Métricas, capacidades organizacionais, IA assistida e desempenho de entrega.",
-    agentUse: "Atualizar critérios de sucesso, métricas e hipóteses de pilotos.",
-  },
-  {
-    id: "SRC-03",
-    name: "OWASP GenAI Security",
-    initials: "OA",
-    url: "https://genai.owasp.org/",
-    strength: "Alta",
-    cadence: "Contínua",
-    signal: "Top 10 LLM, Agentic AI, MCP, threat modeling e mitigação.",
-    agentUse: "Rebaixar/promover blips conforme risco de agentes e LLMs.",
-  },
-  {
-    id: "SRC-04",
-    name: "GitHub Blog, Changelog e Octoverse",
-    initials: "GH",
-    url: "https://github.blog/",
-    strength: "Média",
-    cadence: "Semanal",
-    signal: "Adoção de linguagens, agentes, Copilot, supply chain e workflows.",
-    agentUse: "Detectar adoção de ferramentas, mudanças de produto e sinais de ecossistema.",
-  },
-  {
-    id: "SRC-05",
-    name: "GitLab DevSecOps Reports",
-    initials: "GL",
-    url: "https://about.gitlab.com/resources/",
-    strength: "Média",
-    cadence: "Anual + pesquisas",
-    signal: "DevSecOps, platform engineering, toolchain, governança e AI accountability.",
-    agentUse: "Coletar sinais de gargalos organizacionais e adoção de plataforma.",
-  },
-  {
-    id: "SRC-06",
-    name: "Stack Overflow Developer Survey",
-    initials: "SO",
-    url: "https://survey.stackoverflow.co/",
-    strength: "Média",
-    cadence: "Anual",
-    signal: "Adoção por desenvolvedores, confiança em IA, linguagens e ferramentas.",
-    agentUse: "Validar tração comunitária e percepção de risco.",
-  },
-  {
-    id: "SRC-07",
-    name: "CNCF Landscape",
-    initials: "CF",
-    url: "https://landscape.cncf.io/",
-    strength: "Alta",
-    cadence: "Contínua",
-    signal: "Cloud native, observabilidade, segurança, runtime, plataforma e maturidade de projetos.",
-    agentUse: "Monitorar tecnologias de plataforma e projetos graduados/incubados.",
-  },
-  {
-    id: "SRC-08",
-    name: "OpenSSF",
-    initials: "OS",
-    url: "https://openssf.org/",
-    strength: "Alta",
-    cadence: "Contínua",
-    signal: "Supply chain, Scorecard, SLSA, Sigstore, segurança open source.",
-    agentUse: "Atualizar práticas de proveniência, assinatura e avaliação de dependências.",
-  },
-  {
-    id: "SRC-09",
-    name: "NIST AI RMF e SSDF",
-    initials: "NI",
-    url: "https://www.nist.gov/itl/ai-risk-management-framework",
-    strength: "Alta",
-    cadence: "Conforme publicação",
-    signal: "Gestão de risco de IA, avaliação, governança e desenvolvimento seguro.",
-    agentUse: "Calibrar critérios de risco, governança e controles mínimos.",
-  },
-  {
-    id: "SRC-10",
-    name: "Martin Fowler",
-    initials: "MF",
-    url: "https://martinfowler.com/",
-    strength: "Média",
-    cadence: "Contínua",
-    signal: "Arquitetura, engenharia com agentes, práticas e linguagem conceitual.",
-    agentUse: "Identificar técnicas emergentes com explicação conceitual sólida.",
-  },
-  {
-    id: "SRC-11",
-    name: "InfoQ Trends Reports",
-    initials: "IQ",
-    url: "https://www.infoq.com/infoq-trends-report/",
-    strength: "Complementar",
-    cadence: "Periódica",
-    signal: "Tendências para arquitetura, dados, IA, cultura e métodos.",
-    agentUse: "Comparar leitura de mercado com fontes primárias.",
-  },
-  {
-    id: "SRC-12",
-    name: "SIG State of Software",
-    initials: "SG",
-    url: "https://www.softwareimprovementgroup.com/",
-    strength: "Média",
-    cadence: "Anual",
-    signal: "Qualidade estrutural, débito técnico, riscos de IA e sustentabilidade.",
-    agentUse: "Refinar blips de qualidade, débito cognitivo e governança de código.",
-  },
-];
-
-const state = loadState();
-let selectedId = state.blips[0]?.id ?? null;
+let canonicalState;
+let state;
+let selectedId = null;
+let adminMode = false;
+let adminToken = "";
+let pendingReviewItems = [];
+let activePdfAbort = null;
+let activeAdminLoginAbort = null;
+let suspendedDraft = null;
+let pendingConflictRadar = null;
+let savePending = false;
+let toastTimer = null;
 
 const elements = {
   sourceList: document.getElementById("sourceList"),
@@ -598,39 +105,102 @@ const elements = {
   blipForm: document.getElementById("blipForm"),
   detailCard: document.getElementById("detailCard"),
   selectedBlipLabel: document.getElementById("selectedBlipLabel"),
+  editorPanelTitle: document.getElementById("editorPanelTitle"),
+  radarViewHeading: document.getElementById("radarViewHeading"),
+  radarViewSubtitle: document.getElementById("radarViewSubtitle"),
   totalBlips: document.getElementById("totalBlips"),
   pilotCount: document.getElementById("pilotCount"),
+  radarUpdatedAt: document.getElementById("radarUpdatedAt"),
+  radarRevision: document.getElementById("radarRevision"),
+  historyLink: document.getElementById("historyLink"),
   markdownOutput: document.getElementById("markdownOutput"),
   toast: document.getElementById("toast"),
   ringFilter: document.getElementById("ringFilter"),
   proposalFileInput: document.getElementById("proposalFileInput"),
-  pdfFileInput: document.getElementById("pdfFileInput"),
+  draftIndicator: document.getElementById("draftIndicator"),
+  publishBanner: document.getElementById("publishBanner"),
+  adminModeButton: document.getElementById("adminModeButton"),
+  resetDataButton: document.getElementById("resetDataButton"),
+  saveVersionButton: document.getElementById("saveVersionButton"),
   analyzePdfButton: document.getElementById("analyzePdfButton"),
+  adminDialog: document.getElementById("adminDialog"),
+  adminLoginForm: document.getElementById("adminLoginForm"),
+  adminTokenInput: document.getElementById("adminTokenInput"),
+  adminDialogStatus: document.getElementById("adminDialogStatus"),
+  adminSubmitButton: document.getElementById("adminSubmitButton"),
+  saveDialog: document.getElementById("saveDialog"),
+  saveVersionForm: document.getElementById("saveVersionForm"),
+  changeNoteInput: document.getElementById("changeNoteInput"),
+  saveDialogStatus: document.getElementById("saveDialogStatus"),
+  saveConflictBox: document.getElementById("saveConflictBox"),
+  saveConflictMessage: document.getElementById("saveConflictMessage"),
+  saveSuccessBox: document.getElementById("saveSuccessBox"),
+  saveSuccessMessage: document.getElementById("saveSuccessMessage"),
+  saveConfirmButton: document.getElementById("saveConfirmButton"),
+  saveCloseButton: document.getElementById("saveCloseButton"),
+  downloadDraftButton: document.getElementById("downloadDraftButton"),
+  reloadCanonicalButton: document.getElementById("reloadCanonicalButton"),
+  pdfDialog: document.getElementById("pdfDialog"),
+  pdfAnalyzeForm: document.getElementById("pdfAnalyzeForm"),
+  pdfFileInput: document.getElementById("pdfFileInput"),
+  publicPdfCheckbox: document.getElementById("publicPdfCheckbox"),
+  pdfDialogStatus: document.getElementById("pdfDialogStatus"),
+  pdfStartButton: document.getElementById("pdfStartButton"),
+  pdfCancelButton: document.getElementById("pdfCancelButton"),
+  reviewDialog: document.getElementById("reviewDialog"),
+  reviewSummary: document.getElementById("reviewSummary"),
+  reviewSelectionCount: document.getElementById("reviewSelectionCount"),
+  reviewList: document.getElementById("reviewList"),
+  reviewDialogStatus: document.getElementById("reviewDialogStatus"),
+  applyProposalsButton: document.getElementById("applyProposalsButton"),
 };
 
-renderAll();
-bindEvents();
+const apiBase = resolveApiBaseUrl({
+  configuredBase:
+    globalThis.RADAR_API_BASE ||
+    document.querySelector('meta[name="radar-api-base"]')?.content ||
+    "",
+  location: window.location,
+});
 
-function loadState() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed.blips) && Array.isArray(parsed.sources)) {
-        return parsed;
-      }
-    } catch {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }
-  return {
-    blips: structuredClone(DEFAULT_BLIPS),
-    sources: structuredClone(DEFAULT_SOURCES),
-  };
+const historyUrl = document.querySelector('meta[name="radar-history-url"]')?.content;
+if (historyUrl && elements.historyLink) elements.historyLink.href = historyUrl;
+
+try {
+  canonicalState = await loadState();
+  state = structuredClone(canonicalState);
+  renderAll();
+  bindEvents();
+} catch (error) {
+  elements.toast.textContent = "Não foi possível carregar o radar. " + error.message;
+  elements.toast.classList.add("show");
 }
 
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+async function loadState() {
+  const response = await fetch("./data/radar.json", { cache: "no-store" });
+  if (!response.ok) throw new Error("HTTP " + response.status);
+  return normalizeRadar(await response.json());
+}
+
+async function runWithDeadline(operation, timeoutMs) {
+  const controller = new AbortController();
+  const error = new Error("Não foi possível confirmar a publicação dentro do prazo.");
+  error.code = "publish_timeout";
+  let timer;
+  const deadline = new Promise((_, reject) => {
+    timer = globalThis.setTimeout(() => {
+      reject(error);
+      controller.abort(error);
+    }, timeoutMs);
+  });
+  try {
+    return await Promise.race([
+      Promise.resolve().then(() => operation(controller.signal)),
+      deadline,
+    ]);
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
 }
 
 function bindEvents() {
@@ -638,32 +208,641 @@ function bindEvents() {
     button.addEventListener("click", () => switchView(button.dataset.view));
   });
 
+  document.querySelectorAll("[data-close-dialog]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const dialog = document.getElementById(button.dataset.closeDialog);
+      if (dialog === elements.saveDialog && savePending) return;
+      if (dialog === elements.adminDialog) cancelAdminLogin();
+      dialog?.close();
+    });
+  });
+
+  elements.adminModeButton.addEventListener("click", handleAdminModeButton);
+  elements.adminLoginForm.addEventListener("submit", handleAdminLogin);
+  elements.adminDialog.addEventListener("cancel", cancelAdminLogin);
+  elements.adminDialog.addEventListener("close", () => {
+    if (activeAdminLoginAbort) cancelAdminLogin();
+  });
+
   document.getElementById("addBlipButton").addEventListener("click", addBlip);
   document.getElementById("deleteBlipButton").addEventListener("click", deleteSelectedBlip);
-  document.getElementById("resetDataButton").addEventListener("click", resetData);
+  elements.resetDataButton.addEventListener("click", discardDraft);
+  elements.saveVersionButton.addEventListener("click", openSaveDialog);
+  elements.saveVersionForm.addEventListener("submit", handleSaveVersion);
+  elements.saveDialog.addEventListener("cancel", (event) => {
+    if (savePending) event.preventDefault();
+  });
+  elements.downloadDraftButton.addEventListener("click", downloadDraftJson);
+  elements.reloadCanonicalButton.addEventListener("click", reloadCanonicalVersion);
+
   document
     .getElementById("importProposalsButton")
-    .addEventListener("click", () => elements.proposalFileInput.click());
+    .addEventListener("click", () => {
+      if (!adminMode) return;
+      elements.proposalFileInput.click();
+    });
   elements.proposalFileInput.addEventListener("change", importProposalFile);
-  elements.analyzePdfButton.addEventListener("click", () => elements.pdfFileInput.click());
-  elements.pdfFileInput.addEventListener("change", analyzePdfFile);
+
+  elements.analyzePdfButton.addEventListener("click", openPdfDialog);
+  elements.pdfAnalyzeForm.addEventListener("submit", handlePdfAnalyzeSubmit);
+  elements.pdfCancelButton.addEventListener("click", cancelPdfDialog);
+  elements.pdfDialog.addEventListener("cancel", () => {
+    activePdfAbort?.abort();
+  });
+
+  elements.applyProposalsButton.addEventListener("click", applySelectedReviewProposals);
+
   document.getElementById("exportButton").addEventListener("click", () => {
     switchView("export");
     copyMarkdown();
   });
   document.getElementById("downloadMarkdownButton").addEventListener("click", downloadMarkdown);
-  document.getElementById("downloadHtmlButton").addEventListener("click", downloadHtmlSnapshot);
-  document.getElementById("saveHtmlButton").addEventListener("click", saveHtmlSnapshot);
+  document.getElementById("saveHtmlButton").addEventListener("click", downloadHtmlSnapshot);
   document.getElementById("addSourceButton").addEventListener("click", addSource);
   elements.ringFilter.addEventListener("change", renderRadar);
 
   elements.blipForm.addEventListener("input", (event) => {
+    if (!adminMode) return;
     const blip = selectedBlip();
-    if (!blip) return;
+    if (!blip || !event.target.name) return;
     blip[event.target.name] = event.target.value;
-    saveState();
     renderAll({ keepForm: true });
   });
+}
+
+function setAdminSession(active, token = "") {
+  adminMode = active;
+  adminToken = active ? token : "";
+  if (active && suspendedDraft) {
+    state = suspendedDraft;
+    suspendedDraft = null;
+  }
+  syncAdminUi();
+  renderAll();
+}
+
+function suspendAdminSession() {
+  if (hasDraftChanges(canonicalState, state)) suspendedDraft = structuredClone(state);
+  state = structuredClone(canonicalState);
+  setAdminSession(false, "");
+}
+
+function cancelAdminLogin() {
+  activeAdminLoginAbort?.abort();
+  activeAdminLoginAbort = null;
+  elements.adminSubmitButton.disabled = false;
+}
+
+function syncAdminUi() {
+  document.querySelectorAll("[data-admin-only]").forEach((node) => {
+    node.classList.toggle("hidden", !adminMode);
+  });
+  elements.adminModeButton.querySelector("span").textContent = adminMode
+    ? "Sair do admin"
+    : "Modo administrador";
+  elements.editorPanelTitle.textContent = adminMode ? "Editor de Blip" : "Detalhes do Blip";
+  elements.radarViewHeading.textContent = adminMode ? "Radar Editável" : "Radar Tecnológico";
+  elements.radarViewSubtitle.textContent = adminMode
+    ? "Edite blips ou analise PDFs públicos. Alterações ficam em rascunho até Salvar versão."
+    : "Clique em um blip para consultar detalhes estratégicos e recomendações.";
+  syncDraftUi();
+}
+
+function syncDraftUi() {
+  const dirty = adminMode && hasDraftChanges(canonicalState, state);
+  elements.draftIndicator.classList.toggle("hidden", !dirty);
+  elements.resetDataButton.disabled = !dirty;
+  elements.saveVersionButton.disabled = !dirty;
+}
+
+function handleAdminModeButton() {
+  if (adminMode) {
+    if (hasDraftChanges(canonicalState, state)) {
+      const confirmed = window.confirm(
+        "Sair do modo administrador e descartar as alterações não publicadas do rascunho?",
+      );
+      if (!confirmed) return;
+      state = structuredClone(canonicalState);
+    }
+    suspendedDraft = null;
+    setAdminSession(false, "");
+    showToast("Modo somente leitura restaurado.");
+    return;
+  }
+
+  elements.adminTokenInput.value = "";
+  setStatus(elements.adminDialogStatus, "");
+  if (!apiBase) {
+    setStatus(
+      elements.adminDialogStatus,
+      "URL da API não configurada. Defina a meta tag radar-api-base em index.html.",
+      true,
+    );
+  }
+  elements.adminDialog.showModal();
+  elements.adminTokenInput.focus();
+}
+
+async function handleAdminLogin(event) {
+  event.preventDefault();
+  if (!apiBase) {
+    setStatus(
+      elements.adminDialogStatus,
+      "Configure a meta tag radar-api-base em index.html com a URL pública da API.",
+      true,
+    );
+    return;
+  }
+
+  const token = elements.adminTokenInput.value.trim();
+  if ([...token].length < 32) {
+    setStatus(elements.adminDialogStatus, "O token administrativo deve ter ao menos 32 caracteres.", true);
+    return;
+  }
+
+  cancelAdminLogin();
+  const abortController = new AbortController();
+  activeAdminLoginAbort = abortController;
+  elements.adminSubmitButton.disabled = true;
+  setStatus(elements.adminDialogStatus, "Conectando à API administrativa...");
+  try {
+    await wakeBackend({
+      apiBase,
+      signal: abortController.signal,
+      onRetry: ({ elapsedMs }) => {
+        const seconds = Math.max(1, Math.round(elapsedMs / 1000));
+        setStatus(
+          elements.adminDialogStatus,
+          `Acordando servidor Render (${seconds}s / 90s)...`,
+        );
+      },
+    });
+    const response = await fetch(apiBase + "/api/v1/admin/verify", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+      cache: "no-store",
+      signal: abortController.signal,
+    });
+    if (activeAdminLoginAbort !== abortController || !elements.adminDialog.open) return;
+    if (response.status === 401) {
+      setStatus(elements.adminDialogStatus, "Token administrativo inválido.", true);
+      return;
+    }
+    if (!response.ok) {
+      setStatus(elements.adminDialogStatus, "Não foi possível validar o acesso agora.", true);
+      return;
+    }
+    elements.adminTokenInput.value = "";
+    activeAdminLoginAbort = null;
+    elements.adminSubmitButton.disabled = false;
+    elements.adminDialog.close();
+    setAdminSession(true, token);
+    showToast("Modo administrador ativado.");
+  } catch (error) {
+    if (abortController.signal.aborted) return;
+    setStatus(
+      elements.adminDialogStatus,
+      error?.message || "Falha de comunicação com o servidor administrativo.",
+      true,
+    );
+  } finally {
+    if (activeAdminLoginAbort === abortController) {
+      activeAdminLoginAbort = null;
+      elements.adminSubmitButton.disabled = false;
+    }
+  }
+}
+
+function openSaveDialog() {
+  if (!adminMode || savePending) return;
+  pendingConflictRadar = null;
+  elements.changeNoteInput.value = "";
+  setStatus(elements.saveDialogStatus, "");
+  elements.saveConflictBox.classList.add("hidden");
+  elements.saveSuccessBox.classList.add("hidden");
+  elements.saveConfirmButton.disabled = false;
+  elements.reloadCanonicalButton.disabled = true;
+  elements.saveDialog.showModal();
+  elements.changeNoteInput.focus();
+}
+
+async function handleSaveVersion(event) {
+  event.preventDefault();
+  if (!adminMode || savePending) return;
+  const changeNote = elements.changeNoteInput.value.trim();
+  if (!changeNote) {
+    setStatus(elements.saveDialogStatus, "Informe uma descrição para a versão.", true);
+    return;
+  }
+  const submittedRadar = structuredClone({ blips: state.blips, sources: state.sources });
+  const submittedRevision = canonicalState.revision;
+
+  savePending = true;
+  elements.saveConfirmButton.disabled = true;
+  elements.saveCloseButton.disabled = true;
+  elements.saveConflictBox.classList.add("hidden");
+  elements.saveSuccessBox.classList.add("hidden");
+  setStatus(elements.saveDialogStatus, "Validando conexão com o servidor...");
+
+  try {
+    await wakeBackend({
+      apiBase,
+      onRetry: ({ elapsedMs }) => {
+        const seconds = Math.max(1, Math.round(elapsedMs / 1000));
+        setStatus(elements.saveDialogStatus, `Acordando servidor Render (${seconds}s / 90s)...`);
+      },
+    });
+    setStatus(elements.saveDialogStatus, "Criando commit versionado no GitHub...");
+    const { response, payload } = await runWithDeadline(async (signal) => {
+      const response = await fetch(apiBase + "/api/v1/radar", {
+        method: "PUT",
+        headers: {
+          Authorization: "Bearer " + adminToken,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          baseRevision: submittedRevision,
+          changeNote,
+          radar: submittedRadar,
+        }),
+        signal,
+      });
+      if (response.status === 401) {
+        response.body?.cancel().catch(() => {});
+        return { response, payload: null };
+      }
+      const payload = await response.json().catch((error) => {
+        if (signal.aborted) throw signal.reason || error;
+        return null;
+      });
+      return { response, payload };
+    }, SAVE_TIMEOUT_MS);
+
+    if (response.status === 409) {
+      try {
+        pendingConflictRadar = normalizeRadar(payload?.currentRadar);
+      } catch {
+        pendingConflictRadar = null;
+      }
+      const currentRev = payload?.currentRevision
+        ? ` (${String(payload.currentRevision).slice(0, 8)})`
+        : "";
+      elements.saveConflictMessage.textContent = pendingConflictRadar
+        ? `Outra versão já foi publicada no GitHub${currentRev}. Seu rascunho foi preservado nesta aba. Baixe-o como JSON ou recarregue a versão oficial retornada pelo GitHub.`
+        : `Outra versão já foi publicada no GitHub${currentRev}. Seu rascunho foi preservado nesta aba, mas a versão oficial não pôde ser validada. Baixe-o como JSON antes de tentar novamente.`;
+      elements.reloadCanonicalButton.disabled = !pendingConflictRadar;
+      elements.saveConflictBox.classList.remove("hidden");
+      setStatus(elements.saveDialogStatus, "");
+      return;
+    }
+
+    if (response.status === 401) {
+      suspendAdminSession();
+      setStatus(
+        elements.saveDialogStatus,
+        "Sessão administrativa expirada. Seu rascunho continua em memória; entre novamente para salvar.",
+        true,
+      );
+      return;
+    }
+
+    if (!response.ok || !payload?.ok) {
+      const reason = payload?.error === "invalid_payload"
+        ? "Verifique se todos os campos obrigatórios e URLs HTTP/HTTPS estão preenchidos."
+        : "Não foi possível publicar a versão no GitHub.";
+      setStatus(elements.saveDialogStatus, reason, true);
+      return;
+    }
+
+    const currentDraft = structuredClone({ blips: state.blips, sources: state.sources });
+    const changedDuringPublish = JSON.stringify(currentDraft) !== JSON.stringify(submittedRadar);
+    canonicalState = normalizeRadar(payload.radar);
+    state = changedDuringPublish
+      ? { ...structuredClone(canonicalState), ...currentDraft }
+      : structuredClone(canonicalState);
+    renderAll();
+
+    const shortSha = String(payload.commit?.sha || "").slice(0, 7);
+    const safeCommitUrl =
+      isHttpUrl(payload.commit?.url)
+        ? payload.commit.url
+        : "";
+    const commitLinkHtml = safeCommitUrl
+      ? `<a href="${escapeHtml(safeCommitUrl)}" target="_blank" rel="noreferrer">commit ${escapeHtml(shortSha || "criado")}</a>`
+      : `commit ${escapeHtml(shortSha || "criado")}`;
+    const draftNote = changedDuringPublish
+      ? " Alterações feitas durante a publicação continuam no rascunho."
+      : "";
+    const noteHtml = `Versão salva (${commitLinkHtml}). O GitHub Pages pode levar alguns minutos para atualizar a página pública.${draftNote}`;
+    elements.saveSuccessMessage.innerHTML = noteHtml;
+    elements.saveSuccessBox.classList.remove("hidden");
+    elements.publishBanner.innerHTML = `<span>${noteHtml}</span>`;
+    elements.publishBanner.classList.remove("hidden");
+    setStatus(elements.saveDialogStatus, "");
+    showToast("Versão publicada no GitHub.");
+  } catch (error) {
+    setStatus(
+      elements.saveDialogStatus,
+      error?.code === "publish_timeout"
+        ? "Não foi possível confirmar a publicação dentro do prazo. O rascunho foi preservado; confira o histórico do GitHub antes de tentar novamente."
+        : error?.message || "Erro ao comunicar com o servidor de publicação.",
+      true,
+    );
+  } finally {
+    savePending = false;
+    elements.saveConfirmButton.disabled = false;
+    elements.saveCloseButton.disabled = false;
+  }
+}
+
+function downloadDraftJson() {
+  const payload = {
+    ...state,
+    exportedDraftAt: new Date().toISOString(),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `radar-rascunho-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+  showToast("Rascunho baixado em JSON.");
+}
+
+function reloadCanonicalVersion() {
+  if (!pendingConflictRadar || savePending) return;
+  try {
+    canonicalState = structuredClone(pendingConflictRadar);
+    state = structuredClone(canonicalState);
+    pendingConflictRadar = null;
+    selectedId = state.blips[0]?.id ?? null;
+    elements.saveDialog.close();
+    renderAll();
+    showToast("Última versão oficial recarregada.");
+  } catch (error) {
+    setStatus(elements.saveDialogStatus, "Falha ao recarregar: " + error.message, true);
+  }
+}
+
+function openPdfDialog() {
+  if (!adminMode) return;
+  elements.pdfAnalyzeForm.reset();
+  setStatus(elements.pdfDialogStatus, "");
+  elements.pdfStartButton.disabled = false;
+  elements.pdfDialog.showModal();
+}
+
+function cancelPdfDialog() {
+  activePdfAbort?.abort();
+  elements.pdfDialog.close();
+}
+
+async function handlePdfAnalyzeSubmit(event) {
+  event.preventDefault();
+  if (!adminMode) return;
+  const [file] = elements.pdfFileInput.files;
+  if (!file) {
+    setStatus(elements.pdfDialogStatus, "Selecione um arquivo PDF público.", true);
+    return;
+  }
+  if (!elements.publicPdfCheckbox.checked) {
+    setStatus(elements.pdfDialogStatus, "Confirme que o PDF é um documento público.", true);
+    return;
+  }
+  if (file.size > MAX_PDF_BYTES) {
+    setStatus(elements.pdfDialogStatus, "O PDF excede o limite de 10 MiB.", true);
+    return;
+  }
+
+  const header = new Uint8Array(await file.slice(0, 5).arrayBuffer());
+  const signature = String.fromCharCode(...header);
+  if (signature !== "%PDF-") {
+    setStatus(elements.pdfDialogStatus, "O arquivo selecionado não possui assinatura %PDF- válida.", true);
+    return;
+  }
+
+  const abortController = new AbortController();
+  activePdfAbort = abortController;
+  elements.pdfStartButton.disabled = true;
+  elements.analyzePdfButton.disabled = true;
+  elements.analyzePdfButton.classList.add("loading");
+  setStatus(elements.pdfDialogStatus, "Verificando disponibilidade do servidor...");
+
+  try {
+    await wakeBackend({
+      apiBase,
+      signal: abortController.signal,
+      onRetry: ({ elapsedMs }) => {
+        const seconds = Math.max(1, Math.round(elapsedMs / 1000));
+        setStatus(
+          elements.pdfDialogStatus,
+          `Acordando servidor Render (${seconds}s / 90s)...`,
+        );
+      },
+    });
+
+    setStatus(elements.pdfDialogStatus, "Enviando PDF para análise temporária...");
+    const uploadResponse = await fetch(apiBase + "/api/v1/analysis-jobs", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + adminToken,
+        "Content-Type": "application/pdf",
+        "X-File-Name": sanitizeHeaderFilename(file.name),
+      },
+      body: file,
+      signal: abortController.signal,
+    });
+    const uploadPayload = await uploadResponse.json().catch(() => null);
+
+    if (uploadResponse.status === 401) {
+      suspendAdminSession();
+      throw new Error("Sessão administrativa expirada. Entre novamente no modo administrador.");
+    }
+    if (uploadResponse.status === 429) {
+      throw new Error(
+        uploadPayload?.error === "daily_limit"
+          ? "Limite diário de 10 análises atingido. Tente novamente após 00:00 UTC."
+          : "Já existe uma análise em andamento. Aguarde a conclusão antes de enviar outro PDF.",
+      );
+    }
+    if (!uploadResponse.ok || !uploadPayload?.ok || !uploadPayload.job?.id) {
+      throw new Error(mapUploadError(uploadResponse.status, uploadPayload?.error));
+    }
+
+    const job = await pollAnalysisJob({
+      apiBase,
+      jobId: uploadPayload.job.id,
+      token: adminToken,
+      signal: abortController.signal,
+      onUpdate: (snapshot) => {
+        const stageText = STAGE_LABELS[snapshot.progress?.stage] || "Analisando PDF...";
+        const total = snapshot.progress?.totalPages || 0;
+        const done = snapshot.progress?.processedPages || 0;
+        const suffix = total > 0 ? ` (${done}/${total} páginas)` : "";
+        setStatus(elements.pdfDialogStatus, stageText + suffix);
+      },
+    });
+
+    elements.pdfDialog.close();
+    const proposals = job.result?.proposals ?? [];
+    if (!proposals.length) {
+      showToast("PDF analisado sem propostas de alteração aplicáveis.");
+      return;
+    }
+    openReviewDialog(
+      proposals,
+      `Análise concluída (${job.result.totalPages} páginas, ${job.result.ocrPages} com OCR). Selecione até ${MAX_PROPOSALS} propostas para aplicar ao rascunho.`,
+    );
+  } catch (error) {
+    if (abortController.signal.aborted) {
+      setStatus(elements.pdfDialogStatus, "Análise cancelada.");
+      return;
+    }
+    if (error?.code === "unauthorized") suspendAdminSession();
+    setStatus(elements.pdfDialogStatus, error?.message || "Não foi possível concluir a análise do PDF.", true);
+  } finally {
+    activePdfAbort = null;
+    elements.pdfStartButton.disabled = false;
+    elements.analyzePdfButton.disabled = false;
+    elements.analyzePdfButton.classList.remove("loading");
+  }
+}
+
+function mapUploadError(status, code) {
+  if (status === 413 || code === "pdf_too_large") return "O PDF excede o limite de 10 MiB.";
+  if (status === 415 || code === "unsupported_media_type") return "Envie um arquivo com tipo application/pdf.";
+  if (status === 400 || code === "invalid_pdf") return "O conteúdo do PDF é inválido.";
+  return "Não foi possível iniciar a análise do PDF.";
+}
+
+async function importProposalFile(event) {
+  const [file] = event.target.files;
+  event.target.value = "";
+  if (!file || !adminMode) return;
+
+  try {
+    const payload = JSON.parse(await file.text());
+    const proposals = Array.isArray(payload.proposals) ? payload.proposals : [];
+    if (!proposals.length) {
+      showToast("Arquivo sem propostas aplicáveis.");
+      return;
+    }
+    openReviewDialog(
+      proposals,
+      `${proposals.length} proposta(s) carregadas do arquivo. Todas começam desmarcadas; selecione até ${MAX_PROPOSALS} para aplicar ao rascunho.`,
+    );
+  } catch (error) {
+    showToast("Não foi possível importar o JSON de propostas.");
+    console.error(error);
+  }
+}
+
+function openReviewDialog(rawProposals, summaryText) {
+  pendingReviewItems = prepareProposalsForReview(state, rawProposals);
+  elements.reviewSummary.textContent = summaryText;
+  setStatus(elements.reviewDialogStatus, "");
+  elements.reviewList.innerHTML = "";
+
+  pendingReviewItems.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "proposal-card" + (item.valid ? "" : " invalid");
+    const proposal = item.proposal || {};
+    const action = String(proposal.action || "inválida");
+    const actionLabel = ACTION_LABELS[action] || action;
+    const confidence = Number.isFinite(proposal.confidence)
+      ? Math.round(proposal.confidence * 100) + "%"
+      : "—";
+    const title = item.valid
+      ? `${proposal.targetId ? proposal.targetId + " — " : ""}${proposal.blip.name}`
+      : `Proposta #${item.index + 1} (${actionLabel})`;
+
+    const evidenceHtml = item.valid && Array.isArray(proposal.evidence) && proposal.evidence.length
+      ? `<ul class="proposal-evidence">${proposal.evidence
+          .map((ev) => `<li><strong>Pág. ${escapeHtml(ev.page)}:</strong> ${escapeHtml(ev.note)}</li>`)
+          .join("")}</ul>`
+      : "";
+
+    const diffHtml = item.valid && item.diff.changes.length
+      ? `<div class="proposal-diff">${item.diff.changes
+          .map(
+            (change) => `<div class="diff-row">
+              <span class="diff-field">${escapeHtml(FIELD_LABELS[change.field] || change.field)}</span>
+              <span>
+                ${change.before !== null ? `<span class="diff-before">${escapeHtml(change.before || "—")}</span>` : ""}
+                <span class="diff-after">${escapeHtml(change.after || "—")}</span>
+              </span>
+            </div>`,
+          )
+          .join("")}</div>`
+      : "";
+
+    card.innerHTML = `
+      <div class="proposal-card-header">
+        <input
+          type="checkbox"
+          data-proposal-index="${item.index}"
+          aria-label="Selecionar proposta: ${escapeHtml(title)}"
+          ${item.valid ? "" : "disabled"}
+        />
+        <div>
+          <div class="proposal-badges">
+            <span class="proposal-action ${escapeHtml(action)}">${escapeHtml(actionLabel)}</span>
+            <strong>${escapeHtml(title)}</strong>
+            <span class="tag">Confiança ${escapeHtml(confidence)}</span>
+          </div>
+          ${proposal.reason ? `<p class="proposal-reason">${escapeHtml(proposal.reason)}</p>` : ""}
+        </div>
+      </div>
+      ${item.valid ? "" : `<p class="proposal-error">${escapeHtml(item.error)}</p>`}
+      ${evidenceHtml}
+      ${diffHtml}
+    `;
+
+    const checkbox = card.querySelector('input[type="checkbox"]');
+    checkbox.addEventListener("change", updateReviewSelection);
+    elements.reviewList.appendChild(card);
+  });
+
+  updateReviewSelection();
+  elements.reviewDialog.showModal();
+}
+
+function selectedReviewIndices() {
+  return [...elements.reviewList.querySelectorAll('input[type="checkbox"]:checked')].map((input) =>
+    Number(input.dataset.proposalIndex),
+  );
+}
+
+function updateReviewSelection() {
+  const chosen = selectedReviewIndices();
+  elements.reviewSelectionCount.textContent = `${chosen.length} / ${MAX_PROPOSALS} selecionadas`;
+  const overLimit = chosen.length > MAX_PROPOSALS;
+  elements.applyProposalsButton.disabled = chosen.length === 0 || overLimit;
+  setStatus(
+    elements.reviewDialogStatus,
+    overLimit ? `Selecione no máximo ${MAX_PROPOSALS} propostas por aplicação.` : "",
+    overLimit,
+  );
+}
+
+function applySelectedReviewProposals() {
+  if (!adminMode) return;
+  const indices = selectedReviewIndices();
+  try {
+    let nextSequence = BigInt(nextBlipId(state.blips).slice(3));
+    const result = applySelectedProposals(state, pendingReviewItems, indices, {
+      createId: () => "ES-" + String(nextSequence++).padStart(2, "0"),
+    });
+    state = result.draft;
+    selectedId = result.selectedId ?? selectedId;
+    elements.reviewDialog.close();
+    renderAll();
+    showToast(
+      `${result.added} adicionada(s), ${result.updated} atualizada(s) no rascunho. Clique em Salvar versão para publicar.`,
+    );
+  } catch (error) {
+    setStatus(elements.reviewDialogStatus, error?.message || "Não foi possível aplicar as propostas.", true);
+  }
 }
 
 function switchView(view) {
@@ -684,12 +863,17 @@ function renderAll(options = {}) {
   elements.pilotCount.textContent = state.blips.filter((item) =>
     item.status.includes("Piloto"),
   ).length;
+  elements.radarRevision.title = canonicalState.revision;
+  elements.radarRevision.textContent = canonicalState.revision.split("-")[0];
+  elements.radarUpdatedAt.textContent = formatShortDate(canonicalState.updatedAt);
   renderSources();
   renderRadar();
   renderMatrix();
   renderPilots();
   if (!options.keepForm) renderForm();
+  else renderDetailCard(selectedBlip());
   updateMarkdown();
+  syncDraftUi();
 }
 
 function renderSources() {
@@ -698,14 +882,14 @@ function renderSources() {
     const row = document.createElement("div");
     row.className = "source-row";
     row.innerHTML = `
-      <span class="source-logo">${source.initials}</span>
+      <span class="source-logo">${escapeHtml(source.initials)}</span>
       <div>
         <strong>${escapeHtml(source.name)}</strong>
-        <a href="${source.url}" target="_blank" rel="noreferrer">${cleanUrl(source.url)}</a>
+        <a href="${escapeHtml(source.url)}" target="_blank" rel="noreferrer">${escapeHtml(cleanUrl(source.url))}</a>
       </div>
       <div class="source-meta">
-        <span class="strength-${source.strength.toLowerCase()}">${source.strength}</span>
-        <span>${source.cadence}</span>
+        <span class="strength-${source.strength.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")}">${escapeHtml(source.strength)}</span>
+        <span>${escapeHtml(source.cadence)}</span>
       </div>
     `;
     elements.sourceList.appendChild(row);
@@ -717,8 +901,8 @@ function renderSources() {
     detail.className = "source-detail";
     detail.innerHTML = `
       <h3>${escapeHtml(source.name)}</h3>
-      <p><a href="${source.url}" target="_blank" rel="noreferrer">${cleanUrl(source.url)}</a></p>
-      <p><strong>Força:</strong> ${source.strength} | <strong>Cadência:</strong> ${source.cadence}</p>
+      <p><a href="${escapeHtml(source.url)}" target="_blank" rel="noreferrer">${escapeHtml(cleanUrl(source.url))}</a></p>
+      <p><strong>Força:</strong> ${escapeHtml(source.strength)} | <strong>Cadência:</strong> ${escapeHtml(source.cadence)}</p>
       <ul>
         <li>${escapeHtml(source.signal)}</li>
         <li>${escapeHtml(source.agentUse)}</li>
@@ -769,12 +953,15 @@ function renderRadar() {
     group.setAttribute("aria-label", `${blip.id} ${blip.name}`);
     group.innerHTML = `
       <circle cx="${x}" cy="${y}" r="14" fill="${quadrantColors[blip.quadrant]}" stroke="#ffffff" stroke-width="2" filter="url(#blipShadow)"></circle>
-      <text x="${x}" y="${y}">${Number(blip.id.split("-")[1])}</text>
-      <title>${escapeHtml(blip.name)} | ${blip.quadrant} | ${blip.ring}</title>
+      <text x="${x}" y="${y}">${blipLabel(blip.id, index)}</text>
+      <title>${escapeHtml(blip.name)} | ${escapeHtml(blip.quadrant)} | ${escapeHtml(blip.ring)}</title>
     `;
     group.addEventListener("click", () => selectBlip(blip.id));
     group.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") selectBlip(blip.id);
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        selectBlip(blip.id);
+      }
     });
     svg.appendChild(group);
   });
@@ -788,16 +975,23 @@ function renderMatrix() {
     .forEach((blip) => {
       const row = document.createElement("tr");
       row.classList.toggle("selected", blip.id === selectedId);
+      row.tabIndex = 0;
       row.innerHTML = `
-        <td><strong>${blip.id}</strong> ${escapeHtml(blip.name)}</td>
-        <td>${blip.quadrant}</td>
-        <td><span class="tag ring-${blip.ring.toLowerCase()}">${blip.ring}</span></td>
-        <td>${blip.horizon}</td>
-        <td>${blip.maturity}</td>
-        <td>${blip.risk}</td>
-        <td>${blip.effort}</td>
+        <td><strong>${escapeHtml(blip.id)}</strong> ${escapeHtml(blip.name)}</td>
+        <td>${escapeHtml(blip.quadrant)}</td>
+        <td><span class="tag ring-${escapeHtml(blip.ring.toLowerCase())}">${escapeHtml(blip.ring)}</span></td>
+        <td>${escapeHtml(blip.horizon)}</td>
+        <td>${escapeHtml(blip.maturity)}</td>
+        <td>${escapeHtml(blip.risk)}</td>
+        <td>${escapeHtml(blip.effort)}</td>
       `;
       row.addEventListener("click", () => selectBlip(blip.id));
+      row.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          selectBlip(blip.id);
+        }
+      });
       elements.matrixBody.appendChild(row);
     });
 }
@@ -809,7 +1003,7 @@ function renderPilots() {
     .forEach((blip) => {
       const chip = document.createElement("button");
       chip.className = "pilot-chip";
-      chip.innerHTML = `<span>${blip.id}</span>${escapeHtml(blip.name)}`;
+      chip.innerHTML = `<span>${escapeHtml(blip.id)}</span>${escapeHtml(blip.name)}`;
       chip.addEventListener("click", () => selectBlip(blip.id));
       elements.pilotStrip.appendChild(chip);
     });
@@ -818,7 +1012,7 @@ function renderPilots() {
 function renderForm() {
   const blip = selectedBlip();
   elements.blipForm.querySelectorAll("input, select, textarea").forEach((field) => {
-    field.disabled = !blip;
+    field.disabled = !adminMode || !blip;
     field.value = field.name === "detailsUrl" && blip ? getDetailsUrl(blip) : (blip?.[field.name] ?? "");
   });
   elements.selectedBlipLabel.textContent = blip
@@ -836,13 +1030,18 @@ function renderDetailCard(blip) {
   elements.detailCard.innerHTML = `
     <div class="detail-kicker">${escapeHtml(blip.quadrant)} | ${escapeHtml(blip.ring)}</div>
     <h3>${escapeHtml(blip.name)}</h3>
+    <span class="detail-section-label">Justificativa estratégica</span>
     <p>${escapeHtml(blip.strategic)}</p>
+    <span class="detail-section-label">Gargalos e contraindicações</span>
+    <p>${escapeHtml(blip.constraints)}</p>
     <div class="detail-meta">
       <span>${escapeHtml(blip.horizon)} prazo</span>
       <span>${escapeHtml(blip.maturity)}</span>
       <span>Risco ${escapeHtml(blip.risk)}</span>
+      <span>Esforço ${escapeHtml(blip.effort)}</span>
+      <span>${escapeHtml(blip.status)}</span>
     </div>
-    <a class="detail-link" href="${url}" target="_blank" rel="noreferrer">
+    <a class="detail-link" href="${escapeHtml(url)}" target="_blank" rel="noreferrer">
       Ver detalhes
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg>
     </a>
@@ -859,7 +1058,8 @@ function selectedBlip() {
 }
 
 function addBlip() {
-  const id = nextBlipId();
+  if (!adminMode) return;
+  const id = nextBlipId(state.blips);
   state.blips.push({
     id,
     name: "Nova tecnologia",
@@ -877,30 +1077,33 @@ function addBlip() {
     constraints: "Descrever riscos, dependências, lacunas e contraindicações.",
   });
   selectedId = id;
-  saveState();
   renderAll();
-  showToast("Blip adicionado.");
+  showToast("Blip adicionado ao rascunho.");
 }
 
 function deleteSelectedBlip() {
+  if (!adminMode) return;
   const blip = selectedBlip();
   if (!blip) return;
-  const confirmed = window.confirm(`Excluir ${blip.id} - ${blip.name}?`);
+  const confirmed = window.confirm(`Excluir ${blip.id} - ${blip.name} do rascunho?`);
   if (!confirmed) return;
   state.blips = state.blips.filter((item) => item.id !== selectedId);
   selectedId = state.blips[0]?.id ?? null;
-  saveState();
   renderAll();
-  showToast("Blip excluído.");
+  showToast("Blip excluído do rascunho.");
 }
 
 function addSource() {
-  const name = window.prompt("Nome da fonte monitorada");
+  if (!adminMode) return;
+  const name = window.prompt("Nome da fonte monitorada")?.trim();
   if (!name) return;
-  const url = window.prompt("URL da fonte");
-  if (!url) return;
+  const url = window.prompt("URL HTTP/HTTPS da fonte")?.trim();
+  if (!isHttpUrl(url)) {
+    showToast("Informe uma URL HTTP ou HTTPS válida.");
+    return;
+  }
   const nextNumber =
-    Math.max(0, ...state.sources.map((item) => Number(item.id.replace("SRC-", "")))) + 1;
+    Math.max(0, ...state.sources.map((item) => Number(item.id.replace("SRC-", "")) || 0)) + 1;
   state.sources.push({
     id: `SRC-${String(nextNumber).padStart(2, "0")}`,
     name,
@@ -916,166 +1119,20 @@ function addSource() {
     signal: "Fonte adicionada manualmente para avaliação.",
     agentUse: "Coletar sinais e aguardar classificação editorial.",
   });
-  saveState();
   renderAll();
-  showToast("Fonte adicionada.");
+  showToast("Fonte adicionada ao rascunho.");
 }
 
-async function importProposalFile(event) {
-  const [file] = event.target.files;
-  event.target.value = "";
-  if (!file) return;
-
-  try {
-    const payload = JSON.parse(await file.text());
-    const proposals = Array.isArray(payload.proposals) ? payload.proposals : [];
-    if (!proposals.length) {
-      showToast("Arquivo sem propostas aplicáveis.");
-      return;
-    }
-    const confirmed = window.confirm(`Aplicar ${proposals.length} proposta(s) ao radar local?`);
-    if (!confirmed) return;
-    const result = applyProposals(proposals);
-    saveState();
-    renderAll();
-    showToast(`${result.added} adicionadas, ${result.updated} atualizadas, ${result.removed} removidas.`);
-  } catch (error) {
-    showToast("Não foi possível importar o JSON de propostas.");
-    console.error(error);
-  }
-}
-
-async function analyzePdfFile(event) {
-  const [file] = event.target.files;
-  event.target.value = "";
-  if (!file) return;
-
-  if (window.location.protocol === "file:") {
-    showToast("Abra com npm.cmd run radar:app para analisar PDFs pela interface.");
-    return;
-  }
-
-  elements.analyzePdfButton.disabled = true;
-  elements.analyzePdfButton.classList.add("loading");
-  showToast("Analisando PDF com IA...");
-
-  try {
-    const formData = new FormData();
-    formData.append("pdf", file);
-    const response = await fetch("/api/pdf-proposals", {
-      method: "POST",
-      body: formData,
-    });
-    const payload = await response.json();
-    if (!response.ok || !payload.ok) {
-      throw new Error(payload.error || "Falha ao analisar PDF.");
-    }
-
-    const proposals = Array.isArray(payload.proposals) ? payload.proposals : [];
-    if (!proposals.length) {
-      showToast("PDF analisado, mas sem propostas aplicáveis.");
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `O PDF gerou ${proposals.length} proposta(s). Aplicar ao radar local agora?`,
-    );
-    if (!confirmed) {
-      showToast(`Propostas salvas em ${payload.proposalPath}.`);
-      return;
-    }
-
-    const result = applyProposals(proposals);
-    saveState();
-    renderAll();
-    showToast(`${result.added} adicionadas, ${result.updated} atualizadas, ${result.removed} removidas.`);
-  } catch (error) {
-    console.error(error);
-    showToast(error.message || "Não foi possível analisar o PDF.");
-  } finally {
-    elements.analyzePdfButton.disabled = false;
-    elements.analyzePdfButton.classList.remove("loading");
-  }
-}
-
-function applyProposals(proposals) {
-  const result = { added: 0, updated: 0, removed: 0 };
-  proposals.forEach((proposal) => {
-    const action = String(proposal.action ?? "").toLowerCase();
-    if (action === "add" && proposal.blip) {
-      const blip = normalizeBlip(proposal.blip);
-      if (state.blips.some((item) => item.id === blip.id)) {
-        blip.id = nextBlipId();
-      }
-      state.blips.push(blip);
-      selectedId = blip.id;
-      result.added += 1;
-      return;
-    }
-
-    if ((action === "update" || action === "move") && proposal.id && proposal.changes) {
-      const blip = state.blips.find((item) => item.id === proposal.id);
-      if (!blip) return;
-      Object.assign(blip, sanitizeBlipChanges(blip, proposal.changes));
-      selectedId = blip.id;
-      result.updated += 1;
-      return;
-    }
-
-    if ((action === "remove" || action === "delete") && proposal.id) {
-      const before = state.blips.length;
-      state.blips = state.blips.filter((item) => item.id !== proposal.id);
-      if (state.blips.length !== before) result.removed += 1;
-    }
-  });
-  return result;
-}
-
-function normalizeBlip(input) {
-  return {
-    id: input.id || nextBlipId(),
-    name: input.name || "Nova tecnologia",
-    quadrant: validValue(input.quadrant, ["Técnicas", "Plataformas", "Ferramentas", "Linguagens e Frameworks"], "Técnicas"),
-    ring: validValue(input.ring, ["Adopt", "Trial", "Assess", "Caution"], "Assess"),
-    horizon: validValue(input.horizon, ["Curto", "Médio", "Longo"], "Médio"),
-    maturity: validValue(input.maturity, ["Experimental", "Emergente", "Madura"], "Experimental"),
-    risk: validValue(input.risk, ["Baixo", "Médio", "Alto"], "Médio"),
-    effort: validValue(input.effort, ["Baixo", "Médio", "Alto"], "Médio"),
-    status: input.status || "Monitorar",
-    source: input.source || "Atualização por IA",
-    theme: input.theme || "A definir",
-    detailsUrl: input.detailsUrl || "",
-    strategic: input.strategic || "Proposta gerada por atualização assistida por IA.",
-    constraints: input.constraints || "Requer revisão humana antes de adoção.",
-  };
-}
-
-function sanitizeBlipChanges(current, changes) {
-  const base = normalizeBlip({ ...current, ...changes });
-  delete base.id;
-  return base;
-}
-
-function validValue(value, allowed, fallback) {
-  return allowed.includes(value) ? value : fallback;
-}
-
-function nextBlipId() {
-  const nextNumber =
-    Math.max(0, ...state.blips.map((item) => Number(item.id.replace("ES-", "")))) + 1;
-  return `ES-${String(nextNumber).padStart(2, "0")}`;
-}
-
-function resetData() {
-  const confirmed = window.confirm("Restaurar os dados iniciais do radar?");
+function discardDraft() {
+  if (!adminMode) return;
+  const confirmed = window.confirm(
+    "Descartar alterações do rascunho e restaurar a última versão oficial carregada?",
+  );
   if (!confirmed) return;
-  localStorage.removeItem(STORAGE_KEY);
-  state.blips = structuredClone(DEFAULT_BLIPS);
-  state.sources = structuredClone(DEFAULT_SOURCES);
-  selectedId = state.blips[0].id;
-  saveState();
+  state = structuredClone(canonicalState);
+  selectedId = state.blips[0]?.id ?? null;
   renderAll();
-  showToast("Dados restaurados.");
+  showToast("Rascunho descartado.");
 }
 
 function coordinatesFor(blip, index) {
@@ -1142,121 +1199,28 @@ function downloadMarkdown() {
 }
 
 function downloadHtmlSnapshot() {
-  const html = generateHtmlSnapshot();
+  const payload = snapshotPayload();
+  const html = buildRadarHtmlSnapshot(payload);
   const blob = new Blob([html], { type: "text/html;charset=utf-8" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = monthlySnapshotFilename();
+  link.download = monthlySnapshotFilename(payload.generatedAt);
   link.click();
   URL.revokeObjectURL(link.href);
-  showToast("HTML gerado para download.");
-}
-
-async function saveHtmlSnapshot() {
-  if (window.location.protocol === "file:") {
-    downloadHtmlSnapshot();
-    showToast("Sem servidor local: HTML baixado pelo navegador.");
-    return;
-  }
-
-  try {
-    const response = await fetch("/api/export-html", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(snapshotPayload()),
-    });
-    const payload = await response.json();
-    if (!response.ok || !payload.ok) throw new Error(payload.error || "Falha ao salvar HTML.");
-
-    const blob = new Blob([payload.html], { type: "text/html;charset=utf-8" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = payload.path.split("/").at(-1) || monthlySnapshotFilename();
-    link.click();
-    URL.revokeObjectURL(link.href);
-    showToast(`HTML salvo em ${payload.path}.`);
-  } catch (error) {
-    console.error(error);
-    showToast(error.message || "Não foi possível salvar HTML.");
-  }
+  showToast("Snapshot HTML baixado pelo navegador.");
 }
 
 function snapshotPayload() {
   return {
     title: "Radar Tecnologico e TRM - Engenharia de Software",
     generatedAt: new Date().toISOString(),
-    blips: state.blips,
+    blips: state.blips.map((blip) => ({ ...blip, detailsUrl: getDetailsUrl(blip) })),
     sources: state.sources,
   };
 }
 
-function monthlySnapshotFilename() {
-  return `${new Date().toISOString().slice(0, 10)}-radar-tecnologico-engenharia-software.html`;
-}
-
-function generateHtmlSnapshot() {
-  const rows = state.blips
-    .map(
-      (blip) =>
-        `<tr><td>${escapeHtml(blip.name)}</td><td>${escapeHtml(blip.quadrant)}</td><td>${escapeHtml(blip.ring)}</td><td>${escapeHtml(blip.horizon)}</td><td>${escapeHtml(blip.maturity)}</td><td>${escapeHtml(blip.risk)}</td><td>${escapeHtml(blip.effort)}</td></tr>`,
-    )
-    .join("");
-  const details = ["Curto", "Médio", "Longo"]
-    .map((horizon) => {
-      const cards = state.blips
-        .filter((blip) => blip.horizon === horizon)
-        .map(
-          (blip) => `<article class="card">
-            <h3>${escapeHtml(blip.id)} - ${escapeHtml(blip.name)}</h3>
-            <p><strong>${escapeHtml(blip.quadrant)} | ${escapeHtml(blip.ring)} | ${escapeHtml(blip.maturity)}</strong></p>
-            <p>${escapeHtml(blip.strategic)}</p>
-            <p><strong>Gargalos:</strong> ${escapeHtml(blip.constraints)}</p>
-            <p><a href="${escapeHtml(getDetailsUrl(blip))}">Mais detalhes</a></p>
-          </article>`,
-        )
-        .join("");
-      return `<section><h2>${horizon} Prazo</h2><div class="cards">${cards}</div></section>`;
-    })
-    .join("");
-  const sources = state.sources
-    .map(
-      (source) =>
-        `<tr><td>${escapeHtml(source.name)}</td><td>${escapeHtml(source.strength)}</td><td>${escapeHtml(source.cadence)}</td><td>${escapeHtml(source.signal)}</td><td><a href="${escapeHtml(source.url)}">${escapeHtml(source.url)}</a></td></tr>`,
-    )
-    .join("");
-
-  return `<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Radar Tecnologico e TRM - Engenharia de Software</title>
-  <style>
-    body{margin:0;background:#f6f9fa;color:#17212b;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    header{padding:28px 36px;background:#071724;color:white} header h1{margin:0;font-size:28px} header p{color:#b8cbd4}
-    main{max-width:1180px;margin:auto;padding:28px}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#d7e0e5;border:1px solid #d7e0e5;border-radius:8px;overflow:hidden}
-    .summary div,.panel,.card,table{background:white}.summary div{padding:18px}.summary span{display:block;color:#5f6f7b;font-size:12px;font-weight:700;text-transform:uppercase}.summary strong{font-size:24px}
-    section{margin-top:28px}.panel,.card{border:1px solid #d7e0e5;border-radius:8px;padding:16px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
-    table{width:100%;border-collapse:collapse;border:1px solid #d7e0e5}th,td{border-bottom:1px solid #d7e0e5;padding:10px 12px;text-align:left;vertical-align:top;font-size:13px}th{background:#eef3f5;color:#465967}
-    a{color:#006b6f}@media print{body{background:white}.card,table,.panel{break-inside:avoid}}@media(max-width:800px){main{padding:18px}.summary{grid-template-columns:1fr}}
-  </style>
-</head>
-<body>
-  <header><h1>Radar Tecnologico e TRM - Engenharia de Software</h1><p>Snapshot mensal gerado em ${new Date().toLocaleString("pt-BR")}.</p></header>
-  <main>
-    <section class="summary">
-      <div><span>Blips</span><strong>${state.blips.length}</strong></div>
-      <div><span>Pilotos P&D</span><strong>${state.blips.filter((blip) => blip.status.includes("Piloto")).length}</strong></div>
-      <div><span>Atualização</span><strong>Mensal</strong></div>
-      <div><span>Versão</span><strong>${new Date().toISOString().slice(0, 7)}</strong></div>
-    </section>
-    <section><h2>Sumário Executivo</h2><div class="panel"><p>Radar Tecnológico e Technology Roadmap para apoiar decisões de P&D, pilotos controlados e atualização mensal contínua em Engenharia de Software.</p></div></section>
-    <section><h2>Matriz Radar + TRM</h2><table><thead><tr><th>Tecnologia/Técnica</th><th>Quadrante</th><th>Anel</th><th>Horizonte</th><th>Maturidade</th><th>Risco</th><th>Esforço</th></tr></thead><tbody>${rows}</tbody></table></section>
-    ${details}
-    <section><h2>Fontes Monitoradas</h2><table><thead><tr><th>Fonte</th><th>Força</th><th>Cadência</th><th>Sinal</th><th>URL</th></tr></thead><tbody>${sources}</tbody></table></section>
-  </main>
-</body>
-</html>`;
+function monthlySnapshotFilename(generatedAt = new Date().toISOString()) {
+  return `${generatedAt.slice(0, 10)}-radar-tecnologico-engenharia-software.html`;
 }
 
 function generateMarkdown() {
@@ -1298,11 +1262,7 @@ function generateMarkdown() {
 
 ## Sumário Executivo
 
-Este documento estrutura a primeira versão do Radar Tecnológico e Technology Roadmap para Engenharia de Software, com foco em desenvolvimento, qualidade, segurança, DevOps, engenharia com IA e governança técnica. A proposta institucional é acelerar inovação em propostas de projetos com um processo contínuo de curadoria, experimentação controlada e atualização mensal.
-
-## Visão Geral da Trilha
-
-Os temas prioritários são Engenharia com IA, Qualidade e Testes, Segurança e Governança, DevOps e Plataforma, Supply Chain, Medição e Sustentabilidade Técnica. A postura desta versão é inovadora para P&D: tecnologias em Trial e Assess devem ser exploradas com guardrails, métricas e revisão humana.
+Este documento estrutura a versão atual do Radar Tecnológico e Technology Roadmap para Engenharia de Software, com foco em desenvolvimento, qualidade, segurança, DevOps, engenharia com IA e governança técnica.
 
 ## Tabela Matriz de Roadmap e Radar
 
@@ -1318,18 +1278,7 @@ ${details}
 
 ${pilots}
 
-Critérios mínimos dos pilotos: hipótese explícita, ambiente controlado, métricas antes/depois, política de revisão humana, evidências de segurança, plano de saída e apresentação mensal de aprendizado.
-
-## Protocolo de Atualização Mensal
-
-1. Coletar sinais nas fontes monitoradas.
-2. Agrupar evidências por tema, quadrante e tecnologia.
-3. Propor alterações de anel, horizonte, maturidade, risco e esforço.
-4. Registrar justificativa, fontes e contraindicações.
-5. Submeter a revisão humana do comitê técnico.
-6. Publicar versão mensal do radar e atualizar o backlog de pilotos.
-
-## Fontes Monitoradas pelo Agente de IA
+## Fontes Monitoradas
 
 | Fonte | Força | Cadência | Sinal Observado | URL |
 |---|---|---|---|---|
@@ -1337,10 +1286,22 @@ ${sources}
 `;
 }
 
+function setStatus(element, text, isError = false) {
+  element.textContent = text;
+  element.classList.toggle("error", Boolean(isError && text));
+}
+
 function showToast(message) {
   elements.toast.textContent = message;
   elements.toast.classList.add("show");
-  window.setTimeout(() => elements.toast.classList.remove("show"), 2200);
+  if (toastTimer) window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => elements.toast.classList.remove("show"), 3200);
+}
+
+function formatShortDate(iso) {
+  const date = new Date(iso);
+  if (!Number.isFinite(date.getTime())) return "Mensal";
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(date);
 }
 
 function cleanUrl(url) {

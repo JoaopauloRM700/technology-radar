@@ -4,13 +4,18 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "node --test",
     "radar:full": "node scripts/run-radar-full.mjs",
-    "radar:full:gemini": "node scripts/run-radar-full.mjs --ai gemini",
+    "radar:full:nim": "node scripts/run-radar-full.mjs --ai nim",
     "radar:app": "node scripts/local-server.mjs",
+    "radar:api": "node --env-file-if-exists=.env scripts/api-server.mjs",
     "radar:discover": "node scripts/discover-sources.mjs",
     "radar:update": "node scripts/update-radar.mjs --scan",
     "radar:update:offline": "node scripts/update-radar.mjs --offline",
     "radar:brief": "node scripts/update-radar.mjs --brief",
     "radar:pdf": "node scripts/analyze-pdf.mjs"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0"
   }
 }

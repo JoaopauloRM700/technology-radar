@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "revision": "614f8cf2-f7f8-4b81-b060-989f7bc35529",
+  "updatedAt": "2026-11-18T15:13:02.341Z",
+  "changeNote": "Fixture estável dos testes.",
+  "blips": [
+    {
+      "id": "ES-01",
+      "name": "Coding Agents",
+      "quadrant": "Ferramentas",
+      "ring": "Trial",
+      "horizon": "Curto",
+      "maturity": "Emergente",
+      "risk": "Médio",
+      "effort": "Médio",
+      "status": "Piloto recomendado",
+      "source": "Thoughtworks, GitHub",
+      "theme": "Engenharia com IA",
+      "detailsUrl": "",
+      "strategic": "Acelerar protótipos, refatorações e geração de testes mantendo revisão humana.",
+      "constraints": "Pode introduzir alucinação, vulnerabilidades e decisões não intencionais."
+    },
+    {
+      "id": "ES-02",
+      "name": "Harnesses para agentes de código",
+      "quadrant": "Técnicas",
+      "ring": "Trial",
+      "horizon": "Curto",
+      "maturity": "Emergente",
+      "risk": "Médio",
+      "effort": "Alto",
+      "status": "Piloto recomendado",
+      "source": "Thoughtworks, Martin Fowler",
+      "theme": "Engenharia com IA",
+      "detailsUrl": "",
+      "strategic": "Criar controles de feedforward e feedback para aumentar confiança em agentes.",
+      "constraints": "Exige testes confiáveis, regras estruturais e maturidade de engenharia."
+    },
+    {
+      "id": "ES-25",
+      "name": "Frameworks LLM sem manutenção ou proveniência",
+      "quadrant": "Linguagens e Frameworks",
+      "ring": "Caution",
+      "horizon": "Longo",
+      "maturity": "Experimental",
+      "risk": "Alto",
+      "effort": "Alto",
+      "status": "Segurar",
+      "source": "Thoughtworks, OWASP, OpenSSF",
+      "theme": "Riscos de Adoção",
+      "detailsUrl": "",
+      "strategic": "Evitar dependência de componentes sem comunidade, manutenção ou postura de segurança.",
+      "constraints": "Alto risco de abandono, vulnerabilidades e mudanças incompatíveis."
+    }
+  ],
+  "sources": [
+    {
+      "id": "SRC-01",
+      "name": "Thoughtworks Technology Radar",
+      "initials": "TW",
+      "url": "https://www.thoughtworks.com/radar",
+      "strength": "Alta",
+      "cadence": "Semestral + insights",
+      "signal": "Blips, anéis, temas macro e práticas emergentes de engenharia.",
+      "agentUse": "Comparar mudanças por volume e sugerir alterações de anel."
+    }
+  ]
+}

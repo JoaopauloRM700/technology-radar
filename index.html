@@ -3,6 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="radar-api-base" content="" />
+    <meta
+      name="radar-history-url"
+      content="https://github.com/JoaopauloRM700/technology-radar/commits/main/data/radar.json"
+    />
     <title>Radar Tecnologico | Engenharia de Software</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -22,47 +27,87 @@
         <button class="nav-button" data-view="export">Exportação</button>
       </nav>
       <div class="header-actions">
-        <button class="ghost-button" id="resetDataButton" title="Restaurar dados iniciais">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v6h6M20 20v-6h-6"/><path d="M20 9a8 8 0 0 0-13.3-3L4 8M4 15a8 8 0 0 0 13.3 3L20 16"/></svg>
-          Restaurar
+        <span class="draft-badge hidden" id="draftIndicator" role="status" aria-live="polite">
+          Rascunho não publicado
+        </span>
+        <button
+          class="ghost-button hidden"
+          id="resetDataButton"
+          data-admin-only
+          title="Descartar alterações do rascunho e restaurar a última versão oficial"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 4v6h6M20 20v-6h-6" />
+            <path d="M20 9a8 8 0 0 0-13.3-3L4 8M4 15a8 8 0 0 0 13.3 3L20 16" />
+          </svg>
+          Descartar rascunho
         </button>
         <button class="secondary-button" id="exportButton">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v12" />
+            <path d="m7 10 5 5 5-5" />
+            <path d="M5 21h14" />
+          </svg>
           Exportar Markdown
         </button>
-        <button class="secondary-button" id="importProposalsButton">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M5 21h14"/></svg>
+        <button class="secondary-button hidden" id="importProposalsButton" data-admin-only>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v12" />
+            <path d="m17 8-5-5-5 5" />
+            <path d="M5 21h14" />
+          </svg>
           Importar Propostas
         </button>
-        <button class="secondary-button" id="analyzePdfButton">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 15h6"/><path d="M9 18h4"/></svg>
+        <button class="secondary-button hidden" id="analyzePdfButton" data-admin-only>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+            <path d="M14 2v6h6" />
+            <path d="M9 15h6" />
+            <path d="M9 18h4" />
+          </svg>
           Analisar PDF
         </button>
-        <button class="primary-button" id="addBlipButton">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <button class="secondary-button hidden" id="addBlipButton" data-admin-only>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
           Adicionar Blip
+        </button>
+        <button class="primary-button hidden" id="saveVersionButton" data-admin-only>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+            <path d="M17 21v-8H7v8" />
+            <path d="M7 3v5h8" />
+          </svg>
+          Salvar versão
+        </button>
+        <button class="ghost-button" id="adminModeButton">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="4" y="11" width="16" height="10" rx="2" />
+            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+          </svg>
+          <span>Modo administrador</span>
         </button>
       </div>
     </header>
     <input id="proposalFileInput" class="hidden" type="file" accept="application/json,.json" />
-    <input id="pdfFileInput" class="hidden" type="file" accept="application/pdf,.pdf" />
+
+    <div class="publish-banner hidden" id="publishBanner" role="status" aria-live="polite"></div>
 
     <main class="app-shell">
       <aside class="sources-panel">
         <div class="panel-title-row">
           <div>
             <h2>Fontes Monitoradas</h2>
-            <p>Base para atualização autonoma assistida por IA.</p>
+            <p>Base para atualização autônoma assistida por IA.</p>
           </div>
-          <button class="icon-button" id="addSourceButton" title="Adicionar fonte">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          <button class="icon-button hidden" id="addSourceButton" data-admin-only title="Adicionar fonte">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
           </button>
         </div>
         <div class="agent-card">
           <span class="status-dot live"></span>
           <div>
-            <strong>Agente mensal</strong>
-            <p>Coleta sinais, agrupa evidências, propõe mudanças e aguarda aprovação humana.</p>
+            <strong>Curadoria assistida por IA</strong>
+            <p>Analisa documentos públicos via NVIDIA NIM, apresenta evidências por página e aguarda aprovação humana.</p>
           </div>
         </div>
         <div class="source-list" id="sourceList"></div>
@@ -72,27 +117,38 @@
         <section class="summary-strip" aria-label="Resumo do radar">
           <div>
             <span class="metric-label">Blips</span>
-            <strong id="totalBlips">25</strong>
+            <strong id="totalBlips">—</strong>
           </div>
           <div>
             <span class="metric-label">Pilotos P&amp;D</span>
-            <strong id="pilotCount">5</strong>
+            <strong id="pilotCount">—</strong>
           </div>
           <div>
             <span class="metric-label">Atualização</span>
-            <strong>Mensal</strong>
+            <strong id="radarUpdatedAt">Mensal</strong>
           </div>
           <div>
-            <span class="metric-label">Versão</span>
-            <strong>0.1</strong>
+            <span class="metric-label">Versão oficial</span>
+            <div class="version-cell">
+              <strong id="radarRevision">—</strong>
+              <a
+                class="history-link"
+                id="historyLink"
+                href="https://github.com/JoaopauloRM700/technology-radar/commits/main/data/radar.json"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Histórico
+              </a>
+            </div>
           </div>
         </section>
 
         <section class="radar-view" data-view-panel="radar">
           <div class="section-heading">
             <div>
-              <h2>Radar Editavel</h2>
-              <p>Clique em um blip para editar. Quadrante e anel reposicionam a tecnologia no radar.</p>
+              <h2 id="radarViewHeading">Radar Tecnológico</h2>
+              <p id="radarViewSubtitle">Clique em um blip para consultar detalhes estratégicos e recomendações.</p>
             </div>
             <div class="filter-row">
               <label for="ringFilter">Anel</label>
@@ -149,7 +205,7 @@
           <div class="section-heading">
             <div>
               <h2>Biblioteca de Fontes</h2>
-              <p>Sites e relatórios que alimentam a atualização autonoma assistida.</p>
+              <p>Sites e relatórios que alimentam a atualização autônoma assistida.</p>
             </div>
           </div>
           <div class="source-grid" id="sourceGrid"></div>
@@ -158,42 +214,56 @@
         <section class="export-view hidden" data-view-panel="export">
           <div class="section-heading">
             <div>
-              <h2>Exportação para Google Docs</h2>
-              <p>Markdown pronto para copiar, baixar ou colar em um documento de gestão.</p>
+              <h2>Exportação e Snapshot Offline</h2>
+              <p>Markdown para documentos de gestão e HTML autônomo gerado inteiramente no navegador.</p>
             </div>
             <div class="export-actions">
               <button class="secondary-button" id="saveHtmlButton">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3v12" />
+                  <path d="m7 10 5 5 5-5" />
+                  <path d="M5 21h14" />
+                </svg>
                 Salvar HTML
               </button>
-              <button class="secondary-button" id="downloadHtmlButton">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
-                Baixar HTML
-              </button>
               <button class="secondary-button" id="downloadMarkdownButton">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3v12" />
+                  <path d="m7 10 5 5 5-5" />
+                  <path d="M5 21h14" />
+                </svg>
                 Baixar .md
               </button>
             </div>
           </div>
-          <textarea id="markdownOutput" spellcheck="false"></textarea>
+          <textarea id="markdownOutput" spellcheck="false" readonly></textarea>
         </section>
       </section>
 
       <aside class="editor-panel">
         <div class="panel-title-row">
           <div>
-            <h2>Editor de Blip</h2>
+            <h2 id="editorPanelTitle">Detalhes do Blip</h2>
             <p id="selectedBlipLabel">Selecione uma tecnologia.</p>
           </div>
-          <button class="icon-button danger" id="deleteBlipButton" title="Excluir blip">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>
+          <button
+            class="icon-button danger hidden"
+            id="deleteBlipButton"
+            data-admin-only
+            title="Excluir blip"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h16" />
+              <path d="M10 11v6M14 11v6" />
+              <path d="M6 7l1 14h10l1-14" />
+              <path d="M9 7V4h6v3" />
+            </svg>
           </button>
         </div>
 
         <article class="detail-card" id="detailCard"></article>
 
-        <form id="blipForm" class="editor-form">
+        <form id="blipForm" class="editor-form hidden" data-admin-only>
           <label>
             Nome do Blip
             <input name="name" required />
@@ -290,8 +360,117 @@
       </aside>
     </main>
 
+    <dialog id="adminDialog" class="app-dialog" aria-labelledby="adminDialogTitle">
+      <form id="adminLoginForm" class="dialog-body" method="dialog">
+        <div class="dialog-header">
+          <h2 id="adminDialogTitle">Modo administrador</h2>
+          <p>O token permanece apenas na memória desta aba e nunca é salvo no navegador.</p>
+        </div>
+        <label class="dialog-field">
+          Token administrativo
+          <input
+            id="adminTokenInput"
+            name="token"
+            type="password"
+            autocomplete="off"
+            minlength="32"
+            required
+            placeholder="Informe o ADMIN_TOKEN (mín. 32 caracteres)"
+          />
+        </label>
+        <p class="dialog-status" id="adminDialogStatus" role="status" aria-live="polite"></p>
+        <div class="dialog-actions">
+          <button type="button" class="secondary-button" data-close-dialog="adminDialog">Cancelar</button>
+          <button type="submit" class="primary-button" id="adminSubmitButton">Validar e entrar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="saveDialog" class="app-dialog" aria-labelledby="saveDialogTitle">
+      <form id="saveVersionForm" class="dialog-body" method="dialog">
+        <div class="dialog-header">
+          <h2 id="saveDialogTitle">Salvar versão no GitHub</h2>
+          <p id="saveDialogSummary">Descreva o motivo desta atualização para registrar um commit versionado.</p>
+        </div>
+        <label class="dialog-field">
+          Descrição da versão (obrigatória, máx. 120 caracteres)
+          <input
+            id="changeNoteInput"
+            name="changeNote"
+            maxlength="120"
+            required
+            placeholder="Ex.: Atualiza anéis após revisão do relatório mensal"
+          />
+        </label>
+        <p class="dialog-status" id="saveDialogStatus" role="status" aria-live="polite"></p>
+        <div class="dialog-alert conflict hidden" id="saveConflictBox" role="alert">
+          <strong>Conflito de revisão detectado</strong>
+          <p id="saveConflictMessage"></p>
+          <div class="dialog-actions-inline">
+            <button type="button" class="secondary-button" id="downloadDraftButton">
+              Baixar rascunho (JSON)
+            </button>
+            <button type="button" class="primary-button" id="reloadCanonicalButton">
+              Recarregar versão oficial
+            </button>
+          </div>
+        </div>
+        <div class="dialog-alert success hidden" id="saveSuccessBox" role="status">
+          <strong>Versão publicada no GitHub</strong>
+          <p id="saveSuccessMessage"></p>
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="secondary-button" id="saveCloseButton" data-close-dialog="saveDialog">Fechar</button>
+          <button type="submit" class="primary-button" id="saveConfirmButton">Publicar versão</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="pdfDialog" class="app-dialog" aria-labelledby="pdfDialogTitle">
+      <form id="pdfAnalyzeForm" class="dialog-body" method="dialog">
+        <div class="dialog-header">
+          <h2 id="pdfDialogTitle">Analisar PDF com NVIDIA NIM</h2>
+          <p>Limites da POC: PDF público sem criptografia, até 10 MiB e 75 páginas. O arquivo nunca é armazenado.</p>
+        </div>
+        <label class="dialog-field">
+          Arquivo PDF público
+          <input id="pdfFileInput" name="pdf" type="file" accept="application/pdf,.pdf" required />
+        </label>
+        <label class="checkbox-field">
+          <input id="publicPdfCheckbox" type="checkbox" required />
+          <span>Confirmo que este PDF é um documento público e pode ser enviado à NVIDIA NIM.</span>
+        </label>
+        <div class="dialog-status" id="pdfDialogStatus" role="status" aria-live="polite"></div>
+        <div class="dialog-actions">
+          <button type="button" class="secondary-button" id="pdfCancelButton">Cancelar</button>
+          <button type="submit" class="primary-button" id="pdfStartButton">Iniciar análise</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="reviewDialog" class="app-dialog app-dialog-wide" aria-labelledby="reviewDialogTitle">
+      <div class="dialog-body">
+        <div class="dialog-header">
+          <h2 id="reviewDialogTitle">Revisar propostas antes de aplicar ao rascunho</h2>
+          <p id="reviewSummary">Todas as propostas começam desmarcadas. Aplique apenas o que desejar e depois salve a versão.</p>
+        </div>
+        <div class="review-toolbar">
+          <strong id="reviewSelectionCount">0 / 5 selecionadas</strong>
+          <span class="review-hint">Nenhuma exclusão automática é permitida.</span>
+        </div>
+        <div class="review-list" id="reviewList"></div>
+        <p class="dialog-status" id="reviewDialogStatus" role="status" aria-live="polite"></p>
+        <div class="dialog-actions">
+          <button type="button" class="secondary-button" data-close-dialog="reviewDialog">Fechar</button>
+          <button type="button" class="primary-button" id="applyProposalsButton" disabled>
+            Aplicar selecionadas ao rascunho
+          </button>
+        </div>
+      </div>
+    </dialog>
+
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
   </body>
 </html>

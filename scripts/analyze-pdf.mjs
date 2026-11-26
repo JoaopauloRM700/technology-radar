@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import zlib from "node:zlib";
@@ -13,44 +15,83 @@ if (!inputPath) {
 const resolvedPdf = path.resolve(inputPath);
 const outputDir = path.join(root, "data", "pdf");
 const briefDir = path.join(root, "docs");
-const textPath = path.join(outputDir, `${safeName(path.basename(resolvedPdf, ".pdf"))}.txt`);
-const signalsPath = path.join(outputDir, `${safeName(path.basename(resolvedPdf, ".pdf"))}-signals.json`);
-const briefPath = path.join(briefDir, `${safeName(path.basename(resolvedPdf, ".pdf"))}-brief.md`);
-const proposalsPath = path.join(outputDir, `${safeName(path.basename(resolvedPdf, ".pdf"))}-proposals.json`);
+const pdfBytes = await readFile(resolvedPdf);
+const sourceSha256 = createHash("sha256").update(pdfBytes).digest("hex");
 
 await mkdir(outputDir, { recursive: true });
 await mkdir(briefDir, { recursive: true });
 
-const pdfBytes = await readFile(resolvedPdf);
-const extractedText = extractPdfText(pdfBytes);
-const normalizedText = normalize(extractedText);
-const signals = buildPdfSignals(normalizedText);
-const payload = {
-  generatedAt: new Date().toISOString(),
-  source: resolvedPdf,
-  textLength: normalizedText.length,
-  extractionMode: "local-pdf-text-layer",
-  signals,
-};
-
-await writeFile(textPath, `${normalizedText}\n`, "utf8");
-await writeFile(signalsPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
-await writeFile(briefPath, buildBrief(payload), "utf8");
-
-if (!(await exists(proposalsPath))) {
-  await writeFile(
-    proposalsPath,
-    `${JSON.stringify({ generatedAt: new Date().toISOString(), proposals: [] }, null, 2)}\n`,
-    "utf8"
-  );
+let analysis;
+const paths = await selectOutputPaths(safeName(path.basename(resolvedPdf, ".pdf")));
+const { textPath, signalsPath, briefPath, proposalsPath } = paths;
+const complete = Object.values(paths).every(existsSync);
+if (!complete) {
+  const { text, payload } = getAnalysis();
+  await createOutput(textPath, text + "\n");
+  await createOutput(briefPath, buildBrief(payload));
+  await createOutput(proposalsPath, JSON.stringify({ generatedAt: payload.generatedAt, proposals: [] }, null, 2) + "\n");
 }
 
-console.log("Análise de PDF concluída.");
+process.send?.(Object.fromEntries(Object.entries(paths).map(([key, file]) => [key, relative(file)])));
+console.log(complete ? "Análise de PDF reutilizada." : "Análise de PDF concluída.");
 console.log(`Texto extraído: ${relative(textPath)}`);
 console.log(`Sinais: ${relative(signalsPath)}`);
 console.log(`Brief para IA: ${relative(briefPath)}`);
 console.log(`Propostas para importar no app: ${relative(proposalsPath)}`);
 console.log("Próximo passo: cole o brief em uma IA, salve o JSON de resposta no arquivo de propostas e importe no app.");
+
+function getAnalysis() {
+  if (!analysis) {
+    const text = normalize(extractPdfText(pdfBytes));
+    analysis = {
+      text,
+      payload: {
+        generatedAt: new Date().toISOString(),
+        source: resolvedPdf,
+        sourceSha256,
+        textLength: text.length,
+        extractionMode: "local-pdf-text-layer",
+        signals: buildPdfSignals(text),
+      },
+    };
+  }
+  return analysis;
+}
+
+async function selectOutputPaths(base) {
+  const fingerprintBase = base + "-" + sourceSha256.slice(0, 12);
+  let candidate = base;
+  let suffix = 1;
+  while (true) {
+    const paths = {
+      textPath: path.join(outputDir, candidate + ".txt"),
+      signalsPath: path.join(outputDir, candidate + "-signals.json"),
+      briefPath: path.join(briefDir, candidate + "-brief.md"),
+      proposalsPath: path.join(outputDir, candidate + "-proposals.json"),
+    };
+    if (Object.values(paths).some(existsSync)) {
+      if (await hasMatchingFingerprint(paths.signalsPath)) return paths;
+      candidate = suffix === 1 ? fingerprintBase : fingerprintBase + "-" + suffix;
+      suffix += 1;
+      continue;
+    }
+
+    // Reserve the output name with its full fingerprint before creating sibling files.
+    if (await createOutput(paths.signalsPath, JSON.stringify(getAnalysis().payload, null, 2) + "\n")) {
+      return paths;
+    }
+  }
+}
+
+async function hasMatchingFingerprint(filePath) {
+  try {
+    const signals = JSON.parse(await readFile(filePath, "utf8"));
+    return signals?.sourceSha256 === sourceSha256;
+  } catch (error) {
+    if (error instanceof SyntaxError || error.code === "ENOENT" || error.code === "EISDIR") return false;
+    throw error;
+  }
+}
 
 function extractPdfText(buffer) {
   const raw = buffer.toString("latin1");
@@ -423,11 +464,12 @@ function relative(filePath) {
   return path.relative(root, filePath).replace(/\\/g, "/");
 }
 
-async function exists(filePath) {
+async function createOutput(filePath, content) {
   try {
-    await readFile(filePath, "utf8");
+    await writeFile(filePath, content, { encoding: "utf8", flag: "wx" });
     return true;
-  } catch {
-    return false;
+  } catch (error) {
+    if (error.code === "EEXIST") return false;
+    throw error;
   }
 }

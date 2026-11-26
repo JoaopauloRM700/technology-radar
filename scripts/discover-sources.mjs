@@ -4,7 +4,7 @@ import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
-import { spawn } from "node:child_process";
+import { runPdfAnalyzer } from "./lib/run-pdf-analyzer.mjs";
 
 const require = createRequire(import.meta.url);
 const root = process.cwd();
@@ -13,7 +13,6 @@ const args = process.argv.slice(2);
 const sourcePath = path.join(root, "data", "monitored-sources.json");
 const discoveryDir = path.join(root, "data", "discovery");
 const downloadsDir = path.join(root, "data", "downloads");
-const pdfOutputDir = path.join(root, "data", "pdf");
 const reportPath = path.join(discoveryDir, "radar-discovery.json");
 const cachePath = path.join(discoveryDir, "download-cache.json");
 const briefPath = path.join(root, "docs", "radar-discovery-brief.md");
@@ -528,40 +527,9 @@ async function analyzePdfOnce(relativePdfPath, memo) {
   const absolutePdfPath = path.join(root, relativePdfPath);
   if (memo.has(absolutePdfPath)) return memo.get(absolutePdfPath);
 
-  const result = await runAnalyzer(absolutePdfPath);
+  const result = await runPdfAnalyzer(root, absolutePdfPath);
   memo.set(absolutePdfPath, result);
   return result;
-}
-
-function runAnalyzer(pdfPath) {
-  return new Promise((resolve) => {
-    const analyzerPath = path.join(root, "scripts", "analyze-pdf.mjs");
-    const child = spawn(process.execPath, [analyzerPath, pdfPath], {
-      cwd: root,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    let stdout = "";
-    let stderr = "";
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk.toString();
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
-    });
-    child.on("close", (code) => {
-      const base = safeName(path.basename(pdfPath, ".pdf"));
-      resolve({
-        ok: code === 0,
-        exitCode: code,
-        textPath: relative(path.join(pdfOutputDir, `${base}.txt`)),
-        signalsPath: relative(path.join(pdfOutputDir, `${base}-signals.json`)),
-        briefPath: relative(path.join(root, "docs", `${base}-brief.md`)),
-        proposalsPath: relative(path.join(pdfOutputDir, `${base}-proposals.json`)),
-        stdout: stdout.trim().slice(-800),
-        stderr: stderr.trim().slice(-800),
-      });
-    });
-  });
 }
 
 function buildDiscoveryBrief(payload) {

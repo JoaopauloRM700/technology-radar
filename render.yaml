@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: technology-radar-api
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    buildFilter:
+      ignoredPaths:
+        - data/radar.json
+    envVars:
+      - key: PORT
+        value: "8787"
+      - key: GITHUB_OWNER
+        value: JoaopauloRM700
+      - key: GITHUB_REPO
+        value: technology-radar
+      - key: GITHUB_BRANCH
+        value: main
+      - key: ALLOWED_ORIGINS
+        value: https://joaopaulorm700.github.io,http://localhost:4173
+      - key: NVIDIA_NIM_MODEL
+        value: nvidia/nemotron-3.5-super-vl-120b-a12b
+      - key: NVIDIA_NIM_URL
+        value: https://integrate.api.nvidia.com/v1/chat/completions
+      - key: NVIDIA_PARSE_URL
+        value: https://ai.api.nvidia.com/v1/retrieval/nvidia/nemotron-3.5-parse/parse
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: ADMIN_TOKEN
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
