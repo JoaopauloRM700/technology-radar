@@ -59,7 +59,7 @@ const report = {
 };
 
 const analysisCache = new Map();
-const publicationKeys = new Set();
+const publicationIndex = new Map();
 
 try {
   for (const source of selectedSources) {
@@ -69,14 +69,17 @@ try {
         ? await discoverWithFetch(source)
         : await engine.discover(source);
     if (source.strategy === "publications") {
-      deduplicatePublications(result, publicationKeys);
+      const publicationCandidates = [...result.publications];
+      deduplicatePublications(result, publicationIndex);
       result.pdfCandidates = rankPdfCandidates(
-        result.publications.map((publication) => ({
-          href: publication.pdfUrl,
-          text: `PDF paper ${publication.title}`,
-          title: publication.title,
-          download: "",
-        })),
+        publicationCandidates
+          .filter((publication) => isHttpPdf(publication.pdfUrl))
+          .map((publication) => ({
+            href: publication.pdfUrl,
+            text: `PDF paper ${publication.title}`,
+            title: publication.title,
+            download: "",
+          })),
         source.url,
         source
       );
@@ -333,6 +336,7 @@ async function discoverPublications(source, context) {
     }
 
     const indexUrl = new URL(index.finalUrl);
+    const indexPath = canonicalPath(indexUrl.pathname);
     const patterns = source.publicationLinkPatterns ?? [];
     const maxPublications = Math.min(5, Math.max(1, Number(source.maxPublications) || 5));
     const detailUrls = [];
@@ -342,9 +346,8 @@ async function discoverPublications(source, context) {
       const url = normalizeUrl(link.href, index.finalUrl);
       if (!url || seenUrls.has(url)) continue;
       const parsed = new URL(url);
-      if (parsed.origin !== indexUrl.origin || url === index.finalUrl) continue;
-      const haystack = `${url} ${link.text} ${link.title}`.toLowerCase();
-      if (!patterns.some((pattern) => matchesPattern(haystack, pattern))) continue;
+      if (parsed.origin !== indexUrl.origin || canonicalPath(parsed.pathname) === indexPath) continue;
+      if (!patterns.some((pattern) => matchesPublicationPath(parsed.pathname, pattern))) continue;
       seenUrls.add(url);
       detailUrls.push(url);
       if (detailUrls.length >= maxPublications) break;
@@ -354,7 +357,38 @@ async function discoverPublications(source, context) {
     const publicationErrors = [];
     for (const url of detailUrls) {
       try {
-        const detail = await loadPublicationPage(url, context);
+        const detail = await loadPublicationPage(url, context, indexUrl.origin);
+        if (detail.blockedRedirectUrl) {
+          publicationErrors.push({
+            url,
+            status: detail.status,
+            error: "unexpected_origin",
+            finalUrl: detail.blockedRedirectUrl,
+          });
+          continue;
+        }
+        if (!hasOrigin(detail.finalUrl, indexUrl.origin)) {
+          publicationErrors.push({
+            url,
+            status: detail.status,
+            error: "unexpected_origin",
+            finalUrl: detail.finalUrl,
+          });
+          continue;
+        }
+        const detailUrl = new URL(detail.finalUrl);
+        if (
+          canonicalPath(detailUrl.pathname) === indexPath ||
+          !patterns.some((pattern) => matchesPublicationPath(detailUrl.pathname, pattern))
+        ) {
+          publicationErrors.push({
+            url,
+            status: detail.status,
+            error: "unexpected_detail_url",
+            finalUrl: detail.finalUrl,
+          });
+          continue;
+        }
         if (!detail.ok) {
           publicationErrors.push({ url, status: detail.status, error: `HTTP ${detail.status}` });
           continue;
@@ -397,17 +431,60 @@ async function discoverPublications(source, context) {
   }
 }
 
-async function loadPublicationPage(url, context) {
+async function loadPublicationPage(url, context, allowedOrigin) {
   return context
-    ? loadPublicationPageWithPlaywright(url, context)
-    : loadPublicationPageWithFetch(url);
+    ? loadPublicationPageWithPlaywright(url, context, allowedOrigin)
+    : loadPublicationPageWithFetch(url, allowedOrigin);
 }
 
-async function loadPublicationPageWithPlaywright(url, context) {
+async function loadPublicationPageWithPlaywright(url, context, allowedOrigin) {
   const page = await context.newPage();
+  let blockedRedirectUrl = "";
   try {
-    const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
+    if (allowedOrigin) {
+      await page.route("**/*", async (route) => {
+        const request = route.request();
+        if (
+          request.isNavigationRequest() &&
+          request.frame() === page.mainFrame() &&
+          !hasOrigin(request.url(), allowedOrigin)
+        ) {
+          blockedRedirectUrl = request.url();
+          await route.abort("blockedbyclient");
+          return;
+        }
+        await route.continue();
+      });
+    }
+    let response;
+    try {
+      response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
+    } catch (error) {
+      if (blockedRedirectUrl) {
+        return {
+          ok: false,
+          status: null,
+          finalUrl: url,
+          blockedRedirectUrl,
+          title: "",
+          html: "",
+          links: [],
+        };
+      }
+      throw error;
+    }
     await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
+    if (blockedRedirectUrl) {
+      return {
+        ok: false,
+        status: response?.status() ?? null,
+        finalUrl: page.url(),
+        blockedRedirectUrl,
+        title: "",
+        html: "",
+        links: [],
+      };
+    }
     const html = await page.content();
     return {
       ok: response?.ok() ?? true,
@@ -422,13 +499,42 @@ async function loadPublicationPageWithPlaywright(url, context) {
   }
 }
 
-async function loadPublicationPageWithFetch(url) {
+async function loadPublicationPageWithFetch(url, allowedOrigin, redirectCount = 0) {
   const response = await fetch(url, {
+    redirect: "manual",
     headers: {
       "user-agent": "TechnologyRadarDiscovery/0.1 (+local P&D radar; human-reviewed proposals)",
       accept: "text/html,application/xhtml+xml,application/xml;q=0.9,text/plain;q=0.8",
     },
   });
+  if (isRedirectStatus(response.status)) {
+    const location = response.headers?.get("location");
+    const redirectUrl = location ? normalizeUrl(location, url) : "";
+    if (redirectUrl) {
+      if (allowedOrigin && !hasOrigin(redirectUrl, allowedOrigin)) {
+        return {
+          ok: false,
+          status: response.status,
+          finalUrl: url,
+          blockedRedirectUrl: redirectUrl,
+          title: "",
+          html: "",
+          links: [],
+        };
+      }
+      if (redirectCount >= 5) {
+        return {
+          ok: false,
+          status: response.status,
+          finalUrl: url,
+          title: "",
+          html: "",
+          links: [],
+        };
+      }
+      return loadPublicationPageWithFetch(redirectUrl, allowedOrigin, redirectCount + 1);
+    }
+  }
   const html = await response.text();
   return {
     ok: response.ok,
@@ -438,6 +544,10 @@ async function loadPublicationPageWithFetch(url) {
     html,
     links: parseLinks(html, response.url || url),
   };
+}
+
+function isRedirectStatus(status) {
+  return [301, 302, 303, 307, 308].includes(status);
 }
 
 function parseLinks(html, baseUrl) {
@@ -541,6 +651,27 @@ function matchesPattern(value, pattern) {
     }
   }
   return value.includes(normalizedPattern);
+}
+
+function canonicalPath(pathname) {
+  return String(pathname || "/").replace(/\/+$/, "") || "/";
+}
+
+function matchesPublicationPath(pathname, pattern) {
+  const rawPattern = String(pattern ?? "").trim();
+  if (!rawPattern) return false;
+  const pathPrefix = canonicalPath(rawPattern).toLowerCase();
+  const candidate = canonicalPath(pathname).toLowerCase();
+  if (!pathPrefix.startsWith("/")) return false;
+  return candidate === pathPrefix || candidate.startsWith(`${pathPrefix}/`);
+}
+
+function hasOrigin(value, expectedOrigin) {
+  try {
+    return new URL(value).origin === expectedOrigin;
+  } catch {
+    return false;
+  }
 }
 
 function extractPublication(page) {
@@ -713,31 +844,102 @@ function evidenceLevel({ title, venue, arxivId }) {
   return "corporate-research";
 }
 
-function deduplicatePublications(result, seen) {
+function deduplicatePublications(result, index) {
   const publications = [];
   let duplicates = 0;
   for (const publication of result.publications) {
-    const keys = publicationIdentityKeys(publication);
-    if (keys.some((key) => seen.has(key))) {
+    const keys = publicationLookupKeys(publication);
+    const matches = [
+      ...new Set(
+        keys
+          .map((key) => index.get(key))
+          .filter((record) => record && compatibleIdentifiers(record.publication, publication))
+      ),
+    ];
+    if (matches.length) {
+      const canonical = matches[0];
+      for (const duplicate of matches.slice(1)) {
+        mergePublication(canonical.publication, duplicate.publication);
+        const duplicatePosition = duplicate.collection.indexOf(duplicate.publication);
+        if (duplicatePosition >= 0) duplicate.collection.splice(duplicatePosition, 1);
+        duplicate.result.duplicatePublications += 1;
+        for (const [key, record] of index) {
+          if (record === duplicate) index.set(key, canonical);
+        }
+      }
+      mergePublication(canonical.publication, publication);
+      [...keys, ...publicationLookupKeys(canonical.publication)].forEach((key) => {
+        const current = index.get(key);
+        if (!current || compatibleIdentifiers(current.publication, canonical.publication)) {
+          index.set(key, canonical);
+        }
+      });
       duplicates += 1;
       continue;
     }
-    keys.forEach((key) => seen.add(key));
     publications.push(publication);
+    const record = { publication, result, collection: publications };
+    keys.forEach((key) => {
+      const current = index.get(key);
+      if (!current || compatibleIdentifiers(current.publication, publication)) {
+        index.set(key, record);
+      }
+    });
   }
   result.publications = publications;
   result.duplicatePublications += duplicates;
 }
 
-function publicationIdentityKeys(publication) {
+function publicationLookupKeys(publication) {
   const keys = [];
   if (publication.doi) keys.push(`doi:${publication.doi}`);
   if (publication.arxivId) keys.push(`arxiv:${publication.arxivId.toLowerCase()}`);
-  if (!keys.length && publication.title && publication.year) {
+  if (publication.title && publication.year) {
     keys.push(`title:${normalize(publication.title).toLowerCase()}|${publication.year}`);
   }
   if (!keys.length) keys.push(`url:${publication.detailUrl}`);
   return keys;
+}
+
+function compatibleIdentifiers(left, right) {
+  if (left.doi && right.doi && left.doi !== right.doi) return false;
+  if (left.arxivId && right.arxivId && left.arxivId.toLowerCase() !== right.arxivId.toLowerCase()) {
+    return false;
+  }
+  return true;
+}
+
+function mergePublication(target, incoming) {
+  target.authors = uniqueStrings([...target.authors, ...incoming.authors]);
+  target.areas = uniqueStrings([...target.areas, ...incoming.areas]);
+  for (const field of ["publishedAt", "year", "abstract", "doi", "arxivId", "pdfUrl"]) {
+    if (!target[field] && incoming[field]) target[field] = incoming[field];
+  }
+  if (paperUrlPriority(incoming.paperUrl, incoming) > paperUrlPriority(target.paperUrl, target)) {
+    target.paperUrl = incoming.paperUrl;
+  }
+  if (evidencePriority(incoming.evidenceLevel) > evidencePriority(target.evidenceLevel)) {
+    target.evidenceLevel = incoming.evidenceLevel;
+    if (incoming.venue) target.venue = incoming.venue;
+  } else if (!target.venue && incoming.venue) {
+    target.venue = incoming.venue;
+  }
+}
+
+function paperUrlPriority(url, publication) {
+  if (!url) return 0;
+  if (/\b(?:arxiv\.org|doi\.org)\b/i.test(url)) return 3;
+  if (url === publication.detailUrl) return 1;
+  return 2;
+}
+
+function evidencePriority(level) {
+  return {
+    "corporate-research": 1,
+    preprint: 2,
+    "technical-report": 3,
+    "peer-reviewed": 4,
+  }[level] ?? 0;
 }
 
 function firstValue(...values) {
