@@ -20,7 +20,7 @@ test("discovers, classifies and deduplicates publication details without leaving
       url: "https://research.example/publications/",
       strategy: "publications",
       discoverPdfs: false,
-      publicationLinkPatterns: ["/publications/"],
+      publicationLinkPatterns: ["/publications/", "/research/publications/"],
       maxPublications: 5,
       themes: ["agents"],
     },
@@ -47,7 +47,7 @@ test("discovers, classifies and deduplicates publication details without leaving
       url: "https://paperless.example/publications/",
       strategy: "publications",
       discoverPdfs: false,
-      publicationLinkPatterns: ["/publications/"],
+      publicationLinkPatterns: ["/publications/", "/research/publications/"],
       maxPublications: 5,
       themes: ["security"],
     },
@@ -66,6 +66,8 @@ test("discovers, classifies and deduplicates publication details without leaving
           <a href="?f[year]=2026">Filter publications</a>
           <a href="/publications/?page=2">Next publications page</a>
           <a href="/about">Learn about /publications/</a>
+          <a href="/research/publications/">Alternate publications root</a>
+          <a href="/publications/archive/2025">Publication archive</a>
           <a href="/publications/reliable-agents">Reliable Agents</a>
           <a href="/publications/reliable-agents#abstract">Reliable Agents abstract</a>
           <a href="/publications/reliable-agents?view=full">Reliable Agents full view</a>
@@ -136,7 +138,10 @@ test("discovers, classifies and deduplicates publication details without leaving
     },
     "https://research.example/publications/missing": { status: 404, body: "missing" },
     "https://deep.example/publications/": {
-      body: `<a href="/publications/reliable-agents">Reliable Agents from another lab</a>`,
+      body: `
+        <a href="/publications/reliable-agents">Reliable Agents from another lab</a>
+        <a href="/publications/fallback-a">Fallback listing A</a>
+        <a href="/publications/fallback-b">Fallback listing B</a>`,
     },
     "https://deep.example/publications/reliable-agents": {
       body: `
@@ -144,6 +149,18 @@ test("discovers, classifies and deduplicates publication details without leaving
         <meta name="citation_publication_date" content="2026-10-03">
         <meta name="citation_doi" content="10.1000/reliable.agents">
         <a href="https://arxiv.org/abs/2602.00001v1">Read on arXiv</a>`,
+    },
+    "https://deep.example/publications/fallback-a": {
+      finalUrl: "https://deep.example/publications/canonical-fallback",
+      body: `
+        <meta name="citation_title" content="Undated Research Note">
+        <meta name="citation_author" content="Evelyn Boyd Granville">`,
+    },
+    "https://deep.example/publications/fallback-b": {
+      finalUrl: "https://deep.example/publications/canonical-fallback",
+      body: `
+        <meta name="citation_title" content="Undated Research Note">
+        <meta name="citation_author" content="Evelyn Boyd Granville">`,
     },
     "https://alias.example/publications/": {
       body: `
@@ -163,7 +180,14 @@ test("discovers, classifies and deduplicates publication details without leaving
       body: `
         <meta name="citation_title" content="Bridge DOI Record">
         <meta name="citation_publication_date" content="2026">
-        <meta name="citation_doi" content="10.1000/bridge.record">`,
+        <meta name="citation_doi" content="10.1000/bridge.record">
+        <script type="application/ld+json">
+          {
+            "@type": "ScholarlyArticle",
+            "contentUrl": "/downloads/structured-paper?id=789",
+            "encodingFormat": "application/pdf"
+          }
+        </script>`,
     },
     "https://alias.example/publications/bridge-arxiv": {
       body: `
@@ -187,7 +211,8 @@ test("discovers, classifies and deduplicates publication details without leaving
         <meta name="citation_author" content="Mary Jackson">
         <meta name="citation_publication_date" content="2026-11-20">
         <meta name="citation_journal_title" content="arXiv">
-        <meta name="citation_pdf_url" content="/downloads/citation-paper?id=123">`,
+        <meta name="citation_conference_title" content="arXiv">
+        <meta name="citation_pdf_url" data-content="/downloads/placeholder" content="/downloads/citation-paper?id=123">`,
     },
     "https://paperless.example/publications/": {
       body: `
@@ -226,9 +251,10 @@ test("discovers, classifies and deduplicates publication details without leaving
         <a href="https://arxiv.org/abs/2604.00001">Other Study preprint</a>`,
     },
     "https://paperless.example/publications/back-to-index": {
-      finalUrl: "https://paperless.example/publications/",
+      finalUrl: "https://paperless.example/research/publications/",
       body: `
         <title>Paperless Publications Index</title>
+        <meta name="citation_publication_date" content="2026">
         <a href="/publications/secure-agents">Secure Agents</a>`,
     },
     "https://paperless.example/publications/shared-bridge": {
@@ -236,7 +262,8 @@ test("discovers, classifies and deduplicates publication details without leaving
         <meta name="citation_title" content="Shared Study">
         <meta name="citation_publication_date" content="2026">
         <a href="https://arxiv.org/abs/2604.00001">Same Other Study preprint</a>
-        <a href="/downloads/labeled-paper?id=456">Download PDF</a>`,
+        <a href="#pdf">PDF section</a>
+        <a href="/downloads/agent's-work?id=456">Download PDF</a>`,
     },
   };
 
@@ -337,8 +364,9 @@ globalThis.fetch = async (input, init = {}) => {
       "https://research.example/papers/frontier-model-system-card.pdf",
     ]
   );
-  assert.equal(deep.publications.length, 0);
-  assert.equal(deep.duplicatePublications, 1);
+  assert.equal(deep.publications.length, 1);
+  assert.equal(deep.publications[0].title, "Undated Research Note");
+  assert.equal(deep.duplicatePublications, 2);
   assert.deepEqual(deep.pdfCandidates.map((item) => item.url), [
     "https://arxiv.org/pdf/2602.00001v1.pdf",
   ]);
@@ -349,6 +377,10 @@ globalThis.fetch = async (input, init = {}) => {
   assert.equal(bridged.venue, "NeurIPS 2026");
   assert.equal(bridged.evidenceLevel, "peer-reviewed");
   assert.deepEqual(bridged.authors, ["Annie Easley"]);
+  assert.equal(
+    bridged.pdfUrl,
+    "https://alias.example/downloads/structured-paper?id=789"
+  );
   const citationDownload = alias.publications.find(
     (item) => item.title === "Agent's Citation Study"
   );
@@ -357,11 +389,11 @@ globalThis.fetch = async (input, init = {}) => {
     citationDownload.pdfUrl,
     "https://alias.example/downloads/citation-paper?id=123"
   );
-  assert.ok(
-    alias.pdfCandidates.some(
-      (item) => item.url === "https://alias.example/downloads/citation-paper?id=123"
-    )
+  const citationCandidate = alias.pdfCandidates.find(
+    (item) => item.url === "https://alias.example/downloads/citation-paper?id=123"
   );
+  assert.ok(citationCandidate);
+  assert.equal(citationCandidate.isPdf, false);
   assert.equal(paperless.publications.length, 3);
   const secureAgents = paperless.publications.find((item) => item.title === "Secure Agents");
   assert.equal(secureAgents.evidenceLevel, "corporate-research");
@@ -377,14 +409,14 @@ globalThis.fetch = async (input, init = {}) => {
   ]);
   assert.ok(
     paperless.pdfCandidates.some(
-      (item) => item.url === "https://paperless.example/downloads/labeled-paper?id=456"
+      (item) => item.url === "https://paperless.example/downloads/agent's-work?id=456"
     )
   );
   assert.doesNotMatch(
     paperless.pdfCandidates.map((item) => item.url).join("\n"),
     /secure-agents/
   );
-  assert.match(result.stdout, /Publicacoes encontradas: 8/);
+  assert.match(result.stdout, /Publicacoes encontradas: 9/);
 
   const brief = await readFile(path.join(root, "docs", "radar-discovery-brief.md"), "utf8");
   assert.match(brief, /\[peer-reviewed\] Reliable Agents/);

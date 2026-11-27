@@ -10,6 +10,8 @@ const require = createRequire(import.meta.url);
 const root = process.cwd();
 const args = process.argv.slice(2);
 const publicationNavigationSegments = new Set([
+  "archive",
+  "archives",
   "author",
   "authors",
   "categories",
@@ -378,7 +380,7 @@ async function discoverPublications(source, context) {
     const publicationErrors = [];
     for (const url of detailUrls) {
       try {
-        const detail = await loadPublicationPageWithFetch(url, indexUrl.origin);
+        const detail = await loadPublicationDetailPage(url, context, indexUrl.origin);
         if (detail.blockedRedirectUrl) {
           publicationErrors.push({
             url,
@@ -524,21 +526,73 @@ async function loadPublicationPageWithFetch(url, allowedOrigin, redirectCount = 
   };
 }
 
+async function loadPublicationDetailPage(url, context, allowedOrigin) {
+  const fetched = await loadPublicationPageWithFetch(url, allowedOrigin);
+  if (!context || !fetched.ok || fetched.blockedRedirectUrl) return fetched;
+
+  const page = await context.newPage();
+  let documentServed = false;
+  try {
+    await page.route("**/*", async (route) => {
+      const request = route.request();
+      if (request.isNavigationRequest() && request.frame() === page.mainFrame()) {
+        if (!documentServed && sameRequestUrl(request.url(), fetched.finalUrl)) {
+          documentServed = true;
+          await route.fulfill({
+            status: 200,
+            contentType: "text/html; charset=utf-8",
+            body: fetched.html,
+          });
+        } else {
+          await route.abort("blockedbyclient");
+        }
+        return;
+      }
+      await route.continue();
+    });
+    await page.goto(fetched.finalUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
+    const html = await page.content();
+    return {
+      ...fetched,
+      title: await page.title() || fetched.title,
+      html,
+      links: parseLinks(html, fetched.finalUrl),
+    };
+  } catch {
+    return fetched;
+  } finally {
+    await page.close().catch(() => {});
+  }
+}
+
+function sameRequestUrl(left, right) {
+  try {
+    const leftUrl = new URL(left);
+    const rightUrl = new URL(right);
+    leftUrl.hash = "";
+    rightUrl.hash = "";
+    return leftUrl.href === rightUrl.href;
+  } catch {
+    return false;
+  }
+}
+
 function isRedirectStatus(status) {
   return [301, 302, 303, 307, 308].includes(status);
 }
 
 function parseLinks(html, baseUrl) {
   const links = [];
-  const anchorRegex = /<a\b([^>]*?)href\s*=\s*(["']?)([^"'\s>]+)\2([^>]*)>([\s\S]*?)<\/a>/gi;
+  const anchorRegex = /<a\b([^>]*?)href\s*=\s*(?:(["'])([\s\S]*?)\2|([^\s>]+))([^>]*)>([\s\S]*?)<\/a>/gi;
   let match;
   while ((match = anchorRegex.exec(html)) !== null) {
-    const href = normalizeUrl(match[3], baseUrl);
+    const href = normalizeUrl(match[3] ?? match[4], baseUrl);
     if (!href) continue;
-    const attrs = `${match[1]} ${match[4]}`;
+    const attrs = `${match[1]} ${match[5]}`;
     links.push({
       href,
-      text: stripHtml(match[5]),
+      text: stripHtml(match[6]),
       title: attrValue(attrs, "title"),
       download: attrValue(attrs, "download"),
     });
@@ -561,7 +615,7 @@ function rankPdfCandidates(links, baseUrl, source) {
     const label = normalize(`${link.text} ${link.title} ${link.download}`);
     const haystack = `${url} ${label}`.toLowerCase();
     const urlPath = safeUrlPath(url);
-    const isPdf = /\.pdf($|[?#])/i.test(urlPath) || /\.pdf($|[?#])/i.test(url);
+    const isPdf = /\.pdf$/i.test(urlPath);
     const hasDownloadIntent = /\b(download|pdf|report|whitepaper|research|survey|radar|ebook|guide|paper)\b/i.test(haystack);
     if (!isPdf && !hasDownloadIntent) continue;
 
@@ -645,7 +699,7 @@ function matchesPublicationPath(pathname, pattern) {
   const pathPrefix = canonicalPath(rawPattern).toLowerCase();
   const candidate = canonicalPath(pathname).toLowerCase();
   if (!pathPrefix.startsWith("/")) return false;
-  return candidate === pathPrefix || candidate.startsWith(`${pathPrefix}/`);
+  return candidate.startsWith(`${pathPrefix}/`);
 }
 
 function isPublicationNavigationPath(pathname, patterns) {
@@ -703,11 +757,11 @@ function extractPublication(page) {
   const journalVenue = firstValue(metaValues(page.html, "citation_journal_title"));
   const structuredVenue = firstValue(article?.isPartOf?.name);
   const venue = firstValue(conferenceVenue, journalVenue, structuredVenue);
-  const peerReviewed = Boolean(
-    conferenceVenue ||
-    (journalVenue && !/arxiv/i.test(journalVenue)) ||
-    isAcademicVenue(article?.isPartOf)
-  );
+  const peerReviewed = [
+    conferenceVenue,
+    journalVenue,
+    isAcademicVenue(article?.isPartOf) ? structuredVenue : "",
+  ].some((candidate) => candidate && !/\barxiv\b/i.test(candidate));
   const doiLink = page.links.find((link) => /doi\.org\//i.test(link.href))?.href;
   const doi = normalizeDoi(firstValue(metaValues(page.html, "citation_doi"), doiLink));
   const arxiv = findArxiv(page.links);
@@ -716,15 +770,19 @@ function extractPublication(page) {
     page.finalUrl
   );
   const structuredPdf = normalizeHttpUrl(firstValue(article?.contentUrl), page.finalUrl);
-  const directPdf = page.links.find((link) => /\.pdf($|[?#])/i.test(link.href))?.href;
-  const labeledPdf = page.links.find((link) =>
-    /\bpdf\b/i.test(`${link.text} ${link.title} ${link.download}`)
-  )?.href;
+  const structuredPdfType = firstValue(article?.encodingFormat);
+  const directPdf = page.links.find((link) => isHttpPdf(link.href))?.href;
+  const labeledPdf = page.links
+    .filter((link) => /\bpdf\b/i.test(`${link.text} ${link.title} ${link.download}`))
+    .map((link) => normalizeHttpUrl(link.href, page.finalUrl))
+    .find((url) => url && !sameRequestUrl(url, page.finalUrl));
   const pdfUrl =
     citationPdf ||
-    (isHttpPdf(structuredPdf) ? structuredPdf : "") ||
+    (structuredPdf && (/application\/pdf/i.test(structuredPdfType) || isHttpPdf(structuredPdf))
+      ? structuredPdf
+      : "") ||
     (isHttpPdf(directPdf) ? directPdf : "") ||
-    normalizeHttpUrl(labeledPdf, page.finalUrl) ||
+    labeledPdf ||
     arxiv?.pdfUrl ||
     "";
   const paperUrl = arxiv?.url || pdfUrl || doiLink || page.finalUrl;
@@ -859,14 +917,17 @@ function deduplicatePublications(result, index) {
   let duplicates = 0;
   for (const publication of result.publications) {
     const keys = publicationLookupKeys(publication);
+    const strongKeys = publicationStrongKeys(publication);
     const strongMatches = uniquePublicationRecords(
-      publicationStrongKeys(publication).map((key) => index.get(key)),
+      strongKeys.map((key) => index.get(key)),
       publication
     );
-    const titleMatch = index.get(publicationTitleKey(publication));
+    const fallbackKey = publicationTitleKey(publication) ||
+      (strongKeys.length ? "" : `url:${publication.detailUrl}`);
+    const fallbackMatch = fallbackKey ? index.get(fallbackKey) : null;
     const matches = strongMatches.length
       ? strongMatches
-      : uniquePublicationRecords([titleMatch], publication);
+      : uniquePublicationRecords([fallbackMatch], publication);
     if (matches.length) {
       const canonical = matches[0];
       for (const duplicate of matches.slice(1)) {
@@ -999,7 +1060,12 @@ function extractHeading(html) {
 }
 
 function isHttpPdf(value) {
-  return /^https?:\/\//i.test(value ?? "") && /\.pdf($|[?#])/i.test(value);
+  if (!isHttpUrl(value)) return false;
+  try {
+    return /\.pdf$/i.test(new URL(value).pathname);
+  } catch {
+    return false;
+  }
 }
 
 function isHttpUrl(value) {
@@ -1278,9 +1344,10 @@ function stripHtml(value) {
 }
 
 function attrValue(attrs, name) {
-  const quoted = attrs.match(new RegExp(`${name}\\s*=\\s*(["'])([\\s\\S]*?)\\1`, "i"));
+  const attribute = `(?:^|\\s)${name}\\s*=\\s*`;
+  const quoted = attrs.match(new RegExp(`${attribute}(["'])([\\s\\S]*?)\\1`, "i"));
   if (quoted) return quoted[2];
-  return attrs.match(new RegExp(`${name}\\s*=\\s*([^\\s>]+)`, "i"))?.[1] ?? "";
+  return attrs.match(new RegExp(`${attribute}([^\\s>]+)`, "i"))?.[1] ?? "";
 }
 
 function safeUrlPath(url) {
