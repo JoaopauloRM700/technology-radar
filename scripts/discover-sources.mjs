@@ -9,6 +9,22 @@ import { runPdfAnalyzer } from "./lib/run-pdf-analyzer.mjs";
 const require = createRequire(import.meta.url);
 const root = process.cwd();
 const args = process.argv.slice(2);
+const publicationNavigationSegments = new Set([
+  "author",
+  "authors",
+  "categories",
+  "category",
+  "filter",
+  "page",
+  "pages",
+  "search",
+  "tag",
+  "tags",
+  "topic",
+  "topics",
+  "year",
+  "years",
+]);
 
 const sourcePath = path.join(root, "data", "monitored-sources.json");
 const discoveryDir = path.join(root, "data", "discovery");
@@ -73,12 +89,13 @@ try {
       deduplicatePublications(result, publicationIndex);
       result.pdfCandidates = rankPdfCandidates(
         publicationCandidates
-          .filter((publication) => isHttpPdf(publication.pdfUrl))
+          .filter((publication) => isHttpUrl(publication.pdfUrl))
           .map((publication) => ({
             href: publication.pdfUrl,
             text: `PDF paper ${publication.title}`,
             title: publication.title,
             download: "",
+            explicitPdf: true,
           })),
         source.url,
         source
@@ -340,16 +357,20 @@ async function discoverPublications(source, context) {
     const patterns = source.publicationLinkPatterns ?? [];
     const maxPublications = Math.min(5, Math.max(1, Number(source.maxPublications) || 5));
     const detailUrls = [];
-    const seenUrls = new Set();
+    const seenDetails = new Set();
 
     for (const link of index.links) {
       const url = normalizeUrl(link.href, index.finalUrl);
-      if (!url || seenUrls.has(url)) continue;
+      if (!url) continue;
       const parsed = new URL(url);
       if (parsed.origin !== indexUrl.origin || canonicalPath(parsed.pathname) === indexPath) continue;
       if (!patterns.some((pattern) => matchesPublicationPath(parsed.pathname, pattern))) continue;
-      seenUrls.add(url);
-      detailUrls.push(url);
+      if (isPublicationNavigationPath(parsed.pathname, patterns)) continue;
+      const detailIdentity = `${parsed.origin}${canonicalPath(parsed.pathname).toLowerCase()}`;
+      if (seenDetails.has(detailIdentity)) continue;
+      seenDetails.add(detailIdentity);
+      parsed.hash = "";
+      detailUrls.push(parsed.href);
       if (detailUrls.length >= maxPublications) break;
     }
 
@@ -357,7 +378,7 @@ async function discoverPublications(source, context) {
     const publicationErrors = [];
     for (const url of detailUrls) {
       try {
-        const detail = await loadPublicationPage(url, context, indexUrl.origin);
+        const detail = await loadPublicationPageWithFetch(url, indexUrl.origin);
         if (detail.blockedRedirectUrl) {
           publicationErrors.push({
             url,
@@ -431,60 +452,17 @@ async function discoverPublications(source, context) {
   }
 }
 
-async function loadPublicationPage(url, context, allowedOrigin) {
+async function loadPublicationPage(url, context) {
   return context
-    ? loadPublicationPageWithPlaywright(url, context, allowedOrigin)
-    : loadPublicationPageWithFetch(url, allowedOrigin);
+    ? loadPublicationPageWithPlaywright(url, context)
+    : loadPublicationPageWithFetch(url);
 }
 
-async function loadPublicationPageWithPlaywright(url, context, allowedOrigin) {
+async function loadPublicationPageWithPlaywright(url, context) {
   const page = await context.newPage();
-  let blockedRedirectUrl = "";
   try {
-    if (allowedOrigin) {
-      await page.route("**/*", async (route) => {
-        const request = route.request();
-        if (
-          request.isNavigationRequest() &&
-          request.frame() === page.mainFrame() &&
-          !hasOrigin(request.url(), allowedOrigin)
-        ) {
-          blockedRedirectUrl = request.url();
-          await route.abort("blockedbyclient");
-          return;
-        }
-        await route.continue();
-      });
-    }
-    let response;
-    try {
-      response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
-    } catch (error) {
-      if (blockedRedirectUrl) {
-        return {
-          ok: false,
-          status: null,
-          finalUrl: url,
-          blockedRedirectUrl,
-          title: "",
-          html: "",
-          links: [],
-        };
-      }
-      throw error;
-    }
+    const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
-    if (blockedRedirectUrl) {
-      return {
-        ok: false,
-        status: response?.status() ?? null,
-        finalUrl: page.url(),
-        blockedRedirectUrl,
-        title: "",
-        html: "",
-        links: [],
-      };
-    }
     const html = await page.content();
     return {
       ok: response?.ok() ?? true,
@@ -589,6 +567,10 @@ function rankPdfCandidates(links, baseUrl, source) {
 
     let score = 0;
     const reasons = [];
+    if (link.explicitPdf) {
+      score += 100;
+      reasons.push("PDF indicado pela publicacao");
+    }
     if (isPdf) {
       score += 100;
       reasons.push("URL PDF");
@@ -666,6 +648,16 @@ function matchesPublicationPath(pathname, pattern) {
   return candidate === pathPrefix || candidate.startsWith(`${pathPrefix}/`);
 }
 
+function isPublicationNavigationPath(pathname, patterns) {
+  const candidate = canonicalPath(pathname).toLowerCase();
+  const prefix = patterns
+    .map((pattern) => canonicalPath(String(pattern ?? "").trim()).toLowerCase())
+    .find((pattern) => pattern !== "/" && matchesPublicationPath(candidate, pattern));
+  if (!prefix) return false;
+  const firstSegment = candidate.slice(prefix.length).replace(/^\/+/, "").split("/")[0];
+  return publicationNavigationSegments.has(firstSegment);
+}
+
 function hasOrigin(value, expectedOrigin) {
   try {
     return new URL(value).origin === expectedOrigin;
@@ -707,25 +699,36 @@ function extractPublication(page) {
     metaValues(page.html, "description"),
     metaValues(page.html, "og:description")
   );
-  const venue = firstValue(
-    metaValues(page.html, "citation_conference_title"),
-    metaValues(page.html, "citation_journal_title"),
-    article?.isPartOf?.name
+  const conferenceVenue = firstValue(metaValues(page.html, "citation_conference_title"));
+  const journalVenue = firstValue(metaValues(page.html, "citation_journal_title"));
+  const structuredVenue = firstValue(article?.isPartOf?.name);
+  const venue = firstValue(conferenceVenue, journalVenue, structuredVenue);
+  const peerReviewed = Boolean(
+    conferenceVenue ||
+    (journalVenue && !/arxiv/i.test(journalVenue)) ||
+    isAcademicVenue(article?.isPartOf)
   );
   const doiLink = page.links.find((link) => /doi\.org\//i.test(link.href))?.href;
   const doi = normalizeDoi(firstValue(metaValues(page.html, "citation_doi"), doiLink));
   const arxiv = findArxiv(page.links);
-  const citationPdf = normalizeUrl(
-    firstValue(metaValues(page.html, "citation_pdf_url"), article?.contentUrl),
+  const citationPdf = normalizeHttpUrl(
+    firstValue(metaValues(page.html, "citation_pdf_url")),
     page.finalUrl
   );
+  const structuredPdf = normalizeHttpUrl(firstValue(article?.contentUrl), page.finalUrl);
   const directPdf = page.links.find((link) => /\.pdf($|[?#])/i.test(link.href))?.href;
-  const pdfUrl = isHttpPdf(citationPdf)
-    ? citationPdf
-    : isHttpPdf(directPdf)
-      ? directPdf
-      : arxiv?.pdfUrl ?? "";
+  const labeledPdf = page.links.find((link) =>
+    /\bpdf\b/i.test(`${link.text} ${link.title} ${link.download}`)
+  )?.href;
+  const pdfUrl =
+    citationPdf ||
+    (isHttpPdf(structuredPdf) ? structuredPdf : "") ||
+    (isHttpPdf(directPdf) ? directPdf : "") ||
+    normalizeHttpUrl(labeledPdf, page.finalUrl) ||
+    arxiv?.pdfUrl ||
+    "";
   const paperUrl = arxiv?.url || pdfUrl || doiLink || page.finalUrl;
+  if (!authors.length && !publishedAt && !doi && !arxiv && !pdfUrl) return null;
 
   return {
     title,
@@ -740,8 +743,15 @@ function extractPublication(page) {
     detailUrl: page.finalUrl,
     paperUrl,
     pdfUrl,
-    evidenceLevel: evidenceLevel({ title, venue, arxivId: arxiv?.id }),
+    evidenceLevel: evidenceLevel({ title, venue, arxivId: arxiv?.id, peerReviewed }),
   };
+}
+
+function isAcademicVenue(value) {
+  const types = Array.isArray(value?.["@type"]) ? value["@type"] : [value?.["@type"]];
+  return types.some((type) =>
+    /^(conferenceevent|periodical|publicationissue|publicationvolume)$/i.test(type)
+  );
 }
 
 function extractScholarlyJsonLd(html) {
@@ -835,12 +845,12 @@ function publicationYear(value) {
   return Number.isInteger(year) ? year : null;
 }
 
-function evidenceLevel({ title, venue, arxivId }) {
+function evidenceLevel({ title, venue, arxivId, peerReviewed }) {
   if (/\b(technical report|tech report|white ?paper|system card)\b/i.test(`${title} ${venue}`)) {
     return "technical-report";
   }
-  if (venue && !/arxiv/i.test(venue)) return "peer-reviewed";
-  if (arxivId) return "preprint";
+  if (peerReviewed) return "peer-reviewed";
+  if (arxivId || /\barxiv\b/i.test(venue)) return "preprint";
   return "corporate-research";
 }
 
@@ -849,16 +859,18 @@ function deduplicatePublications(result, index) {
   let duplicates = 0;
   for (const publication of result.publications) {
     const keys = publicationLookupKeys(publication);
-    const matches = [
-      ...new Set(
-        keys
-          .map((key) => index.get(key))
-          .filter((record) => record && compatibleIdentifiers(record.publication, publication))
-      ),
-    ];
+    const strongMatches = uniquePublicationRecords(
+      publicationStrongKeys(publication).map((key) => index.get(key)),
+      publication
+    );
+    const titleMatch = index.get(publicationTitleKey(publication));
+    const matches = strongMatches.length
+      ? strongMatches
+      : uniquePublicationRecords([titleMatch], publication);
     if (matches.length) {
       const canonical = matches[0];
       for (const duplicate of matches.slice(1)) {
+        if (!compatibleIdentifiers(canonical.publication, duplicate.publication)) continue;
         mergePublication(canonical.publication, duplicate.publication);
         const duplicatePosition = duplicate.collection.indexOf(duplicate.publication);
         if (duplicatePosition >= 0) duplicate.collection.splice(duplicatePosition, 1);
@@ -891,19 +903,47 @@ function deduplicatePublications(result, index) {
 }
 
 function publicationLookupKeys(publication) {
-  const keys = [];
-  if (publication.doi) keys.push(`doi:${publication.doi}`);
-  if (publication.arxivId) keys.push(`arxiv:${publication.arxivId.toLowerCase()}`);
-  if (publication.title && publication.year) {
-    keys.push(`title:${normalize(publication.title).toLowerCase()}|${publication.year}`);
-  }
+  const keys = publicationStrongKeys(publication);
+  const titleKey = publicationTitleKey(publication);
+  if (titleKey) keys.push(titleKey);
   if (!keys.length) keys.push(`url:${publication.detailUrl}`);
   return keys;
 }
 
+function publicationStrongKeys(publication) {
+  const keys = [];
+  if (publication.doi) keys.push(`doi:${publication.doi}`);
+  if (publication.arxivId) keys.push(`arxiv:${normalizeArxivIdentity(publication.arxivId)}`);
+  return keys;
+}
+
+function publicationTitleKey(publication) {
+  return publication.title && publication.year
+    ? `title:${normalize(publication.title).toLowerCase()}|${publication.year}`
+    : "";
+}
+
+function uniquePublicationRecords(records, publication) {
+  return [
+    ...new Set(
+      records.filter(
+        (record) => record && compatibleIdentifiers(record.publication, publication)
+      )
+    ),
+  ];
+}
+
+function normalizeArxivIdentity(value) {
+  return String(value ?? "").toLowerCase().replace(/v\d+$/i, "");
+}
+
 function compatibleIdentifiers(left, right) {
   if (left.doi && right.doi && left.doi !== right.doi) return false;
-  if (left.arxivId && right.arxivId && left.arxivId.toLowerCase() !== right.arxivId.toLowerCase()) {
+  if (
+    left.arxivId &&
+    right.arxivId &&
+    normalizeArxivIdentity(left.arxivId) !== normalizeArxivIdentity(right.arxivId)
+  ) {
     return false;
   }
   return true;
@@ -960,6 +1000,16 @@ function extractHeading(html) {
 
 function isHttpPdf(value) {
   return /^https?:\/\//i.test(value ?? "") && /\.pdf($|[?#])/i.test(value);
+}
+
+function isHttpUrl(value) {
+  return /^https?:\/\//i.test(value ?? "");
+}
+
+function normalizeHttpUrl(value, baseUrl) {
+  if (!normalize(value ?? "")) return "";
+  const url = normalizeUrl(value, baseUrl);
+  return isHttpUrl(url) ? url : "";
 }
 
 async function downloadCandidates(candidates, source, context) {
@@ -1228,8 +1278,9 @@ function stripHtml(value) {
 }
 
 function attrValue(attrs, name) {
-  const match = attrs.match(new RegExp(`${name}\\s*=\\s*["']([^"']+)["']`, "i"));
-  return match?.[1] ?? "";
+  const quoted = attrs.match(new RegExp(`${name}\\s*=\\s*(["'])([\\s\\S]*?)\\1`, "i"));
+  if (quoted) return quoted[2];
+  return attrs.match(new RegExp(`${name}\\s*=\\s*([^\\s>]+)`, "i"))?.[1] ?? "";
 }
 
 function safeUrlPath(url) {

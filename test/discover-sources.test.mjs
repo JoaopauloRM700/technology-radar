@@ -67,6 +67,9 @@ test("discovers, classifies and deduplicates publication details without leaving
           <a href="/publications/?page=2">Next publications page</a>
           <a href="/about">Learn about /publications/</a>
           <a href="/publications/reliable-agents">Reliable Agents</a>
+          <a href="/publications/reliable-agents#abstract">Reliable Agents abstract</a>
+          <a href="/publications/reliable-agents?view=full">Reliable Agents full view</a>
+          <a href="/publications/topics/agents">Agents topic navigation</a>
           <a href="/publications/agent-memory">Agent Memory</a>
           <a href="/publications/system-card">System card</a>
           <a href="/publications/redirect">Redirect outside the official origin</a>
@@ -86,6 +89,9 @@ test("discovers, classifies and deduplicates publication details without leaving
           <meta name="citation_abstract" content="Evidence about reliable coding agents.">
           <meta name="keywords" content="agents, software engineering">
         </head><body><h1>Reliable Agents</h1></body></html>`,
+    },
+    "https://research.example/publications/topics/agents": {
+      body: `<html><head><title>Agents Research Topic</title></head><body></body></html>`,
     },
     "https://research.example/publications/agent-memory": {
       body: `
@@ -137,20 +143,21 @@ test("discovers, classifies and deduplicates publication details without leaving
         <meta name="citation_title" content="Reliable Agents">
         <meta name="citation_publication_date" content="2026-10-03">
         <meta name="citation_doi" content="10.1000/reliable.agents">
-        <a href="https://arxiv.org/abs/2602.00001">Read on arXiv</a>`,
+        <a href="https://arxiv.org/abs/2602.00001v1">Read on arXiv</a>`,
     },
     "https://alias.example/publications/": {
       body: `
         <a href="/publications/reliable-agents-alternate">Reliable Agents alternate listing</a>
         <a href="/publications/bridge-doi">Bridge DOI listing</a>
         <a href="/publications/bridge-arxiv">Bridge arXiv listing</a>
-        <a href="/publications/bridge-combined">Bridge combined listing</a>`,
+        <a href="/publications/bridge-combined">Bridge combined listing</a>
+        <a href="/publications/citation-download">Citation PDF listing</a>`,
     },
     "https://alias.example/publications/reliable-agents-alternate": {
       body: `
         <meta name="citation_title" content="Reliable Agents Alternate">
         <meta name="citation_publication_date" content="2026">
-        <a href="https://arxiv.org/abs/2602.00001">Same paper on arXiv</a>`,
+        <a href="https://arxiv.org/abs/2602.00001v2">Same paper on arXiv</a>`,
     },
     "https://alias.example/publications/bridge-doi": {
       body: `
@@ -174,20 +181,36 @@ test("discovers, classifies and deduplicates publication details without leaving
         <meta name="citation_doi" content="10.1000/bridge.record">
         <a href="https://arxiv.org/abs/2603.00001">Published preprint</a>`,
     },
+    "https://alias.example/publications/citation-download": {
+      body: `
+        <meta name="citation_title" content="Agent's Citation Study">
+        <meta name="citation_author" content="Mary Jackson">
+        <meta name="citation_publication_date" content="2026-11-20">
+        <meta name="citation_journal_title" content="arXiv">
+        <meta name="citation_pdf_url" content="/downloads/citation-paper?id=123">`,
+    },
     "https://paperless.example/publications/": {
       body: `
         <title>Paperless Publications Index</title>
-        <a href="/publications/secure-agents">Secure Agents</a>
+        <a href="/publications/secure-agents?filename=anything.pdf">Secure Agents</a>
         <a href="/publications/shared-study-a">Shared Study A</a>
         <a href="/publications/shared-study-b">Shared Study B</a>
-        <a href="/publications/back-to-index">Back to index redirect</a>`,
+        <a href="/publications/back-to-index">Back to index redirect</a>
+        <a href="/publications/shared-bridge">Shared identity bridge</a>`,
     },
-    "https://paperless.example/publications/secure-agents": {
+    "https://paperless.example/publications/secure-agents?filename=anything.pdf": {
       body: `
         <meta name="citation_title" content="Secure Agents">
         <meta name="citation_author" content="Margaret Hamilton">
         <meta name="citation_publication_date" content="2026-11-01">
-        <meta name="description" content="Corporate research without a public PDF.">`,
+        <meta name="description" content="Corporate research without a public PDF.">
+        <script type="application/ld+json">
+          {
+            "@type": "ScholarlyArticle",
+            "headline": "Secure Agents",
+            "isPartOf": { "@type": "WebSite", "name": "Paperless Research Portal" }
+          }
+        </script>`,
     },
     "https://paperless.example/publications/shared-study-a": {
       body: `
@@ -197,15 +220,23 @@ test("discovers, classifies and deduplicates publication details without leaving
     },
     "https://paperless.example/publications/shared-study-b": {
       body: `
-        <meta name="citation_title" content="Shared Study">
+        <meta name="citation_title" content="Other Study">
         <meta name="citation_publication_date" content="2026">
-        <meta name="citation_doi" content="10.1000/shared.b">`,
+        <meta name="citation_doi" content="10.1000/shared.b">
+        <a href="https://arxiv.org/abs/2604.00001">Other Study preprint</a>`,
     },
     "https://paperless.example/publications/back-to-index": {
       finalUrl: "https://paperless.example/publications/",
       body: `
         <title>Paperless Publications Index</title>
         <a href="/publications/secure-agents">Secure Agents</a>`,
+    },
+    "https://paperless.example/publications/shared-bridge": {
+      body: `
+        <meta name="citation_title" content="Shared Study">
+        <meta name="citation_publication_date" content="2026">
+        <a href="https://arxiv.org/abs/2604.00001">Same Other Study preprint</a>
+        <a href="/downloads/labeled-paper?id=456">Download PDF</a>`,
     },
   };
 
@@ -277,10 +308,10 @@ globalThis.fetch = async (input, init = {}) => {
   assert.deepEqual(reviewed.areas, ["agents", "software engineering"]);
   assert.equal(reviewed.venue, "ICSE 2026");
   assert.equal(reviewed.doi, "10.1000/reliable.agents");
-  assert.equal(reviewed.arxivId, "2602.00001");
+  assert.equal(reviewed.arxivId, "2602.00001v1");
   assert.equal(reviewed.evidenceLevel, "peer-reviewed");
-  assert.equal(reviewed.paperUrl, "https://arxiv.org/abs/2602.00001");
-  assert.equal(reviewed.pdfUrl, "https://arxiv.org/pdf/2602.00001.pdf");
+  assert.equal(reviewed.paperUrl, "https://arxiv.org/abs/2602.00001v1");
+  assert.equal(reviewed.pdfUrl, "https://arxiv.org/pdf/2602.00001v1.pdf");
 
   const preprint = research.publications.find((item) => item.title === "Agent Memory at Scale");
   assert.equal(preprint.arxivId, "2601.12345");
@@ -309,26 +340,51 @@ globalThis.fetch = async (input, init = {}) => {
   assert.equal(deep.publications.length, 0);
   assert.equal(deep.duplicatePublications, 1);
   assert.deepEqual(deep.pdfCandidates.map((item) => item.url), [
-    "https://arxiv.org/pdf/2602.00001.pdf",
+    "https://arxiv.org/pdf/2602.00001v1.pdf",
   ]);
-  assert.equal(alias.publications.length, 1);
+  assert.equal(alias.publications.length, 2);
   assert.equal(alias.duplicatePublications, 3);
-  assert.equal(alias.publications[0].doi, "10.1000/bridge.record");
-  assert.equal(alias.publications[0].arxivId, "2603.00001");
-  assert.equal(alias.publications[0].venue, "NeurIPS 2026");
-  assert.equal(alias.publications[0].evidenceLevel, "peer-reviewed");
-  assert.deepEqual(alias.publications[0].authors, ["Annie Easley"]);
-  assert.equal(paperless.publications.length, 3);
-  assert.equal(paperless.publications[0].evidenceLevel, "corporate-research");
-  assert.deepEqual(
-    paperless.publications.filter((item) => item.title === "Shared Study").map((item) => item.doi),
-    ["10.1000/shared.a", "10.1000/shared.b"]
+  const bridged = alias.publications.find((item) => item.doi === "10.1000/bridge.record");
+  assert.equal(bridged.arxivId, "2603.00001");
+  assert.equal(bridged.venue, "NeurIPS 2026");
+  assert.equal(bridged.evidenceLevel, "peer-reviewed");
+  assert.deepEqual(bridged.authors, ["Annie Easley"]);
+  const citationDownload = alias.publications.find(
+    (item) => item.title === "Agent's Citation Study"
   );
+  assert.equal(citationDownload.evidenceLevel, "preprint");
+  assert.equal(
+    citationDownload.pdfUrl,
+    "https://alias.example/downloads/citation-paper?id=123"
+  );
+  assert.ok(
+    alias.pdfCandidates.some(
+      (item) => item.url === "https://alias.example/downloads/citation-paper?id=123"
+    )
+  );
+  assert.equal(paperless.publications.length, 3);
+  const secureAgents = paperless.publications.find((item) => item.title === "Secure Agents");
+  assert.equal(secureAgents.evidenceLevel, "corporate-research");
+  assert.equal(secureAgents.pdfUrl, "");
+  const sharedStudy = paperless.publications.find((item) => item.title === "Shared Study");
+  const otherStudy = paperless.publications.find((item) => item.title === "Other Study");
+  assert.equal(sharedStudy.doi, "10.1000/shared.a");
+  assert.equal(otherStudy.doi, "10.1000/shared.b");
+  assert.equal(otherStudy.arxivId, "2604.00001");
+  assert.equal(paperless.duplicatePublications, 1);
   assert.deepEqual(paperless.publicationErrors.map((item) => item.error), [
     "unexpected_detail_url",
   ]);
-  assert.deepEqual(paperless.pdfCandidates, []);
-  assert.match(result.stdout, /Publicacoes encontradas: 7/);
+  assert.ok(
+    paperless.pdfCandidates.some(
+      (item) => item.url === "https://paperless.example/downloads/labeled-paper?id=456"
+    )
+  );
+  assert.doesNotMatch(
+    paperless.pdfCandidates.map((item) => item.url).join("\n"),
+    /secure-agents/
+  );
+  assert.match(result.stdout, /Publicacoes encontradas: 8/);
 
   const brief = await readFile(path.join(root, "docs", "radar-discovery-brief.md"), "utf8");
   assert.match(brief, /\[peer-reviewed\] Reliable Agents/);
