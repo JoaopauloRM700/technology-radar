@@ -212,7 +212,7 @@ test("discovers, classifies and deduplicates publication details without leaving
         <meta name="citation_publication_date" content="2026-11-20">
         <meta name="citation_journal_title" content="arXiv">
         <meta name="citation_conference_title" content="arXiv">
-        <meta name="citation_pdf_url" data-content="/downloads/placeholder" content="/downloads/citation-paper?id=123">`,
+        <meta name="citation_pdf_url" data-preview="Value of content='/downloads/placeholder'" content="/downloads/citation-paper?id=123">`,
     },
     "https://paperless.example/publications/": {
       body: `
@@ -251,7 +251,7 @@ test("discovers, classifies and deduplicates publication details without leaving
         <a href="https://arxiv.org/abs/2604.00001">Other Study preprint</a>`,
     },
     "https://paperless.example/publications/back-to-index": {
-      finalUrl: "https://paperless.example/research/publications/",
+      finalUrl: "https://paperless.example/publications/archive/2026",
       body: `
         <title>Paperless Publications Index</title>
         <meta name="citation_publication_date" content="2026">
@@ -263,7 +263,7 @@ test("discovers, classifies and deduplicates publication details without leaving
         <meta name="citation_publication_date" content="2026">
         <a href="https://arxiv.org/abs/2604.00001">Same Other Study preprint</a>
         <a href="#pdf">PDF section</a>
-        <a href="/downloads/agent's-work?id=456">Download PDF</a>`,
+        <a data-href="/preview/not-a-pdf" href="/downloads/agent's-work?id=456">Download PDF</a>`,
     },
   };
 

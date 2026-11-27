@@ -235,6 +235,7 @@ async function launchPlaywright(playwright) {
     const browser = await playwright.chromium.launch({ headless: true });
     const context = await browser.newContext({
       acceptDownloads: true,
+      serviceWorkers: "block",
       userAgent: "TechnologyRadarDiscovery/0.1 (+local P&D radar; human-reviewed proposals)",
     });
     return { browser, context, note: "Chromium headless via Playwright." };
@@ -243,6 +244,7 @@ async function launchPlaywright(playwright) {
       const browser = await playwright.chromium.launch({ channel: "chrome", headless: true });
       const context = await browser.newContext({
         acceptDownloads: true,
+        serviceWorkers: "block",
         userAgent: "TechnologyRadarDiscovery/0.1 (+local P&D radar; human-reviewed proposals)",
       });
       return { browser, context, note: "Chrome instalado via Playwright channel." };
@@ -402,7 +404,8 @@ async function discoverPublications(source, context) {
         const detailUrl = new URL(detail.finalUrl);
         if (
           canonicalPath(detailUrl.pathname) === indexPath ||
-          !patterns.some((pattern) => matchesPublicationPath(detailUrl.pathname, pattern))
+          !patterns.some((pattern) => matchesPublicationPath(detailUrl.pathname, pattern)) ||
+          isPublicationNavigationPath(detailUrl.pathname, patterns)
         ) {
           publicationErrors.push({
             url,
@@ -584,17 +587,19 @@ function isRedirectStatus(status) {
 
 function parseLinks(html, baseUrl) {
   const links = [];
-  const anchorRegex = /<a\b([^>]*?)href\s*=\s*(?:(["'])([\s\S]*?)\2|([^\s>]+))([^>]*)>([\s\S]*?)<\/a>/gi;
+  const anchorRegex = /<a\b([^>]*)>([\s\S]*?)<\/a>/gi;
   let match;
   while ((match = anchorRegex.exec(html)) !== null) {
-    const href = normalizeUrl(match[3] ?? match[4], baseUrl);
+    const attributes = parseAttributes(match[1]);
+    const rawHref = attributes.get("href");
+    if (!rawHref) continue;
+    const href = normalizeUrl(rawHref, baseUrl);
     if (!href) continue;
-    const attrs = `${match[1]} ${match[5]}`;
     links.push({
       href,
-      text: stripHtml(match[6]),
-      title: attrValue(attrs, "title"),
-      download: attrValue(attrs, "download"),
+      text: stripHtml(match[2]),
+      title: attributes.get("title") ?? "",
+      download: attributes.get("download") ?? "",
     });
   }
 
@@ -1344,10 +1349,20 @@ function stripHtml(value) {
 }
 
 function attrValue(attrs, name) {
-  const attribute = `(?:^|\\s)${name}\\s*=\\s*`;
-  const quoted = attrs.match(new RegExp(`${attribute}(["'])([\\s\\S]*?)\\1`, "i"));
-  if (quoted) return quoted[2];
-  return attrs.match(new RegExp(`${attribute}([^\\s>]+)`, "i"))?.[1] ?? "";
+  return parseAttributes(attrs).get(name.toLowerCase()) ?? "";
+}
+
+function parseAttributes(attrs) {
+  const attributes = new Map();
+  const pattern = /([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g;
+  let match;
+  while ((match = pattern.exec(attrs)) !== null) {
+    const name = match[1].toLowerCase();
+    if (!attributes.has(name)) {
+      attributes.set(name, match[2] ?? match[3] ?? match[4] ?? "");
+    }
+  }
+  return attributes;
 }
 
 function safeUrlPath(url) {
