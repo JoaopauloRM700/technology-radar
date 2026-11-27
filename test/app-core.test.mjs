@@ -42,6 +42,11 @@ test("corporate research sources stay synchronized and safely bounded", async ()
     assert.ok(monitoredSource.publicationLinkPatterns.length > 0);
     assert.ok(monitoredSource.themes.length > 0);
   }
+
+  const salesforce = monitored.find(
+    (source) => source.name === "Salesforce AI Research Publications"
+  );
+  assert.deepEqual(salesforce.publicationPdfOrigins, ["https://arxiv.org"]);
 });
 
 test("loads the canonical radar and normalizes a detached copy", async () => {

@@ -359,30 +359,54 @@ async function discoverPublications(source, context) {
     const indexUrl = new URL(index.finalUrl);
     const indexPath = canonicalPath(indexUrl.pathname);
     const patterns = source.publicationLinkPatterns ?? [];
+    const externalPdfOrigins = allowedPublicationPdfOrigins(source.publicationPdfOrigins);
     const maxPublications = Math.min(5, Math.max(1, Number(source.maxPublications) || 5));
-    const detailUrls = [];
+    const detailTargets = [];
     const seenDetails = new Set();
 
     for (const link of index.links) {
       const url = normalizeUrl(link.href, index.finalUrl);
       if (!url) continue;
       const parsed = new URL(url);
-      if (parsed.origin !== indexUrl.origin || canonicalPath(parsed.pathname) === indexPath) continue;
-      if (!patterns.some((pattern) => matchesPublicationPath(parsed.pathname, pattern))) continue;
-      if (isPublicationNavigationPath(parsed.pathname, patterns)) continue;
-      const detailIdentity = `${parsed.origin}${canonicalPath(parsed.pathname).toLowerCase()}`;
+      let target;
+      if (parsed.origin === indexUrl.origin) {
+        if (canonicalPath(parsed.pathname) === indexPath) continue;
+        if (!patterns.some((pattern) => matchesPublicationPath(parsed.pathname, pattern))) continue;
+        if (isPublicationNavigationPath(parsed.pathname, patterns)) continue;
+        parsed.hash = "";
+        target = {
+          url: parsed.href,
+          expectedOrigin: indexUrl.origin,
+          patterns,
+          indexPath,
+          arxivId: "",
+          pdfUrl: "",
+          render: true,
+        };
+      } else {
+        target = externalArxivPublicationTarget(parsed, externalPdfOrigins);
+        if (!target) continue;
+      }
+      const targetUrl = new URL(target.url);
+      const detailIdentity = target.arxivId
+        ? `arxiv:${normalizeArxivIdentity(target.arxivId)}`
+        : `${target.expectedOrigin}${canonicalPath(targetUrl.pathname).toLowerCase()}`;
       if (seenDetails.has(detailIdentity)) continue;
       seenDetails.add(detailIdentity);
-      parsed.hash = "";
-      detailUrls.push(parsed.href);
-      if (detailUrls.length >= maxPublications) break;
+      detailTargets.push(target);
+      if (detailTargets.length >= maxPublications) break;
     }
 
     const publications = [];
     const publicationErrors = [];
-    for (const url of detailUrls) {
+    for (const target of detailTargets) {
+      const { url } = target;
       try {
-        const detail = await loadPublicationDetailPage(url, context, indexUrl.origin);
+        const detail = await loadPublicationDetailPage(
+          url,
+          target.render ? context : null,
+          target.expectedOrigin
+        );
         if (detail.blockedRedirectUrl) {
           publicationErrors.push({
             url,
@@ -392,7 +416,7 @@ async function discoverPublications(source, context) {
           });
           continue;
         }
-        if (!hasOrigin(detail.finalUrl, indexUrl.origin)) {
+        if (!hasOrigin(detail.finalUrl, target.expectedOrigin)) {
           publicationErrors.push({
             url,
             status: detail.status,
@@ -403,9 +427,11 @@ async function discoverPublications(source, context) {
         }
         const detailUrl = new URL(detail.finalUrl);
         if (
-          canonicalPath(detailUrl.pathname) === indexPath ||
-          !patterns.some((pattern) => matchesPublicationPath(detailUrl.pathname, pattern)) ||
-          isPublicationNavigationPath(detailUrl.pathname, patterns)
+          (target.indexPath && canonicalPath(detailUrl.pathname) === target.indexPath) ||
+          !target.patterns.some((pattern) => matchesPublicationPath(detailUrl.pathname, pattern)) ||
+          isPublicationNavigationPath(detailUrl.pathname, target.patterns) ||
+          (target.arxivId &&
+            arxivIdFromAbsPath(detailUrl.pathname) !== target.arxivId.toLowerCase())
         ) {
           publicationErrors.push({
             url,
@@ -420,7 +446,10 @@ async function discoverPublications(source, context) {
           continue;
         }
         const publication = extractPublication(detail);
-        if (publication) publications.push(publication);
+        if (publication) {
+          if (target.arxivId) applyExternalArxivIdentity(publication, target);
+          publications.push(publication);
+        }
         else publicationErrors.push({ url, status: detail.status, error: "publication_metadata_missing" });
       } catch (error) {
         publicationErrors.push({ url, status: null, error: error.message });
@@ -717,6 +746,82 @@ function isPublicationNavigationPath(pathname, patterns) {
   return publicationNavigationSegments.has(firstSegment);
 }
 
+function allowedPublicationPdfOrigins(values) {
+  const origins = new Set();
+  for (const value of Array.isArray(values) ? values : []) {
+    try {
+      const url = new URL(value);
+      if (
+        url.protocol === "https:" &&
+        !url.username &&
+        !url.password &&
+        url.pathname === "/" &&
+        !url.search &&
+        !url.hash
+      ) {
+        origins.add(url.origin);
+      }
+    } catch {
+      // Invalid allowlist entries are ignored.
+    }
+  }
+  return origins;
+}
+
+function externalArxivPublicationTarget(url, allowedOrigins) {
+  if (
+    url.protocol !== "https:" ||
+    url.username ||
+    url.password ||
+    url.hostname !== "arxiv.org" ||
+    !allowedOrigins.has(url.origin)
+  ) {
+    return null;
+  }
+  const arxivId = arxivIdFromPdfPath(url.pathname);
+  if (!arxivId) return null;
+  return {
+    url: `${url.origin}/abs/${arxivId}`,
+    expectedOrigin: url.origin,
+    patterns: ["/abs/"],
+    indexPath: "",
+    arxivId,
+    pdfUrl: `${url.origin}/pdf/${arxivId}`,
+    render: false,
+  };
+}
+
+function arxivIdFromPdfPath(pathname) {
+  return decodePath(pathname).match(
+    /^\/pdf\/(\d{4}\.\d{4,5}(?:v\d+)?)(?:\.pdf)?\/?$/i
+  )?.[1] ?? "";
+}
+
+function arxivIdFromAbsPath(pathname) {
+  const id = decodePath(pathname).match(
+    /^\/abs\/(\d{4}\.\d{4,5}(?:v\d+)?)\/?$/i
+  )?.[1];
+  return id?.toLowerCase() ?? "";
+}
+
+function decodePath(pathname) {
+  try {
+    return decodeURIComponent(pathname);
+  } catch {
+    return "";
+  }
+}
+
+function applyExternalArxivIdentity(publication, target) {
+  publication.arxivId = target.arxivId;
+  publication.detailUrl = target.url;
+  publication.paperUrl = target.url;
+  publication.pdfUrl = target.pdfUrl;
+  if (publication.evidenceLevel === "corporate-research") {
+    publication.evidenceLevel = "preprint";
+  }
+}
+
 function hasOrigin(value, expectedOrigin) {
   try {
     return new URL(value).origin === expectedOrigin;
@@ -744,6 +849,8 @@ function extractPublication(page) {
   );
   const publishedAt = firstValue(
     metaValues(page.html, "citation_publication_date"),
+    metaValues(page.html, "citation_date"),
+    metaValues(page.html, "citation_online_date"),
     metaValues(page.html, "article:published_time"),
     article?.datePublished
   );

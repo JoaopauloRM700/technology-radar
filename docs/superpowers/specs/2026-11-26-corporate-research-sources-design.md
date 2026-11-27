@@ -23,7 +23,7 @@ Ampliar o Radar Tecnológico com publicações técnicas e acadêmicas produzida
 
 - Node.js 22 e APIs nativas; nenhuma dependência nova.
 - No máximo cinco páginas de publicação por fonte em cada varredura, configurável por fonte.
-- Somente páginas de detalhe na mesma origem e compatíveis com padrões explícitos da fonte.
+- Somente páginas de detalhe na mesma origem e compatíveis com padrões explícitos da fonte. Catálogos que apontam diretamente para PDFs do arXiv podem autorizar `https://arxiv.org` explicitamente; a coleta consulta apenas o `/abs/` correspondente e bloqueia redirecionamentos externos.
 - Erros em uma publicação não interrompem as demais fontes.
 - Os contratos existentes `pdfCandidates` e `downloads` permanecem presentes.
 
@@ -35,7 +35,7 @@ Ampliar o Radar Tecnológico com publicações técnicas e acadêmicas produzida
 
 ## Fluxo e dados
 
-Fontes com `strategy: "publications"` entram na varredura mesmo sem descoberta direta de PDFs. O coletor carrega o índice, seleciona links na mesma origem por `publicationLinkPatterns`, limita a quantidade, visita cada detalhe e produz `publications` no relatório. Cada item contém `title`, `authors`, `publishedAt`, `year`, `areas`, `abstract`, `venue`, `doi`, `arxivId`, `detailUrl`, `paperUrl`, `pdfUrl` e `evidenceLevel`.
+Fontes com `strategy: "publications"` entram na varredura mesmo sem descoberta direta de PDFs. O coletor carrega o índice, seleciona links na mesma origem por `publicationLinkPatterns` ou PDFs arXiv permitidos por `publicationPdfOrigins`, limita a quantidade, visita cada detalhe e produz `publications` no relatório. Cada item contém `title`, `authors`, `publishedAt`, `year`, `areas`, `abstract`, `venue`, `doi`, `arxivId`, `detailUrl`, `paperUrl`, `pdfUrl` e `evidenceLevel`.
 
 PDFs diretos e links arXiv são convertidos em candidatos do pipeline existente. O brief passa a listar as publicações e seus níveis de evidência. DOI, arXiv e título/ano impedem que Google Research/DeepMind ou outros portais produzam registros repetidos na mesma execução.
 

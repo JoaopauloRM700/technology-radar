@@ -51,6 +51,16 @@ test("discovers, classifies and deduplicates publication details without leaving
       maxPublications: 5,
       themes: ["security"],
     },
+    {
+      name: "Example External PDF Research",
+      url: "https://external.example/catalog",
+      strategy: "publications",
+      discoverPdfs: false,
+      publicationLinkPatterns: ["/publications/"],
+      publicationPdfOrigins: ["https://arxiv.org"],
+      maxPublications: 5,
+      themes: ["agents"],
+    },
   ];
   await writeFile(
     path.join(root, "data", "monitored-sources.json"),
@@ -227,7 +237,7 @@ test("discovers, classifies and deduplicates publication details without leaving
       body: `
         <meta name="citation_title" content="Secure Agents">
         <meta name="citation_author" content="Margaret Hamilton">
-        <meta name="citation_publication_date" content="2026-11-01">
+        <meta name="citation_online_date" content="2026-11-01">
         <meta name="description" content="Corporate research without a public PDF.">
         <script type="application/ld+json">
           {
@@ -264,6 +274,42 @@ test("discovers, classifies and deduplicates publication details without leaving
         <a href="https://arxiv.org/abs/2604.00001">Same Other Study preprint</a>
         <a href="#pdf">PDF section</a>
         <a data-href="/preview/not-a-pdf" href="/downloads/agent's-work?id=456">Download PDF</a>`,
+    },
+    "https://external.example/catalog": {
+      body: `
+        <a href="https://outside.example/paper.pdf">Untrusted external PDF</a>
+        <a href="https://arxiv.org/pdf/%E0%A4%A">Malformed arXiv PDF</a>
+        <a href="https://arxiv.org/pdf/2605.00001v2">Trusted arXiv PDF</a>
+        <a href="https://arxiv.org/pdf/2605.00001v2#page=2">Duplicate arXiv PDF</a>
+        <a href="https://arxiv.org/pdf/2605.00001v1">Older version of the same arXiv paper</a>
+        <a href="https://arxiv.org/pdf/2605.00002">Redirecting arXiv PDF</a>
+        <a href="https://arxiv.org/pdf/2605.00003v2">Version-changing arXiv redirect</a>`,
+    },
+    "https://arxiv.org/abs/2605.00001v2": {
+      body: `
+        <meta name="citation_title" content="External Catalog Agents">
+        <meta name="citation_author" content="Barbara Liskov">
+        <meta name="citation_date" content="2026/05/01">
+        <meta name="citation_journal_title" content="arXiv">
+        <meta name="citation_pdf_url" content="https://arxiv.org/pdf/2605.00001">`,
+    },
+    "https://arxiv.org/abs/2605.00002": {
+      status: 302,
+      location: "https://outside.example/arxiv-trap",
+    },
+    "https://outside.example/arxiv-trap": {
+      reject: true,
+      body: `<meta name="citation_title" content="External arXiv trap">`,
+    },
+    "https://arxiv.org/abs/2605.00003v2": {
+      status: 302,
+      location: "https://arxiv.org/abs/2605.00003",
+    },
+    "https://arxiv.org/abs/2605.00003": {
+      body: `
+        <meta name="citation_title" content="Wrong arXiv version">
+        <meta name="citation_date" content="2026/05/03">
+        <meta name="citation_pdf_url" content="https://arxiv.org/pdf/2605.00003">`,
     },
   };
 
@@ -318,9 +364,9 @@ globalThis.fetch = async (input, init = {}) => {
   const report = JSON.parse(
     await readFile(path.join(root, "data", "discovery", "radar-discovery.json"), "utf8")
   );
-  assert.equal(report.sources.length, 4);
+  assert.equal(report.sources.length, 5);
 
-  const [research, deep, alias, paperless] = report.sources;
+  const [research, deep, alias, paperless, external] = report.sources;
   assert.equal(research.publications.length, 3);
   assert.equal(research.duplicatePublications, 0);
   assert.deepEqual(
@@ -396,6 +442,8 @@ globalThis.fetch = async (input, init = {}) => {
   assert.equal(citationCandidate.isPdf, false);
   assert.equal(paperless.publications.length, 3);
   const secureAgents = paperless.publications.find((item) => item.title === "Secure Agents");
+  assert.equal(secureAgents.publishedAt, "2026-11-01");
+  assert.equal(secureAgents.year, 2026);
   assert.equal(secureAgents.evidenceLevel, "corporate-research");
   assert.equal(secureAgents.pdfUrl, "");
   const sharedStudy = paperless.publications.find((item) => item.title === "Shared Study");
@@ -416,7 +464,34 @@ globalThis.fetch = async (input, init = {}) => {
     paperless.pdfCandidates.map((item) => item.url).join("\n"),
     /secure-agents/
   );
-  assert.match(result.stdout, /Publicacoes encontradas: 9/);
+  assert.equal(external.publications.length, 1);
+  const externalPublication = external.publications[0];
+  assert.equal(externalPublication.title, "External Catalog Agents");
+  assert.equal(externalPublication.publishedAt, "2026/05/01");
+  assert.equal(externalPublication.year, 2026);
+  assert.equal(externalPublication.arxivId, "2605.00001v2");
+  assert.equal(externalPublication.detailUrl, "https://arxiv.org/abs/2605.00001v2");
+  assert.equal(externalPublication.paperUrl, "https://arxiv.org/abs/2605.00001v2");
+  assert.equal(externalPublication.pdfUrl, "https://arxiv.org/pdf/2605.00001v2");
+  assert.equal(externalPublication.evidenceLevel, "preprint");
+  assert.deepEqual(external.publicationErrors, [
+    {
+      url: "https://arxiv.org/abs/2605.00002",
+      status: 302,
+      error: "unexpected_origin",
+      finalUrl: "https://outside.example/arxiv-trap",
+    },
+    {
+      url: "https://arxiv.org/abs/2605.00003v2",
+      status: 200,
+      error: "unexpected_detail_url",
+      finalUrl: "https://arxiv.org/abs/2605.00003",
+    },
+  ]);
+  assert.deepEqual(external.pdfCandidates.map((item) => item.url), [
+    "https://arxiv.org/pdf/2605.00001v2",
+  ]);
+  assert.match(result.stdout, /Publicacoes encontradas: 10/);
 
   const brief = await readFile(path.join(root, "docs", "radar-discovery-brief.md"), "utf8");
   assert.match(brief, /\[peer-reviewed\] Reliable Agents/);

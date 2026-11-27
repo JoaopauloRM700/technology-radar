@@ -192,6 +192,7 @@
     "maxPublications": 5,
     "maxPdfDownloads": 1,
     "publicationLinkPatterns": ["/publications/"],
+    "publicationPdfOrigins": ["https://arxiv.org"],
     "themes": ["enterprise agents", "RAG", "AI evaluation", "software engineering"]
   }
 ]
